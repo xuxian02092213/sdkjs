@@ -1615,6 +1615,7 @@ function CPage()
 
 	this.Draw = function (context, xDst, yDst, wDst, hDst, contextW, contextH)
 	{
+        var StartTime = new Date().getTime();
 		if (null != this.drawingPage.cachedImage)
 		{
 			if (!g_page_outline_inner)
@@ -1658,6 +1659,9 @@ function CPage()
 
 			context.fillRect(xDst, yDst, wDst, hDst);
 		}
+
+        var EndTime = new Date().getTime();
+        AscCommon.SpeedTestLogger.blitLog((EndTime - StartTime) / 1000);
 	};
 
 	this.DrawSelection = function (overlay, xDst, yDst, wDst, hDst, TextMatrix)
@@ -3027,7 +3031,7 @@ function CDrawingDocument()
 		page.drawingPage.UnLock(this.m_oCacheManager);
 		page.drawingPage.cachedImage = this.m_oCacheManager.Lock(w, h);
 
-		//var StartTime = new Date().getTime();
+		var StartTime = new Date().getTime();
 
 		// теперь берем графикс
 		var g = new AscCommon.CGraphics();
@@ -3061,7 +3065,9 @@ function CDrawingDocument()
 		if (this.m_oWordControl.m_oApi.watermarkDraw)
 			this.m_oWordControl.m_oApi.watermarkDraw.Draw(page.drawingPage.cachedImage.image.ctx, w, h);
 
-		//var EndTime = new Date().getTime();
+		var EndTime = new Date().getTime();
+
+		AscCommon.SpeedTestLogger.drawLog((EndTime - StartTime) / 1000);
 
 		//alert("" + ((EndTime - StartTime) / 1000));
 	}

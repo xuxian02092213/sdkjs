@@ -1185,6 +1185,8 @@ background-repeat: no-repeat;\
 		g_oIdCounter.Set_Load(true);
 		AscFonts.IsCheckSymbols = true;
 
+        var StartTime = new Date().getTime();
+
 		var openParams        = {checkFileSize : /*this.isMobileVersion*/false, charCount : 0, parCount : 0};
 		var oBinaryFileReader = new AscCommonWord.BinaryFileReader(this.WordControl.m_oLogicDocument, openParams);
 		if (oBinaryFileReader.Read(gObject))
@@ -1206,6 +1208,9 @@ background-repeat: no-repeat;\
 		}
 		else
 			editor.sendEvent("asc_onError", c_oAscError.ID.MobileUnexpectedCharCount, c_oAscError.Level.Critical);
+
+        var EndTime = new Date().getTime();
+        AscCommon.SpeedTestLogger.openLog((EndTime - StartTime) / 1000);
 
 		AscFonts.IsCheckSymbols = false;
 
@@ -6448,6 +6453,7 @@ background-repeat: no-repeat;\
 							}
 						};
 
+                	var StartTime = new Date().getTime();
 					if (!this.isOnlyReaderMode)
 					{
 						if (false === this.isSaveFonts_Images)
@@ -6467,6 +6473,9 @@ background-repeat: no-repeat;\
 						else
 							this.WordControl.UpdateReaderContent();
 					}
+
+					var EndTime = new Date().getTime();
+					AscCommon.SpeedTestLogger.calculateLog((EndTime - StartTime) / 1000);
 				}
 			}
 
@@ -9884,4 +9893,38 @@ background-repeat: no-repeat;\
 	asc_CCommentDataWord.prototype['asc_getRepliesCount'] = asc_CCommentDataWord.prototype.asc_getRepliesCount;
 	asc_CCommentDataWord.prototype['asc_getDocumentFlag'] = asc_CCommentDataWord.prototype.asc_getDocumentFlag;
 	asc_CCommentDataWord.prototype['asc_putDocumentFlag'] = asc_CCommentDataWord.prototype.asc_putDocumentFlag;
+
+    function SpeedTestLogger()
+	{
+		this._openLog = "";
+		this._calculateLog = "";
+		this._blitLog = "";
+		this._drawLog = "";
+
+		this.isChecked = false;
+
+		this.check = function()
+		{
+			if (this.isChecked)
+				return;
+
+			if ("" == this._openLog || "" == this._calculateLog || "" == this._blitLog || "" == this._drawLog)
+				return;
+
+            this.isChecked = true;
+
+			var _log = "open:      " + this._openLog + "\n";
+            _log += ("calculate: " + this._calculateLog + "\n");
+            _log += ("draw:      " + this._drawLog + "\n");
+            _log += ("blit:      " + this._blitLog + "\n");
+            alert(_log);
+		};
+
+        this.openLog = function(time) 		{ this._openLog = time + "s"; this.check(); };
+        this.calculateLog = function(time) 	{ this._calculateLog = time + "s"; this.check(); };
+        this.drawLog = function(time)		{ this._drawLog = time + "s"; this.check(); };
+        this.blitLog = function(time) 		{ this._blitLog = time + "s"; this.check(); };
+	}
+
+    AscCommon.SpeedTestLogger = new SpeedTestLogger();
 })(window, window.document);
