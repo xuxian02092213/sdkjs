@@ -1601,7 +1601,7 @@ function _HEXTORGB_( colorHEX ) {
 		this.startColorFadeOutStart = _HEXTORGB_(this.settings.scrollerColorOver).R;
 		this.startColorFadeInOutStart = -1;
 
-		this.IsRetina = AscBrowser.isRetina;
+		this.IsRetina = AscBrowser.isCustomScalingAbove2();
 
 		this.piperImgVert = [document.createElement( 'canvas' ), document.createElement( 'canvas' )];
 		this.piperImgHor = [document.createElement( 'canvas' ), document.createElement( 'canvas' )];
@@ -1840,9 +1840,9 @@ function _HEXTORGB_( colorHEX ) {
 		}
 	};
 	ScrollObject.prototype.Repos = function ( settings, bIsHorAttack, bIsVerAttack ) {
-		if (this.IsRetina != AscBrowser.isRetina)
+		if (this.IsRetina != AscBrowser.isCustomScalingAbove2())
 		{
-			this.IsRetina = AscBrowser.isRetina;
+			this.IsRetina = AscBrowser.isCustomScalingAbove2();
 			this.ArrowDrawer.InitSize(this.settings.arrowSizeH, this.settings.arrowSizeW, this.IsRetina);
 		}
 

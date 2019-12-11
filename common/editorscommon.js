@@ -413,7 +413,7 @@
 		this.value = function(param)
 		{
 			var ret = this.map[param];
-			if (AscCommon.AscBrowser.isRetina && this.mapRetina[param])
+			if (AscCommon.AscBrowser.isCustomScalingAbove2() && this.mapRetina[param])
 				ret = this.mapRetina[param];
 			return ret ? ret : param;
 		};
@@ -4899,6 +4899,52 @@
 		return null;
 	}
 
+    function _getIntegerByDivide(val)
+    {
+        // поддерживаем scale, который
+        // 1) рациональное число
+        // 2) знаменатель несократимой дроби <= 10 (поддерживаем проценты кратные 1/10, 1/9, ... 1/2)
+        var test = val;
+        for (var i = 0; i < 10; i++)
+        {
+            test = (val - i) * AscCommon.AscBrowser.retinaPixelRatio;
+            if (test > 0 && Math.abs(test - (test >> 0)) < 0.001)
+                return { start: (val - i), end : (test >> 0) };
+        }
+        return { start : val, end: AscCommon.AscBrowser.convertToRetinaValue(val, true) };
+    };
+
+    function calculateCanvasSize(element)
+	{
+        var scale = AscCommon.AscBrowser.retinaPixelRatio;
+        if (Math.abs(scale - (scale >> 0)) < 0.001)
+		{
+            element.width = (scale * parseInt(element.style.width));
+            element.height = (scale * parseInt(element.style.height));
+            return;
+		}
+
+        var rect = element.getBoundingClientRect();
+        if (!AscCommon.AscBrowser.isMozilla)
+        {
+            element.width = Math.round(scale * rect.right) - Math.round(scale * rect.left);
+            element.height = Math.round(scale * rect.bottom) - Math.round(scale * rect.top);
+        }
+        else
+        {
+            //element.width = Math.round(scale * rect.width);
+            //element.height = Math.round(scale * rect.height);
+
+            var sizeW = _getIntegerByDivide(rect.width);
+            var sizeH = _getIntegerByDivide(rect.height);
+            if (sizeW.start !== rect.width) element.style.width = sizeW.start + "px";
+            if (sizeH.start !== rect.height) element.style.height = sizeH.start + "px";
+
+            element.width = sizeW.end;
+            element.height = sizeH.end;
+        }
+    };
+
 	//------------------------------------------------------------export---------------------------------------------------
 	window['AscCommon'] = window['AscCommon'] || {};
 	window["AscCommon"].getSockJs = getSockJs;
@@ -4999,6 +5045,7 @@
 
 	window["AscCommon"].valueToMm = valueToMm;
 	window["AscCommon"].valueToMmType = valueToMmType;
+	window["AscCommon"].calculateCanvasSize = calculateCanvasSize;
 })(window);
 
 window["asc_initAdvancedOptions"] = function(_code, _file_hash, _docInfo)

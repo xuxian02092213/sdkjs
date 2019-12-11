@@ -2041,11 +2041,9 @@ function CDrawingDocument()
 
 			var _ww = this.m_oWordControl.m_oEditor.HtmlElement.width;
 			var _hh = this.m_oWordControl.m_oEditor.HtmlElement.height;
-			if (this.m_oWordControl.bIsRetinaSupport)
-			{
-				_ww /= AscCommon.AscBrowser.retinaPixelRatio;
-				_hh /= AscCommon.AscBrowser.retinaPixelRatio;
-			}
+
+			_ww /= AscCommon.AscBrowser.retinaPixelRatio;
+			_hh /= AscCommon.AscBrowser.retinaPixelRatio;
 
 			var boxX = 0;
 			var boxY = 0;
@@ -2112,8 +2110,7 @@ function CDrawingDocument()
 		{
 			var yPos = _y * g_dKoef_mm_to_pix - this.m_oWordControl.m_oNotesApi.Scroll;
 			var _hh = this.m_oWordControl.m_oNotes.HtmlElement.height;
-			if (this.m_oWordControl.bIsRetinaSupport)
-				_hh /= AscCommon.AscBrowser.retinaPixelRatio;
+			_hh /= AscCommon.AscBrowser.retinaPixelRatio;
 
 			var boxY = 0;
 			var targetSizeAscent = (this.m_dTargetAscent * g_dKoef_mm_to_pix) >> 0;
@@ -2661,8 +2658,7 @@ function CDrawingDocument()
 	this.GetVisibleMMHeight = function()
 	{
 		var pixHeigth = this.m_oWordControl.m_oEditor.HtmlElement.height;
-		if (this.m_oWordControl.bIsRetinaSupport)
-			pixHeigth /= AscCommon.AscBrowser.retinaPixelRatio;
+		pixHeigth /= AscCommon.AscBrowser.retinaPixelRatio;
 		var pixBetweenPages = 20 * (this.m_lDrawingEnd - this.m_lDrawingFirst);
 
 		return (pixHeigth - pixBetweenPages) * g_dKoef_pix_to_mm * 100 / this.m_oWordControl.m_nZoomValue;
@@ -5606,8 +5602,7 @@ function CSlideDrawer()
 			this.bIsEmptyPresentation = true;
 
 		var dKoef = zoom * g_dKoef_mm_to_pix / 100;
-		if (this.m_oWordControl.bIsRetinaSupport)
-			dKoef *= AscCommon.AscBrowser.retinaPixelRatio;
+		dKoef *= AscCommon.AscBrowser.retinaPixelRatio;
 
 		var w_mm = this.m_oWordControl.m_oLogicDocument.Width;
 		var h_mm = this.m_oWordControl.m_oLogicDocument.Height;
@@ -5649,8 +5644,7 @@ function CSlideDrawer()
 			this.bIsEmptyPresentation = true;
 
 		var dKoef = this.m_oWordControl.m_nZoomValue * g_dKoef_mm_to_pix / 100;
-		if (this.m_oWordControl.bIsRetinaSupport)
-			dKoef *= AscCommon.AscBrowser.retinaPixelRatio;
+		dKoef *= AscCommon.AscBrowser.retinaPixelRatio;
 
 		var w_mm = this.m_oWordControl.m_oLogicDocument.Width;
 		var h_mm = this.m_oWordControl.m_oLogicDocument.Height;
@@ -5680,8 +5674,7 @@ function CSlideDrawer()
 		{
 			// поидее если был ресайз только
 			dKoef = this.m_oWordControl.m_nZoomValue * g_dKoef_mm_to_pix / 100;
-			if (this.m_oWordControl.bIsRetinaSupport)
-				dKoef *= AscCommon.AscBrowser.retinaPixelRatio;
+			dKoef *= AscCommon.AscBrowser.retinaPixelRatio;
 
 			w_mm = this.m_oWordControl.m_oLogicDocument.Width;
 			h_mm = this.m_oWordControl.m_oLogicDocument.Height;
@@ -5739,7 +5732,7 @@ function CSlideDrawer()
 			g.init(this.CachedCanvasCtx, w_px, h_px, w_mm, h_mm);
 			g.m_oFontManager = AscCommon.g_fontManager;
 
-			if (this.m_oWordControl.bIsRetinaSupport)
+			if (AscCommon.AscBrowser.isCustomScalingAbove2())
 				g.IsRetina = true;
 
 			g.m_oCoordTransform.tx = -this.BoundsChecker.Bounds.min_x + this.SlideEps;
@@ -5772,11 +5765,8 @@ function CSlideDrawer()
 		var _x = _rect.left + _bounds.min_x;
 		var _y = _rect.top + _bounds.min_y;
 
-		if (this.m_oWordControl.bIsRetinaSupport)
-		{
-			_x = ((_rect.left * AscCommon.AscBrowser.retinaPixelRatio) >> 0) + _bounds.min_x;
-			_y = ((_rect.top * AscCommon.AscBrowser.retinaPixelRatio) >> 0) + _bounds.min_y;
-		}
+		_x = ((_rect.left * AscCommon.AscBrowser.retinaPixelRatio) >> 0) + _bounds.min_x;
+		_y = ((_rect.top * AscCommon.AscBrowser.retinaPixelRatio) >> 0) + _bounds.min_y;
 
 		if (this.bIsEmptyPresentation)
 		{
@@ -5837,8 +5827,7 @@ function CSlideDrawer()
 		else
 		{
 			var dKoef = this.m_oWordControl.m_nZoomValue * g_dKoef_mm_to_pix / 100;
-			if (this.m_oWordControl.bIsRetinaSupport)
-				dKoef *= AscCommon.AscBrowser.retinaPixelRatio;
+			dKoef *= AscCommon.AscBrowser.retinaPixelRatio;
 
 			var w_mm = this.m_oWordControl.m_oLogicDocument.Width;
 			var h_mm = this.m_oWordControl.m_oLogicDocument.Height;
@@ -5849,7 +5838,7 @@ function CSlideDrawer()
 			g.init(outputCtx, w_px, h_px, w_mm, h_mm);
 			g.m_oFontManager = AscCommon.g_fontManager;
 
-			if (this.m_oWordControl.bIsRetinaSupport)
+			if (AscCommon.AscBrowser.isCustomScalingAbove2())
 				g.IsRetina = true;
 
 			g.m_oCoordTransform.tx = _x - _bounds.min_x;
@@ -5944,8 +5933,7 @@ function CNotesDrawer(page)
 		}
 
 		var dKoef = g_dKoef_mm_to_pix;
-		if (this.HtmlPage.bIsRetinaSupport)
-			dKoef *= AscCommon.AscBrowser.retinaPixelRatio;
+		dKoef *= AscCommon.AscBrowser.retinaPixelRatio;
 
 		var w_mm = this.Width;
 		var h_mm = this.Height;
@@ -5956,7 +5944,7 @@ function CNotesDrawer(page)
 		g.init(ctx, w_px, h_px, w_mm, h_mm);
 		g.m_oFontManager = this.fontManager;
 
-		if (this.HtmlPage.bIsRetinaSupport)
+		if (AscCommon.AscBrowser.isCustomScalingAbove2())
 			g.IsRetina = true;
 
 		g.SaveGrState();
@@ -6011,11 +5999,8 @@ function CNotesDrawer(page)
 		settings.scrollBackgroundColorHover = GlobalSkin.BackgroundScroll;
 		settings.scrollBackgroundColorActive = GlobalSkin.BackgroundScroll;
 
-		if (this.HtmlPage.bIsRetinaSupport)
-		{
-			settings.screenW = AscCommon.AscBrowser.convertToRetinaValue(settings.screenW);
-			settings.screenH = AscCommon.AscBrowser.convertToRetinaValue(settings.screenH);
-		}
+		settings.screenW = AscCommon.AscBrowser.convertToRetinaValue(settings.screenW);
+		settings.screenH = AscCommon.AscBrowser.convertToRetinaValue(settings.screenH);
 
 		this.ScrollMax = Math.max(0, settings.contentH - settings.screenH);
 		if (this.Scroll > this.ScrollMax)

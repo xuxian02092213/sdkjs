@@ -812,11 +812,8 @@ CShapeDrawer.prototype =
                         koefX = __graphics.m_dDpiX / AscCommon.g_dDpiX;
                         koefY = __graphics.m_dDpiY / AscCommon.g_dDpiX;
 
-                        if (editor.WordControl.bIsRetinaSupport)
-                        {
-                            koefX /= AscCommon.AscBrowser.retinaPixelRatio;
-                            koefY /= AscCommon.AscBrowser.retinaPixelRatio;
-                        }
+                        koefX /= AscCommon.AscBrowser.retinaPixelRatio;
+                        koefY /= AscCommon.AscBrowser.retinaPixelRatio;
                     }
 
                     // TODO: !!!

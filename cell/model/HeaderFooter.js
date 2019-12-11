@@ -771,7 +771,7 @@
 	function CHeaderFooterEditor(idArr, width, pageType) {
 		window.Asc.g_header_footer_editor = this;
 
-		this.parentWidth = AscBrowser.isRetina ? AscCommon.AscBrowser.convertToRetinaValue(width, true) : width;
+		this.parentWidth = AscCommon.AscBrowser.convertToRetinaValue(width, true);
 		this.parentHeight = 90;
 		this.pageType = undefined === pageType ? asc.c_oAscHeaderFooterType.odd : pageType;//odd, even, first
 		this.canvas = [];
@@ -809,9 +809,9 @@
 			obj.width = t.parentWidth;
 			obj.canvas = document.createElement('canvas');
 			obj.canvas.id = obj.id;
-			obj.canvas.width = t.parentWidth;
-			obj.canvas.height = t.parentHeight;
-			obj.canvas.style.width = AscBrowser.isRetina ? AscCommon.AscBrowser.convertToRetinaValue(t.parentWidth) + "px" : t.parentWidth + "px";
+            obj.canvas.style.width = t.parentWidth + "px";
+            obj.canvas.style.height = t.parentHeight + "px";
+            AscCommon.calculateCanvasSize(obj.canvas);
 
 			var curElem = document.getElementById(id);
 			curElem.appendChild(obj.canvas);
@@ -936,8 +936,7 @@
 							}, "resizeEditorHeight": function () {
 								self.handlers.trigger("asc_resizeEditorHeight");
 							}
-						}, AscCommon.AscBrowser.isRetina ? AscCommon.AscBrowser.convertToRetinaValue(2, true) :
-							2, /*settings*/{menuEditor: true});
+						}, AscCommon.AscBrowser.convertToRetinaValue(2, true), /*settings*/{menuEditor: true});
 
 					//временно меняем cellEditor у wb
 					wb.cellEditor = t.cellEditor;

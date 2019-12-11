@@ -1639,11 +1639,8 @@ function CDrawingDocument(drawingObjects)
         var w = parseInt(this.m_oWordControl.m_nZoomValue * g_dKoef_mm_to_pix * page.width_mm / 100);
         var h = parseInt(this.m_oWordControl.m_nZoomValue * g_dKoef_mm_to_pix * page.height_mm / 100);
 
-        if (this.m_oWordControl.bIsRetinaSupport)
-        {
-            w = AscCommon.AscBrowser.convertToRetinaValue(w, true);
-			h = AscCommon.AscBrowser.convertToRetinaValue(h, true);
-        }
+        w = AscCommon.AscBrowser.convertToRetinaValue(w, true);
+        h = AscCommon.AscBrowser.convertToRetinaValue(h, true);
 
         // заглушка под мобильную версию (iPad не рисует большие картинки (наверное страховка по памяти))
         if (AscCommon.AscBrowser.isMobile)
@@ -2247,7 +2244,7 @@ function CDrawingDocument(drawingObjects)
             _offY = this.AutoShapesTrack.Graphics.m_oCoordTransform.ty;
         }
 
-        var _factor = AscCommon.AscBrowser.isRetina ? AscCommon.AscBrowser.retinaPixelRatio : 1;
+        var _factor = AscCommon.AscBrowser.retinaPixelRatio;
 
         var targetPosX = 0;
         var targetPosY = 0;
