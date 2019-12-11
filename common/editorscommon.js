@@ -4932,9 +4932,6 @@
         }
         else
         {
-            //element.width = Math.round(scale * rect.width);
-            //element.height = Math.round(scale * rect.height);
-
             var sizeW = _getIntegerByDivide(rect.width);
             var sizeH = _getIntegerByDivide(rect.height);
             if (sizeW.start !== rect.width) element.style.width = sizeW.start + "px";
