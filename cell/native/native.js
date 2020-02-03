@@ -3898,98 +3898,99 @@ function OfflineEditor () {
         window["_api"] = window["API"] = _api = new window["Asc"]["spreadsheet_api"](translations);
         
         AscCommon.g_clipboardBase.Init(_api);
-        
+
         var userInfo = new Asc.asc_CUserInfo();
         userInfo.asc_putId(this.initSettings["docUserId"]);
         userInfo.asc_putFullName(this.initSettings["docUserName"]);
         userInfo.asc_putFirstName(this.initSettings["docUserFirstName"]);
         userInfo.asc_putLastName(this.initSettings["docUserLastName"]);
-        
+
         var docInfo = new Asc.asc_CDocInfo();
         docInfo.put_Id(this.initSettings["docKey"]);
         docInfo.put_Url(this.initSettings["docURL"]);
         docInfo.put_Format("xlsx");
         docInfo.put_UserInfo(userInfo);
         docInfo.put_Token(this.initSettings["token"]);
-        
+
         var permissions = this.initSettings["permissions"];
         if (undefined != permissions && null != permissions && permissions.length > 0) {
             docInfo.put_Permissions(JSON.parse(permissions));
         }
-        
+
         _api.asc_setDocInfo(docInfo);
-        
+
         this.offline_beforeInit();
-        
+
         this.registerEventsHandlers();
-        
+
         if (this.initSettings["iscoauthoring"]) {
             _api.asc_setAutoSaveGap(1);
             _api._coAuthoringInit();
             _api.asc_SetFastCollaborative(true);
-            
+
             window["native"]["onTokenJWT"](_api.CoAuthoringApi.get_jwt());
-            
+
         } else {
-            
-            _api.asc_nativeOpenFile(window["native"]["GetFileString"](), undefined, true, window["native"]["GetXlsxPath"]());
-            
+
+             var thenCallback = function() {
+
             this.asc_WriteAllWorksheets(true);
-            
+
             _api.sendColorThemes(_api.wbModel.theme);
             _api.asc_ApplyColorScheme(false);
             _api._applyFirstLoadChanges();
             // Go to if sent options
             var options = _api.DocInfo && _api.DocInfo.asc_getOptions();
             _api.goTo(options && options["action"]);
-            
+
             var ws = _api.wb.getWorksheet();
-            
+
             _api.wb.showWorksheet(undefined, true);
             ws._fixSelectionOfMergedCells();
-            
+
             if (ws.topLeftFrozenCell) {
                 this.row0 = ws.topLeftFrozenCell.getRow0();
                 this.col0 = ws.topLeftFrozenCell.getCol0();
             }
-            
+
             var chartData = this.initSettings["chartData"];
             if (chartData.length > 0) {
                 var json = JSON.parse(chartData);
                 if (json) {
-                    
+
                     var nativeToEditor = 1.0 / deviceScale;
-                    
+
                     var screenWidth = this.initSettings["screenWidth"] * nativeToEditor / 2.54 - ws.headersWidth;
                     var screenHeight = this.initSettings["screenHeight"] * nativeToEditor / 2.54 - ws.headersHeight;
-                    
+
                     _api.asc_addChartDrawingObject(json);
-                    
+
                     var objects = ws.objectRender.controller.drawingObjects.getDrawingObjects();
                     if (objects.length > 0) {
-                        
+
                         var gr = objects[0].graphicObject;
-                        
+
                         var w = gr.spPr.xfrm.extX;
                         var h = gr.spPr.xfrm.extY;
-                        
+
                         var offX = Math.max(0, (screenWidth - w) * 0.5);
                         var offY = Math.max(screenHeight * 0.2, (screenHeight - w) * 0.5);
-                        
+
                         gr.spPr.xfrm.setOffX(offX);
                         gr.spPr.xfrm.setOffY(offY);
                         gr.checkDrawingBaseCoords();
                         gr.recalculate();
                     }
-                    
+
                     //console.log(JSON.stringify(json));
                 }
             }
-            
+            };
+            _api.asc_nativeOpenFile(window["native"]["GetFileString"](), undefined, true, window["native"]["GetXlsxPath"]()).then(thenCallback, thenCallback);
             // TODO: Implement frozen places
             // TODO: Implement Text Art Styles
         }
-        
+
         this.offline_afteInit();
     };
     this.registerEventsHandlers = function () {
