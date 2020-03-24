@@ -9410,6 +9410,15 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 	};
 
 
+	function CSlicerCache() {
+		this.slicers = [];
+		return this;
+	}
+	function CSlicer() {
+		return this;
+	}
+
+
 	//----------------------------------------------------------export----------------------------------------------------
 	var prot;
 	window['Asc'] = window['Asc'] || {};
