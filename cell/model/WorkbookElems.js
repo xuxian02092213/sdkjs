@@ -9411,13 +9411,27 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 
 
 	function CSlicerCache() {
-		this.slicers = [];
-		return this;
-	}
-	function CSlicer() {
+		this.name = null;
+		this.sourceName = null;
+		this.extLst = [];
 		return this;
 	}
 
+	function CSlicer() {
+		this.name = null;
+		this.cache = null;
+		this.caption = null;
+		this.rowHeight = null;
+
+		return this;
+	}
+
+	function CTableSlicerCache() {
+		//id генерируется только на запись
+		this.tableId = null;
+		this.column = null;
+		return this;
+	}
 
 	//----------------------------------------------------------export----------------------------------------------------
 	var prot;
