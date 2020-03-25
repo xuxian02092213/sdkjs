@@ -361,7 +361,7 @@ function CHorRuler()
     this.CheckCanvas = function()
     {
         this.m_dZoom = this.m_oWordControl.m_nZoomValue / 100;
-        this.IsRetina = this.m_oWordControl.bIsRetinaSupport;
+        this.IsRetina = AscCommon.AscBrowser.isCustomScalingAbove2();
 
         this.CheckTableSprite(this.IsRetina);
 
@@ -2819,7 +2819,7 @@ function CVerRuler()
     this.CheckCanvas = function()
     {
         this.m_dZoom = this.m_oWordControl.m_nZoomValue / 100;
-        this.IsRetina = this.m_oWordControl.bIsRetinaSupport;
+        this.IsRetina = AscCommon.AscBrowser.isCustomScalingAbove2();
 
         var dKoef_mm_to_pix = g_dKoef_mm_to_pix * this.m_dZoom;
         if (this.IsRetina)

@@ -87,7 +87,6 @@ function COverlay()
     this.DashLineColor = "#000000";
     this.ClearAll = false;
 
-    this.IsRetina = false;
     this.IsCellEditor = false;
 }
 
@@ -138,7 +137,7 @@ COverlay.prototype =
 
     GetImageTrackRotationImage : function()
     {
-        return this.IsRetina ? window.g_track_rotate_marker2 : window.g_track_rotate_marker;
+        return AscCommon.AscBrowser.isCustomScalingAbove2() ? window.g_track_rotate_marker2 : window.g_track_rotate_marker;
     },
 
     SetTransform : function(sx, shy, shx, sy, tx, ty)
@@ -150,7 +149,7 @@ COverlay.prototype =
 
     SetBaseTransform : function()
     {
-        if (this.IsRetina)
+        if (AscCommon.AscBrowser.isCustomScaling())
             this.m_oContext.setTransform(AscCommon.AscBrowser.retinaPixelRatio, 0, 0, AscCommon.AscBrowser.retinaPixelRatio, 0, 0);
         else
             this.m_oContext.setTransform(1, 0, 0, 1, 0, 0);
@@ -596,7 +595,7 @@ CAutoshapeTrack.prototype =
 
         this.Graphics = new AscCommon.CGraphics();
 
-        var _scale = this.m_oOverlay.IsRetina? AscCommon.AscBrowser.retinaPixelRatio : 1;
+        var _scale = AscCommon.AscBrowser.retinaPixelRatio;
 
         this.Graphics.init(this.m_oContext, _scale * (r - x), _scale * (b - y), w_mm, h_mm);
 
@@ -787,7 +786,7 @@ CAutoshapeTrack.prototype =
 
         this.Graphics = new AscCommon.CGraphics();
 
-        var _scale = this.m_oOverlay.IsRetina? AscCommon.AscBrowser.retinaPixelRatio : 1;
+        var _scale = AscCommon.AscBrowser.retinaPixelRatio;
 
         this.Graphics.init(this.m_oContext, _scale * (drawPage.right - drawPage.left), _scale * (drawPage.bottom - drawPage.top), oPage.width_mm, oPage.height_mm);
 
@@ -871,11 +870,8 @@ CAutoshapeTrack.prototype =
 		if (true === isNoMove)
 			return;
 
-		var _retina = this.m_oOverlay.IsRetina;
-
-		if (!_retina && this.m_oOverlay.IsCellEditor && AscCommon.AscBrowser.isRetina)
+		if (this.m_oOverlay.IsCellEditor)
         {
-			this.m_oOverlay.IsRetina = true;
             this.m_oOverlay.m_oContext.setTransform(1, 0, 0, 1, 0, 0);
 
             left    /= AscCommon.AscBrowser.retinaPixelRatio;
@@ -2253,9 +2249,8 @@ CAutoshapeTrack.prototype =
 
         ctx.globalAlpha = _oldGlobalAlpha;
 
-		if (!_retina && this.m_oOverlay.IsCellEditor && AscCommon.AscBrowser.isRetina)
+		if (this.m_oOverlay.IsCellEditor)
 		{
-			this.m_oOverlay.IsRetina = false;
 			this.m_oOverlay.SetBaseTransform();
 
 			if (matrix)
@@ -2546,7 +2541,7 @@ CAutoshapeTrack.prototype =
 
         var dist = TRACK_ADJUSTMENT_SIZE / 2;
 
-        if (!overlay.IsRetina && overlay.IsCellEditor && AscCommon.AscBrowser.isRetina)
+        if (overlay.IsCellEditor)
             dist *= AscCommon.AscBrowser.retinaPixelRatio;
 
         ctx.moveTo(cx - dist, cy);
@@ -2827,7 +2822,7 @@ CAutoshapeTrack.prototype =
 
     drawFlowAnchor : function(x, y)
     {
-        var _flow_anchor = this.m_oOverlay.IsRetina ? AscCommon.g_flow_anchor2 : AscCommon.g_flow_anchor;
+        var _flow_anchor = AscCommon.AscBrowser.isCustomScalingAbove2() ? AscCommon.g_flow_anchor2 : AscCommon.g_flow_anchor;
         if (!_flow_anchor || !_flow_anchor.asc_complete || (!editor || !editor.ShowParaMarks))
             return;
 

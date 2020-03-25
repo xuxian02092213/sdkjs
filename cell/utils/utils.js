@@ -176,17 +176,12 @@
 
 		function convertPtToPx(value) {
 			value = value / sizePxinPt;
-			if (AscBrowser.isRetina) {
-				value = value * AscBrowser.retinaPixelRatio;
-			}
-			value = value | value;
+			value = (value * AscBrowser.retinaPixelRatio) >> 0;			
 			return value;
 		}
 		function convertPxToPt(value) {
 			value = value * sizePxinPt;
-			if (AscBrowser.isRetina) {
-				value = Asc.ceil(value / AscBrowser.retinaPixelRatio * 10) / 10;
-			}
+			value = Asc.ceil(value / AscBrowser.retinaPixelRatio * 10) / 10;
 			return value;
 		}
 
@@ -1829,12 +1824,8 @@
 		function generateStyles(width, height, cellStyles, wb) {
 			var result = [];
 
-			var widthWithRetina = width;
-			var heightWithRetina = height;
-			if (AscCommon.AscBrowser.isRetina) {
-				widthWithRetina = AscCommon.AscBrowser.convertToRetinaValue(widthWithRetina, true);
-				heightWithRetina = AscCommon.AscBrowser.convertToRetinaValue(heightWithRetina, true);
-			}
+			var widthWithRetina = AscCommon.AscBrowser.convertToRetinaValue(width, true);
+			var heightWithRetina = AscCommon.AscBrowser.convertToRetinaValue(height, true);
 
 			var oCanvas = document.createElement('canvas');
 			oCanvas.width = widthWithRetina;

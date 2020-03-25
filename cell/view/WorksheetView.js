@@ -1640,7 +1640,7 @@
         }
 
         var vector_koef = AscCommonExcel.vector_koef / this.getZoom();
-        if (AscCommon.AscBrowser.isRetina) {
+        if (AscCommon.AscBrowser.isCustomScaling()) {
 			vector_koef /= AscCommon.AscBrowser.retinaPixelRatio;
 		}
 
@@ -2141,7 +2141,7 @@
 			// Рисуем сетку
 			if (printPagesData.pageGridLines) {
 				var vector_koef = AscCommonExcel.vector_koef / this.getZoom();
-				if (AscCommon.AscBrowser.isRetina) {
+				if (AscCommon.AscBrowser.isCustomScaling()) {
 					vector_koef /= AscCommon.AscBrowser.retinaPixelRatio;
 				}
 				this._drawGrid(drawingCtx, range, offsetX, offsetY, printPagesData.pageWidth / vector_koef,
@@ -2429,7 +2429,7 @@
 
 
 		var vector_koef = AscCommonExcel.vector_koef / this.getZoom();
-		if (AscCommon.AscBrowser.isRetina) {
+		if (AscCommon.AscBrowser.isCustomScaling()) {
 			vector_koef /= AscCommon.AscBrowser.retinaPixelRatio;
 		}
 
@@ -3010,7 +3010,7 @@
 		};
 
 		var vector_koef = AscCommonExcel.vector_koef / this.getZoom();
-		if (AscCommon.AscBrowser.isRetina) {
+		if (AscCommon.AscBrowser.isCustomScaling()) {
 			vector_koef /= AscCommon.AscBrowser.retinaPixelRatio;
 		}
 
@@ -8807,7 +8807,7 @@
         var width = this._getColumnWidth(col);
         var height = this._getRowHeight(row);
 
-        if ( AscBrowser.isRetina ) {
+        if ( AscBrowser.isCustomScaling() ) {
             xL = AscCommon.AscBrowser.convertToRetinaValue(xL);
             yL = AscCommon.AscBrowser.convertToRetinaValue(yL);
             width = AscCommon.AscBrowser.convertToRetinaValue(width);
@@ -12216,11 +12216,9 @@
 				var offsetY = this._getRowTop(this.visibleRange.r1) - this.cellsTop;
 				var posX = curShape.transformText.TransformPointX(cursorPos.X, cursorPos.Y) * mmToPx - offsetX + this.cellsLeft;
 				var posY = curShape.transformText.TransformPointY(cursorPos.X, cursorPos.Y) * mmToPx - offsetY + this.cellsTop;
-				if ( AscCommon.AscBrowser.isRetina ) {
-					posX = AscCommon.AscBrowser.convertToRetinaValue(posX);
-					posY = AscCommon.AscBrowser.convertToRetinaValue(posY);
-				}
 
+				posX = AscCommon.AscBrowser.convertToRetinaValue(posX);
+				posY = AscCommon.AscBrowser.convertToRetinaValue(posY);
 
 				cellCoord = [new AscCommon.asc_CRect( posX, posY, 0, 0 )];
 			}
@@ -14953,8 +14951,8 @@
         return arrResult;
     };
 
-	WorksheetView.prototype._getFilterButtonSize = function () {
-	    return AscBrowser.isRetina ? AscCommon.AscBrowser.convertToRetinaValue(filterSizeButton, true) : filterSizeButton;
+	WorksheetView.prototype.getFilterButtonSize = function () {
+	    return AscCommon.AscBrowser.convertToRetinaValue(filterSizeButton, true);
 	};
 
 	WorksheetView.prototype.getButtonSize = function (row, col, isDataValidation) {
@@ -15299,9 +15297,7 @@
 			isMobileRetina = true;
 		}
 
-		if (AscBrowser.isRetina) {
-			scaleIndex *= 2;
-		}
+        scaleIndex *= AscBrowser.retinaPixelRatio;
 
 		_drawButton(x1 + diffX, y1 + diffY);
 	};
@@ -17140,7 +17136,7 @@
 		var st = this.settings.header.style[kHeaderDefault];
 		var x1, y1, x2, y2, arrayLines, groupData;
 		var lineWidth = AscCommon.AscBrowser.convertToRetinaValue(2, true);
-		var thickLineDiff = AscCommon.AscBrowser.isRetina ? 0.5 : 0;
+		var thickLineDiff = AscCommon.AscBrowser.isCustomScalingAbove2() ? 0.5 : 0;
 		var tempButtonMap = [];//чтобы не рисовать точки там где кпопки
 		var bFirstLine = true;
 		var _buttonSize = this._getGroupButtonSize();

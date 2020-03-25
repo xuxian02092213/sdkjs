@@ -98,12 +98,12 @@
             };
             this.get = function()
             {
-                var index = AscCommon.AscBrowser.isRetina ? 1 : 0;
+                var index = AscCommon.AscBrowser.isCustomScalingAbove2() ? 1 : 0;
                 return this.images[index].asc_complete ? this.images[index] : null;
             };
             this.getActive = function()
             {
-                var index = AscCommon.AscBrowser.isRetina ? 3 : 2;
+                var index = AscCommon.AscBrowser.isCustomScalingAbove2() ? 3 : 2;
                 return this.images[index].asc_complete ? this.images[index] : null;
             };
         }
@@ -656,7 +656,7 @@
 
             this.get = function(isActive)
             {
-                var index = AscCommon.AscBrowser.isRetina ? 2 : 0;
+                var index = AscCommon.AscBrowser.isCustomScalingAbove2() ? 2 : 0;
                 if (isActive)
                     index++;
                 if (this.images[index].asc_complete)
@@ -1143,7 +1143,7 @@
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
             }
 
-            return this.measures[text][AscCommon.AscBrowser.isRetina ? 1 : 0];
+            return this.measures[text][AscCommon.AscBrowser.isCustomScalingAbove2() ? 1 : 0];
         };
 
         // сохранение текущих в последние
@@ -1553,7 +1553,7 @@
                                     nY += 10;
                                     nY -= 1;
 
-                                    var plus = AscCommon.AscBrowser.isRetina ? 0.5 : 1;
+                                    var plus = AscCommon.AscBrowser.isCustomScalingAbove2() ? 0.5 : 1;
 
                                     var nX = (xText + widthName - 7) >> 0;
                                     for (var i = 0; i <= 2; i+=plus)
