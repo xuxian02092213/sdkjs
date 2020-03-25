@@ -19907,7 +19907,24 @@
 		return res;
 	};
 
-	//------------------------------------------------------------export---------------------------------------------------
+	WorksheetView.prototype.beforeInsertSlicer = function () {
+		var tables = this.model.TableParts;
+		var activeCell = this.model.selectionRange.activeCell;
+		for (var i = 0; i < tables.length; i++) {
+			if (tables[i].Ref.contains(activeCell.col, activeCell.row)) {
+				//TODO скорее всего нужно будет возвращать специальный объект
+				var res = [];
+				for (var j = 0; j < tables[i].TableColumns.length; j++) {
+					res.push(tables[i].TableColumns[j].Name);
+				}
+				return res;
+			}
+		}
+		return null;
+	};
+
+
+    //------------------------------------------------------------export---------------------------------------------------
     window['AscCommonExcel'] = window['AscCommonExcel'] || {};
 	window["AscCommonExcel"].CellFlags = CellFlags;
     window["AscCommonExcel"].WorksheetView = WorksheetView;

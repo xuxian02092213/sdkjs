@@ -3309,6 +3309,10 @@
 		});
 	};
 
+	WorkbookView.prototype.beforeInsertSlicer = function () {
+		return this.getWorksheet().beforeInsertSlicer();
+	};
+
   //------------------------------------------------------------export---------------------------------------------------
   window['AscCommonExcel'] = window['AscCommonExcel'] || {};
   window["AscCommonExcel"].WorkbookView = WorkbookView;

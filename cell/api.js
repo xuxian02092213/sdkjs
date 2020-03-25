@@ -4532,6 +4532,10 @@ var editor;
 	spreadsheet_api.prototype.asc_validSheetName = function (val) {
 		return window["AscCommon"].rx_test_ws_name.isValidName(val);
 	};
+    spreadsheet_api.prototype.asc_beforeInsertSlicer = function () {
+      //пока возвращаю только данные о ф/т
+      return this.wb.beforeInsertSlicer();
+    };
 
 
   /*

@@ -9409,19 +9409,23 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 		return this.isText;
 	};
 
-
-	function CSlicerCache() {
-		this.name = null;
-		this.sourceName = null;
-		this.extLst = [];
-		return this;
-	}
-
 	function CSlicer() {
 		this.name = null;
 		this.cache = null;
 		this.caption = null;
 		this.rowHeight = null;
+
+		return this;
+	}
+
+	function CSlicerCache() {
+		this.name = null;
+		this.sourceName = null;
+		this.extLst = [];
+
+		//TODO ?
+		this.pivotTables = [];
+		this.data = null;
 
 		return this;
 	}
