@@ -2003,8 +2003,6 @@
 		// формул лист и книгу(на которые ссылаемся) - например у элементов cStrucTable
 		//временно добавляю новый вставляемый лист, чтобы не передавать параметры через большое количество функций
 		this.addingWorksheet = null;
-
-		this.aSlicer = [];
 	}
 	Workbook.prototype.init=function(tableCustomFunc, bNoBuildDep, bSnapshot){
 		if(this.nActive < 0)
@@ -3450,6 +3448,8 @@
 
 		/*handlers*/
 		this.handlers = null;
+
+		this.aSlicers = [];
 	}
 
 	Worksheet.prototype.getCompiledStyle = function (row, col, opt_cell, opt_styleComponents) {
@@ -7702,6 +7702,13 @@
 		return false;
 	};
 
+	Worksheet.prototype.insertSlicer = function (name, obj, type) {
+		var slicer = new window['AscCommonExcel'].CSlicer();
+		slicer.init(name, obj, type);
+		this.aSlicers.push(slicer);
+		//History.Add(AscCommonExcel.g_oUndoRedoSortState, AscCH.historyitem_SortState_Add, this.getId(), null,
+		// 			new AscCommonExcel.UndoRedoData_SortState(oldSortState, null));
+	};
 
 //-------------------------------------------------------------------------------------------------
 	var g_nCellOffsetFlag = 0;

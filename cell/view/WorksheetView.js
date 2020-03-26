@@ -19919,13 +19919,18 @@
 		return null;
 	};
 
-	WorksheetView.prototype.insertSlicer = function (obj) {
+	WorksheetView.prototype.insertSlicer = function (arr) {
 		var table = this.model.autoFilters.getTableByActiveCell();
+		var t = this;
 
 		var callback = function () {
 			//добавляем в структуру
 
-			//создаём view
+			for (var i = 0; i < arr.length; i++) {
+				t.model.insertSlicer(arr[i], table, type);
+				//wb.editDefinedNames(oldDefName, newDefName);
+				//создаём view
+			}
 		};
 
 		if(table) {

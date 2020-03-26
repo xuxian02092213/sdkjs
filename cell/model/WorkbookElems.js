@@ -9459,6 +9459,7 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 	window['AscCommonExcel'].CorrectAscColor = CorrectAscColor;
 	window['AscCommonExcel'].Fragment = Fragment;
 	window['AscCommonExcel'].Font = Font;
+	window['AscCommonExcel'].CSlicer = CSlicer;
 	window["Asc"]["c_oAscPatternType"] = c_oAscPatternType;
 	prot = c_oAscPatternType;
 	prot["DarkDown"] = prot.DarkDown;

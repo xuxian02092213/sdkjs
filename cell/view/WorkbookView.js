@@ -3313,8 +3313,8 @@
 		return this.getWorksheet().beforeInsertSlicer();
 	};
 
-	WorkbookView.prototype.insertSlicer = function (obj) {
-		return this.getWorksheet().insertSlicer(obj);
+	WorkbookView.prototype.insertSlicer = function (arr) {
+		return this.getWorksheet().insertSlicer(arr);
 	};
 
   //------------------------------------------------------------export---------------------------------------------------
