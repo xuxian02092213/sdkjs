@@ -4811,35 +4811,46 @@
 				
 				return result;
 			},
-			
-			_intersectionRangeWithTableParts: function(range, exceptionRange)//находим таблицы, находящиеся в данном range
+
+			_intersectionRangeWithTableParts: function (range, exceptionRange)//находим таблицы, находящиеся в данном range
 			{
 				var result = [];
 				var rangeFilter;
-                var worksheet = this.worksheet;
+				var worksheet = this.worksheet;
 
-				if(worksheet.TableParts)
-				{
-					for(var k = 0; k < worksheet.TableParts.length; k++)
-					{
-						if(worksheet.TableParts[k])
-						{
+				if (worksheet.TableParts) {
+					for (var k = 0; k < worksheet.TableParts.length; k++) {
+						if (worksheet.TableParts[k]) {
 							rangeFilter = worksheet.TableParts[k].Ref;
 							//TODO пересмотреть условие range.r1 === rangeFilter.r1 && range.c1 === rangeFilter.c1
-							if(range.intersection(rangeFilter) && !(range.containsRange(rangeFilter) && !(range.r1 === rangeFilter.r1 && range.c1 === rangeFilter.c1)))
-							{
-								if(!exceptionRange || !(exceptionRange && exceptionRange.containsRange(rangeFilter)))
+							if (range.intersection(rangeFilter) && !(range.containsRange(rangeFilter) && !(range.r1 === rangeFilter.r1 && range.c1 === rangeFilter.c1))) {
+								if (!exceptionRange || !(exceptionRange && exceptionRange.containsRange(rangeFilter))) {
 									result[result.length] = worksheet.TableParts[k];
+								}
 							}
 						}
 					}
 				}
-				if(!result.length)
-					result = false;
 
-				return result;
+				return !result.length ? false : result;
 			},
-			
+
+			getTableByActiveCell: function () {
+				var activeCell = this.worksheet.selectionRange.activeCell;
+				var res = null;
+
+				if (this.worksheet.TableParts) {
+					for (var i = 0; i < this.worksheet.TableParts.length; i++) {
+						var table = this.worksheet.TableParts[i];
+						if (table && table.Ref.contains(activeCell.col, activeCell.row)) {
+							res = table;
+							break;
+						}
+					}
+				}
+				return res;
+			},
+
 			_cloneCtrlAutoFilters: function(arnTo, arnFrom, offLock)
 			{
 				var worksheet = this.worksheet;

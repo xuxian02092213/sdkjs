@@ -4536,6 +4536,10 @@ var editor;
       //пока возвращаю только данные о ф/т
       return this.wb.beforeInsertSlicer();
     };
+    spreadsheet_api.prototype.asc_insertSlicer = function (obj) {
+      //пока возвращаю только данные о ф/т
+      return this.wb.insertSlicer(obj);
+    };
 
 
   /*

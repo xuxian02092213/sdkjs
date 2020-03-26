@@ -19908,19 +19908,31 @@
 	};
 
 	WorksheetView.prototype.beforeInsertSlicer = function () {
-		var tables = this.model.TableParts;
-		var activeCell = this.model.selectionRange.activeCell;
-		for (var i = 0; i < tables.length; i++) {
-			if (tables[i].Ref.contains(activeCell.col, activeCell.row)) {
-				//TODO скорее всего нужно будет возвращать специальный объект
-				var res = [];
-				for (var j = 0; j < tables[i].TableColumns.length; j++) {
-					res.push(tables[i].TableColumns[j].Name);
-				}
-				return res;
+		var table = this.model.autoFilters.getTableByActiveCell();
+		if(table) {
+			var res = [];
+			for (var j = 0; j < table.TableColumns.length; j++) {
+				res.push(table.TableColumns[j].Name);
 			}
+			return res;
 		}
 		return null;
+	};
+
+	WorksheetView.prototype.insertSlicer = function (obj) {
+		var table = this.model.autoFilters.getTableByActiveCell();
+
+		var callback = function () {
+			//добавляем в структуру
+
+			//создаём view
+		};
+
+		if(table) {
+			//TODO lock
+			//+ lock def names
+			callback();
+		}
 	};
 
 

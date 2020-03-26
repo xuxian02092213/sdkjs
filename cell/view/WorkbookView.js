@@ -3313,6 +3313,10 @@
 		return this.getWorksheet().beforeInsertSlicer();
 	};
 
+	WorkbookView.prototype.insertSlicer = function (obj) {
+		return this.getWorksheet().insertSlicer(obj);
+	};
+
   //------------------------------------------------------------export---------------------------------------------------
   window['AscCommonExcel'] = window['AscCommonExcel'] || {};
   window["AscCommonExcel"].WorkbookView = WorkbookView;
