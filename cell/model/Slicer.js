@@ -34,6 +34,18 @@
 
 (function(window, undefined){
 
+	var ST_OlapSlicerCacheSortOrder = {
+		Natural: 0,
+		Ascending: 1,
+		Descending: 2
+	};
+
+	var ST_SlicerCacheCrossFilter = {
+		None: 0,
+		ShowItemsWithDataAtTop: 1,
+		showItemsWithNoData: 2
+	};
+
 	function CT_slicer() {
 		//from documentation
 		this.extLst = null; //? CT_OfficeArtExtensionList
@@ -64,7 +76,7 @@
 	};
 
 	function CT_slicerCacheDefinition() {
-		this.pivotTables = [];//SlicerCachePivotTables
+		this.pivotTables = [];//SlicerCachePivotTable
 		this.data = null;//CSlicerCacheData
 		this.extLst = null;
 		this.name = null;
@@ -108,16 +120,16 @@
 	}
 
 	function CT_olapSlicerCacheLevelData() {
-		this.ranges = [];//OlapSlicerCacheRanges
+		this.ranges = [];//OlapSlicerCacheRange
 		this.uniqueName = null;
 		this.sourceCaption = null;
 		this.count = null;
-		this.sortOrder = null;//OlapSlicerCacheSortOrder
-		this.crossFilter = null;//SlicerCacheCrossFilter
+		this.sortOrder = null;//ST_OlapSlicerCacheSortOrder
+		this.crossFilter = null;//ST_SlicerCacheCrossFilter
 	}
 
 	function CT_olapSlicerCache() {
-		this.levels = [];//OlapSlicerCacheLevelsData
+		this.levels = [];//OlapSlicerCacheLevelData
 		this.selections = [];//OlapSlicerCacheSelection
 		this.extLst = [];//ExtensionList
 		this.pivotCacheId = null;
@@ -128,10 +140,15 @@
 		this.n = null;
 	}
 
-	function CTableSlicerCache() {
+	function CT_TableSlicerCache() {
 		//id генерируется только на запись
+		this.extLst = [];//CT_ExtensionList
 		this.tableId = null;
 		this.column = null;
+		this.sortOrder = null;
+		this.customListSort = null;
+		this.crossFilter = null;//ST_SlicerCacheCrossFilter
+
 		return this;
 	}
 
@@ -142,7 +159,7 @@
 		this.sortOrder = null;
 		this.customListSort = null;
 		this.showMissing = null;
-		this.crossFilter = null;//SlicerCacheCrossFilter
+		this.crossFilter = null;//ST_SlicerCacheCrossFilter
 	}
 
 	function CT_tabularSlicerCacheItem() {
