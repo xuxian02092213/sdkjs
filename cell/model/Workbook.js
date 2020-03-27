@@ -7703,6 +7703,7 @@
 	};
 
 	Worksheet.prototype.insertSlicer = function (name, obj, type) {
+		//TODO недостаточно ли вместо всей данной длинной структуры использовать только tableId(name) и columnName?
 		var slicer = new window['AscCommonExcel'].CSlicer();
 		slicer.init(name, obj, type);
 		this.aSlicers.push(slicer);

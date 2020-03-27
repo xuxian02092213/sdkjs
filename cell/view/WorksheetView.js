@@ -19908,6 +19908,7 @@
 	};
 
 	WorksheetView.prototype.beforeInsertSlicer = function () {
+		//чтобы лишний раз не проверять - может быть взять информацию из cellinfo?
 		var table = this.model.autoFilters.getTableByActiveCell();
 		if(table) {
 			var res = [];
@@ -19916,10 +19917,16 @@
 			}
 			return res;
 		}
+		var pivot;
+		if (pivot) {
+
+		}
+
 		return null;
 	};
 
 	WorksheetView.prototype.insertSlicer = function (arr) {
+		//чтобы лишний раз не проверять - может быть взять информацию из cellinfo?
 		var table = this.model.autoFilters.getTableByActiveCell();
 		var t = this;
 

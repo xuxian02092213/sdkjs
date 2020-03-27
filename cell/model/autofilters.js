@@ -5273,70 +5273,59 @@
 					}
 				}
 			},
-			
-			_generateColumnName2: function(tableColumns)
-			{
+
+			_generateColumnName2: function (tableColumns) {
 				// ToDo почему 2 функции generateColumnName?
 				var columnName = "Column";
 				//var indexColumn = name[1]; name - не определено!
 				var indexColumn = undefined;
 				var nextIndex;
-				
+
 				//ищем среди tableColumns, возможно такое имя уже имеется
-				var checkNextName = function()
-				{
+				var checkNextName = function () {
 					var nextName = columnName + nextIndex;
-					for(var i = 0; i < tableColumns.length; i++)
-					{
-						if(tableColumns[i].Name === nextName)
+					for (var i = 0; i < tableColumns.length; i++) {
+						if (tableColumns[i].Name === nextName)
 							return false;
 					}
 					return true;
 				};
-				
+
 				//если сменилась первая цифра
-				var checkChangeIndex = function()
-				{
-					if((nextIndex + 1).toString().substr(0, 1) !== (indexColumn).toString().substr(0, 1))
+				var checkChangeIndex = function () {
+					if ((nextIndex + 1).toString().substr(0, 1) !== (indexColumn).toString().substr(0, 1)) {
 						return true;
-					else 
+					} else {
 						return false;
+					}
 				};
-				
-				if(indexColumn && !isNaN(indexColumn))//если нашли числовой индекс
+
+				if (indexColumn && !isNaN(indexColumn))//если нашли числовой индекс
 				{
 					indexColumn = parseFloat(indexColumn);
 					nextIndex = indexColumn + 1;
 					var string = "";
-					
+
 					var firstInput = true;
-					while(checkNextName() === false)
-					{
-						if(firstInput === true)
-						{
+					while (checkNextName() === false) {
+						if (firstInput === true) {
 							string += "1";
 							nextIndex = parseFloat(indexColumn + "2");
-						}
-						else
-						{
-							if(checkChangeIndex())
-							{
+						} else {
+							if (checkChangeIndex()) {
 								string += "0";
 								nextIndex = parseFloat(indexColumn + string);
-							}
-							else
+							} else
 								nextIndex++;
 						}
-						
+
 						firstInput = false;
 					}
-					
-				}
-				else//если не нашли, то индекс начинаем с 1
+
+				} else//если не нашли, то индекс начинаем с 1
 				{
 					nextIndex = 1;
-					while(checkNextName() === false)
-					{
+					while (checkNextName() === false) {
 						nextIndex++;
 					}
 				}
@@ -5344,66 +5333,55 @@
 				return columnName + nextIndex;
 			},
 
-			_getFilterInfoByAddTableProps: function(ar, addFormatTableOptionsObj, bTable)
-			{
-				var tempRange =  new Asc.Range(ar.c1, ar.r1, ar.c2, ar.r2);
+			_getFilterInfoByAddTableProps: function (ar, addFormatTableOptionsObj, bTable) {
+				var tempRange = new Asc.Range(ar.c1, ar.r1, ar.c2, ar.r2);
 				var addNameColumn, filterRange, bIsManualOptions = false;
 				var ws = this.worksheet;
 
-				var _isOneCell = function(_range) {
+				var _isOneCell = function (_range) {
 					var res = null;
 					if (_range.isOneCell()) {
 						res = true;
-					} else if(!bTable) {
+					} else if (!bTable) {
 						var merged = ws.getMergedByCell(_range.r1, _range.c1);
-						if(merged && merged.isEqual(_range)) {
+						if (merged && merged.isEqual(_range)) {
 							res = true;
 						}
 					}
 					return res;
 				};
 
-				if(addFormatTableOptionsObj === false)
-				{
+				if (addFormatTableOptionsObj === false) {
 					addNameColumn = true;
-				}
-				else if(addFormatTableOptionsObj && typeof addFormatTableOptionsObj == 'object')
-				{
+				} else if (addFormatTableOptionsObj && typeof addFormatTableOptionsObj == 'object') {
 					tempRange = addFormatTableOptionsObj.asc_getRange();
 					addNameColumn = !addFormatTableOptionsObj.asc_getIsTitle();
 					tempRange = AscCommonExcel.g_oRangeCache.getAscRange(tempRange).clone();
 					bIsManualOptions = true;
-				}
-				else if(addFormatTableOptionsObj === true)
-				{
+				} else if (addFormatTableOptionsObj === true) {
 					addNameColumn = false;
 				}
 
 				//expand by merged cells(if selected columns/rows)
-				if(bTable) {
+				if (bTable) {
 					tempRange = this.worksheet.expandRangeByMerged(tempRange);
 				}
 
 				//expand range
 				var tablePartsContainsRange = this._isTablePartsContainsRange(tempRange);
-				if(tablePartsContainsRange)
-				{
+				if (tablePartsContainsRange) {
 					filterRange = tablePartsContainsRange.Ref.clone();
-				}
-				else if(_isOneCell(tempRange) && !bIsManualOptions)
-				{
+				} else if (_isOneCell(tempRange) && !bIsManualOptions) {
 					//filterRange = this._getAdjacentCellsAF(tempRange, this.worksheet);
 					filterRange = this.expandRange(tempRange);
-				}
-				else
-				{
-					if(!bTable) {
+				} else {
+					if (!bTable) {
 						//меняем range в зависимости от последних ячеек со значениями
 						//ms ещё смотрит на аналогичные значения для начала диапазона
 						//TODO если будут такие переменные со значениями начала диапазона - сделать аналогично MS
-						var definedRange =  new Asc.Range(0, 0, this.worksheet.nColsCount - 1, this.worksheet.nRowsCount - 1);
+						var definedRange = new Asc.Range(0, 0, this.worksheet.nColsCount - 1, this.worksheet.nRowsCount - 1);
 						filterRange = tempRange.intersection(definedRange);
-						if(!filterRange) {
+						if (!filterRange) {
 							filterRange = tempRange;
 						}
 					} else {
@@ -5412,12 +5390,16 @@
 				}
 
 				var rangeWithoutDiff = filterRange.clone();
-				if(addNameColumn)
-				{
+				if (addNameColumn) {
 					filterRange.r2 = filterRange.r2 + 1;
 				}
-				
-				return {filterRange: filterRange, addNameColumn: addNameColumn, rangeWithoutDiff: rangeWithoutDiff, tablePartsContainsRange: tablePartsContainsRange};
+
+				return {
+					filterRange: filterRange,
+					addNameColumn: addNameColumn,
+					rangeWithoutDiff: rangeWithoutDiff,
+					tablePartsContainsRange: tablePartsContainsRange
+				};
 			}
 		};
 

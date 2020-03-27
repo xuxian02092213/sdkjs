@@ -9415,8 +9415,21 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 		this.caption = null;
 		this.rowHeight = null;
 
+		this._obj = null; //?
+
 		return this;
 	}
+	CSlicer.prototype.init = function (name, obj, type) {
+		this.name = name;
+		this.caption = name;
+		this._obj = obj;
+		this.cache = new CSlicerCache();
+		this.cache.init(name, obj, type);
+	};
+	CSlicer.prototype.initPostOpen = function () {
+		return this.isText;
+	};
+
 
 	function CSlicerCache() {
 		this.name = null;
@@ -9429,6 +9442,17 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 
 		return this;
 	}
+	CSlicerCache.prototype.init = function (name, obj, type) {
+		if (true/*table*/) {
+			this.sourceName = name;
+			//TODO для генерации имени нужна отдельная функция
+			this.name = "Slicer_" + name;
+			var tableCache = new CTableSlicerCache();
+			tableCache.tableId = obj.name;
+			tableCache.column = name;
+			this.extLst.push(tableCache);
+		}
+	};
 
 	function CTableSlicerCache() {
 		//id генерируется только на запись
