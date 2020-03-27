@@ -170,6 +170,6 @@
 
 	window['Asc'] = window['Asc'] || {};
 	window['AscCommonExcel'] = window['AscCommonExcel'] || {};
-	window['AscCommonExcel'].CT_Slicer = CT_Slicer;
+	window['AscCommonExcel'].CT_slicer = CT_slicer;
 
 })(window);
