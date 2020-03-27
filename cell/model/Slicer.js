@@ -34,6 +34,11 @@
 
 (function(window, undefined){
 
+	var insertSlicerType = {
+		table: 0,
+		pivotTable: 1
+	};
+
 	var ST_OlapSlicerCacheSortOrder = {
 		Natural: 0,
 		Ascending: 1,
@@ -171,5 +176,10 @@
 	window['Asc'] = window['Asc'] || {};
 	window['AscCommonExcel'] = window['AscCommonExcel'] || {};
 	window['AscCommonExcel'].CT_slicer = CT_slicer;
+
+	window['AscCommonExcel'].insertSlicerType = insertSlicerType;
+	prot = insertSlicerType;
+	prot['table'] = prot.table;
+	prot['pivotTable'] = prot.pivotTable;
 
 })(window);
