@@ -7704,7 +7704,7 @@
 
 	Worksheet.prototype.insertSlicer = function (name, obj, type) {
 		//TODO недостаточно ли вместо всей данной длинной структуры использовать только tableId(name) и columnName?
-		var slicer = new window['AscCommonExcel'].CSlicer();
+		var slicer = new window['AscCommonExcel'].CT_Slicer();
 		slicer.init(name, obj, type);
 		this.aSlicers.push(slicer);
 		//History.Add(AscCommonExcel.g_oUndoRedoSortState, AscCH.historyitem_SortState_Add, this.getId(), null,
