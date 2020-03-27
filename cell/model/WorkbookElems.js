@@ -9410,9 +9410,18 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 	};
 
 	function CSlicer() {
+		//from documentation
+		this.extLst = null; //? CT_OfficeArtExtensionList
 		this.name = null;
+		//this.ref = null;//<xsd:attribute ref="xr10:uid" use="optional"/>
 		this.cache = null;
 		this.caption = null;
+		this.startItem = null;
+		this.columnCount = null;
+		this.showCaption = null;
+		this.columnCount = null;
+		this.style = null;
+		this.lockedPosition = null;
 		this.rowHeight = null;
 
 		this._obj = null; //?
@@ -9423,26 +9432,23 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 		this.name = name;
 		this.caption = name;
 		this._obj = obj;
-		this.cache = new CSlicerCache();
+		this.cache = new СSlicerCacheDefinition();
 		this.cache.init(name, obj, type);
 	};
 	CSlicer.prototype.initPostOpen = function () {
-		return this.isText;
 	};
 
-
-	function CSlicerCache() {
+	function CSlicerCacheDefinition() {
+		this.pivotTables = [];//SlicerCachePivotTables
+		this.data = null;//CSlicerCacheData
+		this.extLst = null;
 		this.name = null;
+		//<xsd:attribute ref="xr10:uid" use="optional"/>
 		this.sourceName = null;
-		this.extLst = [];
-
-		//TODO ?
-		this.pivotTables = [];
-		this.data = null;
 
 		return this;
 	}
-	CSlicerCache.prototype.init = function (name, obj, type) {
+	CSlicerCacheDefinition.prototype.init = function (name, obj, type) {
 		if (true/*table*/) {
 			this.sourceName = name;
 			//TODO для генерации имени нужна отдельная функция
@@ -9454,11 +9460,70 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 		}
 	};
 
+	function CSlicerCacheData() {
+		this.olap = null;//OlapSlicerCache
+		this.tabular = null;//TabularSlicerCache
+	}
+
+	function CSlicerCachePivotTable() {
+		this.tabId = null;
+		this.name = null;
+	}
+
+	function COlapSlicerCacheItem() {
+		this.p = null;//OlapSlicerCacheItemParent - состоит из одного поля, поэтому данную структуру не добавляю
+		this.n = null;
+		this.c = null;
+		this.nd = null;
+	}
+
+	function COlapSlicerCacheRange() {
+		this.i = null;//OlapSlicerCacheItem
+		this.startItem = null
+	}
+
+	function COlapSlicerCacheLevelData() {
+		this.ranges = [];//OlapSlicerCacheRanges
+		this.uniqueName = null;
+		this.sourceCaption = null;
+		this.count = null;
+		this.sortOrder = null;//OlapSlicerCacheSortOrder
+		this.crossFilter = null;//SlicerCacheCrossFilter
+	}
+
+	function COlapSlicerCache() {
+		this.levels = [];//OlapSlicerCacheLevelsData
+		this.selections = [];//OlapSlicerCacheSelection
+		this.extLst = [];//ExtensionList
+		this.pivotCacheId = null;
+	}
+
+	function COlapSlicerCacheSelection() {
+		this.p = null;//OlapSlicerCacheItemParent - состоит из одного поля, поэтому данную структуру не добавляю
+		this.n = null;
+	}
+
 	function CTableSlicerCache() {
 		//id генерируется только на запись
 		this.tableId = null;
 		this.column = null;
 		return this;
+	}
+
+	function CTabularSlicerCache() {
+		this.items = [];//TabularSlicerCacheItem
+		this.extLst = [];//ExtensionList
+		this.pivotCacheId = null;
+		this.sortOrder = null;
+		this.customListSort = null;
+		this.showMissing = null;
+		this.crossFilter = null;//SlicerCacheCrossFilter
+	}
+
+	function CTabularSlicerCacheItem() {
+		this.x = null;
+		this.s = null;
+		this.nd = null;
 	}
 
 	//----------------------------------------------------------export----------------------------------------------------
