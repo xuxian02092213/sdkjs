@@ -74,7 +74,7 @@
 		this.name = name;
 		this.caption = name;
 		this._obj = obj;
-		this.cache = new CT_SlicerCacheDefinition();
+		this.cache = new CT_slicerCacheDefinition();
 		this.cache.init(name, obj, type);
 	};
 	CT_slicer.prototype.initPostOpen = function () {
@@ -91,14 +91,40 @@
 		return this;
 	}
 	CT_slicerCacheDefinition.prototype.init = function (name, obj, type) {
-		if (true/*table*/) {
-			this.sourceName = name;
-			//TODO для генерации имени нужна отдельная функция
-			this.name = "Slicer_" + name;
-			var tableCache = new CTableSlicerCache();
-			tableCache.tableId = obj.name;
-			tableCache.column = name;
-			this.extLst.push(tableCache);
+		switch (type) {
+			case insertSlicerType.table: {
+				this.sourceName = name;
+				//TODO для генерации имени нужна отдельная функция
+				this.name = "Slicer_" + name;
+				var tableCache = new CT_tableSlicerCache();
+				tableCache.tableId = obj.name;
+				tableCache.column = name;
+				this.extLst.push(tableCache);
+				break;
+			}
+			case insertSlicerType.pivotTable: {
+				var pivot = new CT_slicerCachePivotTable();
+				pivot.name = obj.name;
+				//pivot.tabId = obj.name;
+				this.pivotTables.push(pivot);
+
+				//TODO data?
+
+				/*
+					<pivotTables>
+					<pivotTable tabId="2" name="PivotTable1"/>
+					</pivotTables>
+					<data>
+					<tabular pivotCacheId="1">
+					<items count="2">
+					<i x="0" s="1"/>
+					<i x="1" s="1"/>
+					</items>
+					</tabular>
+					</data>
+				*/
+				break;
+			}
 		}
 	};
 
@@ -145,7 +171,7 @@
 		this.n = null;
 	}
 
-	function CT_TableSlicerCache() {
+	function CT_tableSlicerCache() {
 		//id генерируется только на запись
 		this.extLst = [];//CT_ExtensionList
 		this.tableId = null;

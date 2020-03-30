@@ -19926,25 +19926,30 @@
 	};
 
 	WorksheetView.prototype.insertSlicer = function (arr) {
-		//чтобы лишний раз не проверять - может быть взять информацию из cellinfo?
-		var table = this.model.autoFilters.getTableByActiveCell();
 		var t = this;
+		var type;
 
-		var callback = function () {
+		var callback = function (_obj) {
 			//добавляем в структуру
 
 			for (var i = 0; i < arr.length; i++) {
-				t.model.insertSlicer(arr[i], table, type);
+				t.model.insertSlicer(arr[i], _obj, type);
 				//wb.editDefinedNames(oldDefName, newDefName);
 				//создаём view
 			}
 		};
 
-		if(table) {
-			//TODO lock
-			//+ lock def names
-			callback();
+		//чтобы лишний раз не проверять - может быть взять информацию из cellinfo?
+		var obj = this.model.autoFilters.getTableByActiveCell();
+		if(obj) {
+			type = window['AscCommonExcel'].insertSlicerType.table;
+		} else if (false/*obj = getPivotByactiveCell*/) {
+			type = window['AscCommonExcel'].insertSlicerType.pivotTable;
 		}
+
+		//TODO lock
+		//+ lock def names
+		callback(obj);
 	};
 
 
