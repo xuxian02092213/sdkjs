@@ -39,13 +39,13 @@
 		pivotTable: 1
 	};
 
-	var ST_OlapSlicerCacheSortOrder = {
+	var ST_olapSlicerCacheSortOrder = {
 		Natural: 0,
 		Ascending: 1,
 		Descending: 2
 	};
 
-	var ST_SlicerCacheCrossFilter = {
+	var ST_slicerCacheCrossFilter = {
 		None: 0,
 		ShowItemsWithDataAtTop: 1,
 		showItemsWithNoData: 2
@@ -202,6 +202,30 @@
 	window['Asc'] = window['Asc'] || {};
 	window['AscCommonExcel'] = window['AscCommonExcel'] || {};
 	window['AscCommonExcel'].CT_slicer = CT_slicer;
+
+	window['Asc']['CT_slicerCacheDefinition'] = window['Asc'].CT_slicerCacheDefinition = CT_slicerCacheDefinition;
+	window['Asc']['CT_slicerCacheData'] = window['Asc'].CT_slicerCacheData = CT_slicerCacheData;
+	window['Asc']['CT_slicerCachePivotTable'] = window['Asc'].CT_slicerCachePivotTable = CT_slicerCachePivotTable;
+	window['Asc']['CT_olapSlicerCacheItem'] = window['Asc'].CT_olapSlicerCacheItem = CT_olapSlicerCacheItem;
+	window['Asc']['CT_olapSlicerCacheRange'] = window['Asc'].CT_olapSlicerCacheRange = CT_olapSlicerCacheRange;
+	window['Asc']['CT_olapSlicerCacheLevelData'] = window['Asc'].CT_olapSlicerCacheLevelData = CT_olapSlicerCacheLevelData;
+	window['Asc']['CT_olapSlicerCache'] = window['Asc'].CT_olapSlicerCache = CT_olapSlicerCache;
+	window['Asc']['CT_olapSlicerCacheSelection'] = window['Asc'].CT_olapSlicerCacheSelection = CT_olapSlicerCacheSelection;
+	window['Asc']['CT_tableSlicerCache'] = window['Asc'].CT_tableSlicerCache = CT_tableSlicerCache;
+	window['Asc']['CT_tabularSlicerCache'] = window['Asc'].CT_tabularSlicerCache = CT_tabularSlicerCache;
+	window['Asc']['CT_tabularSlicerCacheItem'] = window['Asc'].CT_tabularSlicerCacheItem = CT_tabularSlicerCacheItem;
+
+	window['Asc']['ST_olapSlicerCacheSortOrder'] = window['AscCommonExcel'].ST_olapSlicerCacheSortOrder = ST_olapSlicerCacheSortOrder;
+	prot = ST_olapSlicerCacheSortOrder;
+	prot['Natural'] = prot.Natural;
+	prot['Ascending'] = prot.Ascending;
+	prot['Descending'] = prot.Descending;
+
+	window['Asc']['ST_slicerCacheCrossFilter'] = window['AscCommonExcel'].ST_slicerCacheCrossFilter = ST_slicerCacheCrossFilter;
+	prot = ST_slicerCacheCrossFilter;
+	prot['None'] = prot.None;
+	prot['ShowItemsWithDataAtTop'] = prot.ShowItemsWithDataAtTop;
+	prot['showItemsWithNoData'] = prot.showItemsWithNoData;
 
 	window['AscCommonExcel'].insertSlicerType = insertSlicerType;
 	prot = insertSlicerType;
