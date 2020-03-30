@@ -199,6 +199,7 @@
 		this.nd = null;
 	}
 
+	var prot;
 	window['Asc'] = window['Asc'] || {};
 	window['AscCommonExcel'] = window['AscCommonExcel'] || {};
 	window['Asc']['CT_slicer'] = window['Asc'].CT_slicer = CT_slicer;
