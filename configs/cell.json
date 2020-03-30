@@ -127,6 +127,7 @@
 			"cell/model/DataValidation.js",
 			"cell/model/HeaderFooter.js",
 			"cell/model/CellInfo.js",
+			"cell/model/Slicer.js",
 			"cell/view/mobileTouch.js",
 			"cell/view/StringRender.js",
 			"cell/view/CellTextRender.js",
