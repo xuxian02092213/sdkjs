@@ -3450,6 +3450,7 @@
 		this.handlers = null;
 
 		this.aSlicers = [];
+		this.aSlicerCaches = [];
 	}
 
 	Worksheet.prototype.getCompiledStyle = function (row, col, opt_cell, opt_styleComponents) {
@@ -7707,7 +7708,7 @@
 		History.StartTransaction();
 
 		//TODO недостаточно ли вместо всей данной длинной структуры использовать только tableId(name) и columnName?
-		var slicer = new window['AscCommonExcel'].CT_slicer();
+		var slicer = new window['AscCommonExcel'].CT_slicer(this);
 		slicer.init(name, obj, type);
 		this.aSlicers.push(slicer);
 
@@ -7722,6 +7723,29 @@
 
 		History.EndTransaction();
 	};
+
+	Worksheet.prototype.getSlicerCacheBySourceName = function (name) {
+		for (var i = 0; i < this.aSlicerCaches.length; i++) {
+			if (name === this.aSlicerCaches[i].sourceName) {
+				return this.aSlicerCaches[i];
+			}
+		}
+
+		return null;
+	};
+
+	Worksheet.prototype.getSlicersByCaption = function (name) {
+		var res = [];
+
+		for (var i = 0; i < this.aSlicers.length; i++) {
+			if (name === this.aSlicers[i].caption) {
+				res.push(this.aSlicers[i]);
+			}
+		}
+
+		return res.length ? res : null;
+	};
+
 
 //-------------------------------------------------------------------------------------------------
 	var g_nCellOffsetFlag = 0;

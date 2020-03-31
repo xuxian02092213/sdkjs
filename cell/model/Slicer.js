@@ -51,7 +51,7 @@
 		showItemsWithNoData: 2
 	};
 
-	function CT_slicer() {
+	function CT_slicer(ws) {
 		//from documentation
 		this.extLst = null; //? CT_OfficeArtExtensionList
 		this.name = null;
@@ -68,14 +68,21 @@
 
 		this._obj = null; //?
 
+		this.ws = ws;
+
 		return this;
 	}
 	CT_slicer.prototype.init = function (name, obj, type) {
 		this.name = name;
 		this.caption = name;
 		this._obj = obj;
-		this.cache = new CT_slicerCacheDefinition();
-		this.cache.init(name, obj, type);
+		var cache = this.ws.getSlicerCacheBySourceName(name);
+		if (!cache) {
+			cache = new CT_slicerCacheDefinition();
+			cache.init(name, obj, type);
+			this.aSlicerCaches.push(cache);
+		}
+		this.cache = cache;
 	};
 	CT_slicer.prototype.initPostOpen = function () {
 	};
