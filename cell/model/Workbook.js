@@ -7703,12 +7703,24 @@
 	};
 
 	Worksheet.prototype.insertSlicer = function (name, obj, type) {
+		History.Create_NewPoint();
+		History.StartTransaction();
+
 		//TODO недостаточно ли вместо всей данной длинной структуры использовать только tableId(name) и columnName?
 		var slicer = new window['AscCommonExcel'].CT_slicer();
 		slicer.init(name, obj, type);
 		this.aSlicers.push(slicer);
+
 		//History.Add(AscCommonExcel.g_oUndoRedoSortState, AscCH.historyitem_SortState_Add, this.getId(), null,
 		// 			new AscCommonExcel.UndoRedoData_SortState(oldSortState, null));
+
+		if (slicer && slicer.cache) {
+			var _name = slicer.cache.name;
+			var newDefName = new Asc.asc_CDefName(_name, null, null, false, null, null, true);
+			this.workbook.editDefinesNames(null, newDefName);
+		}
+
+		History.EndTransaction();
 	};
 
 //-------------------------------------------------------------------------------------------------

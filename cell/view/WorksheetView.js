@@ -19934,7 +19934,6 @@
 
 			for (var i = 0; i < arr.length; i++) {
 				t.model.insertSlicer(arr[i], _obj, type);
-				//wb.editDefinedNames(oldDefName, newDefName);
 				//создаём view
 			}
 		};
