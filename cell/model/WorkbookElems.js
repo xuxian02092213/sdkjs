@@ -6120,6 +6120,14 @@ function RangeDataManagerElem(bbox, data)
 		}
 	};
 
+	TablePart.prototype.getColIdByName = function(name) {
+		for (var i = 0; i < this.TableColumns.length; i++) {
+			if (name === this.TableColumns[i].Name) {
+				return i;
+			}
+		}
+		return null;
+	};
 
 	/** @constructor */
 	function AutoFilter() {

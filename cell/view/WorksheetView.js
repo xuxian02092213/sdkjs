@@ -19964,12 +19964,13 @@
 		callback();
 	};
 
-	WorksheetView.prototype.setSlicerFilter = function (name, obj) {
+	WorksheetView.prototype.setFilterValuesFromSlicer = function (name, obj) {
 
 	};
 
-	WorksheetView.prototype.getSlicerFilter = function (name) {
-		
+	WorksheetView.prototype.getFilterValuesBySlicerName = function (name) {
+		var slicerCache = this.model.getSlicerCacheBySourceName(name);
+		return slicerCache.getFilterValues();
 	};
 
 

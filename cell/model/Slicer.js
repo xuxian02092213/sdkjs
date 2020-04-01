@@ -78,7 +78,7 @@
 		this._obj = obj;
 		var cache = this.ws.getSlicerCacheBySourceName(name);
 		if (!cache) {
-			cache = new CT_slicerCacheDefinition();
+			cache = new CT_slicerCacheDefinition(this.ws);
 			cache.init(name, obj, type);
 			this.aSlicerCaches.push(cache);
 		} else {
@@ -89,13 +89,18 @@
 	CT_slicer.prototype.initPostOpen = function () {
 	};
 
-	function CT_slicerCacheDefinition() {
+	function CT_slicerCacheDefinition(ws) {
 		this.pivotTables = [];//SlicerCachePivotTable
 		this.data = null;//CSlicerCacheData
 		this.extLst = null;
 		this.name = null;
 		//<xsd:attribute ref="xr10:uid" use="optional"/>
 		this.sourceName = null;
+
+		this.ws = ws;
+
+		//пока добавил объект для хранения типа, чтобы не проходится по внутреннему дереву
+		this._type = null;
 
 		return this;
 	}
@@ -135,7 +140,31 @@
 				break;
 			}
 		}
+		this._type = type;
 	};
+
+	CT_slicerCacheDefinition.prototype.getFilterValues = function () {
+		var res = null;
+		switch (type) {
+			case insertSlicerType.table: {
+				//пока беру первый элемент, поскольку не очень понятно в каких случаях их вообще может быть несколько
+				var tableCache = this.extLst[0];
+				var table = this.ws.getTableByName(tableCache.tableId);
+				if (table) {
+					var colId = table.getColIdByName(tableCache.column);
+					if (colId !== null) {
+						res = this.ws.autoFilters.getOpenAndClosedValues(table, colId);
+					}
+				}
+				break;
+			}
+			case insertSlicerType.pivotTable: {
+				break;
+			}
+		}
+		return res;
+	};
+
 
 	function CT_slicerCacheData() {
 		this.olap = null;//OlapSlicerCache
