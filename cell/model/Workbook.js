@@ -7724,10 +7724,39 @@
 		History.EndTransaction();
 	};
 
+	Worksheet.prototype.deleteSlicer = function (name) {
+		History.Create_NewPoint();
+		History.StartTransaction();
+
+		var slicers = this.getSlicersByCaption(name);
+		if (slicers) {
+			for (var i = 0; i < slicers.length; i++) {
+				this.aSlicers.splice(slicers[i].index, 1);
+			}
+		}
+		var slicerCache = this.getSlicerCacheBySourceName(name);
+		if (slicerCache) {
+			this.aSlicerCaches.splice(slicerCache.index, 1);
+		}
+
+		//History.Add(AscCommonExcel.g_oUndoRedoSortState, AscCH.historyitem_SortState_Add, this.getId(), null,
+		// 			new AscCommonExcel.UndoRedoData_SortState(oldSortState, null));
+
+		//TODO скорее всего придётся переносить удаление именованных диапазонов выше, чтобы делались все необходимые проверки
+		//и посылались все необходимые эвенты
+		/*if (slicer && slicer.cache) {
+			var _name = slicer.cache.name;
+			var newDefName = new Asc.asc_CDefName(_name, null, null, false, null, null, true);
+			this.workbook.editDefinesNames(null, newDefName);
+		}*/
+
+		History.EndTransaction();
+	};
+
 	Worksheet.prototype.getSlicerCacheBySourceName = function (name) {
 		for (var i = 0; i < this.aSlicerCaches.length; i++) {
 			if (name === this.aSlicerCaches[i].sourceName) {
-				return this.aSlicerCaches[i];
+				return {obj: this.aSlicerCaches[i], index: i};
 			}
 		}
 
@@ -7739,7 +7768,7 @@
 
 		for (var i = 0; i < this.aSlicers.length; i++) {
 			if (name === this.aSlicers[i].caption) {
-				res.push(this.aSlicers[i]);
+				res.push({obj: this.aSlicers[i], index: i});
 			}
 		}
 

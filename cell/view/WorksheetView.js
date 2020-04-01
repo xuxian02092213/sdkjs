@@ -19951,8 +19951,29 @@
 		callback(obj);
 	};
 
+	WorksheetView.prototype.deleteSlicer = function (name) {
+		var t = this;
 
-    //------------------------------------------------------------export---------------------------------------------------
+		var callback = function () {
+			//добавляем в структуру
+			t.model.deleteSlicer(name);
+		};
+
+		//TODO lock
+		//+ lock def names
+		callback();
+	};
+
+	WorksheetView.prototype.setSlicerFilter = function (name, obj) {
+
+	};
+
+	WorksheetView.prototype.getSlicerFilter = function (name) {
+		
+	};
+
+
+	//------------------------------------------------------------export---------------------------------------------------
     window['AscCommonExcel'] = window['AscCommonExcel'] || {};
 	window["AscCommonExcel"].CellFlags = CellFlags;
     window["AscCommonExcel"].WorksheetView = WorksheetView;

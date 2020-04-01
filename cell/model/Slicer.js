@@ -81,6 +81,8 @@
 			cache = new CT_slicerCacheDefinition();
 			cache.init(name, obj, type);
 			this.aSlicerCaches.push(cache);
+		} else {
+			cache = cache.obj;
 		}
 		this.cache = cache;
 	};
