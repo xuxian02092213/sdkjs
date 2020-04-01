@@ -7728,13 +7728,14 @@
 		History.Create_NewPoint();
 		History.StartTransaction();
 
-		var slicers = this.getSlicersByCaption(name);
-		if (slicers) {
-			for (var i = 0; i < slicers.length; i++) {
-				this.aSlicers.splice(slicers[i].index, 1);
-			}
+		var slicer = this.getSlicerByName(name);
+		var cacheName = slicer.cache;
+		if (slicer) {
+			this.aSlicers.splice(slicer.index, 1);
 		}
-		var slicerCache = this.getSlicerCacheBySourceName(name);
+		//в некоторых случаях не нужно удалять cache потому что на него может ссылаться другой slicer
+		//TODO проверить
+		var slicerCache = this.getSlicerCacheByName(cacheName);
 		if (slicerCache) {
 			this.aSlicerCaches.splice(slicerCache.index, 1);
 		}
@@ -7773,6 +7774,29 @@
 		}
 
 		return res.length ? res : null;
+	};
+
+	Worksheet.prototype.getSlicerByName = function (name) {
+		var res = [];
+
+		for (var i = 0; i < this.aSlicers.length; i++) {
+			if (name === this.aSlicers[i].name) {
+				res = {obj: this.aSlicers[i], index: i};
+				break;
+			}
+		}
+
+		return res;
+	};
+
+	Worksheet.prototype.getSlicerCacheByName = function (name) {
+		for (var i = 0; i < this.aSlicerCaches.length; i++) {
+			if (name === this.aSlicerCaches[i].name) {
+				return {obj: this.aSlicerCaches[i], index: i};
+			}
+		}
+
+		return null;
 	};
 
 
