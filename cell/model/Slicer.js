@@ -145,7 +145,7 @@
 
 	CT_slicerCacheDefinition.prototype.getFilterValues = function () {
 		var res = null;
-		switch (type) {
+		switch (this._type) {
 			case insertSlicerType.table: {
 				//пока беру первый элемент, поскольку не очень понятно в каких случаях их вообще может быть несколько
 				var tableCache = this.extLst[0];
@@ -155,6 +155,26 @@
 					if (colId !== null) {
 						res = this.ws.autoFilters.getOpenAndClosedValues(table, colId);
 					}
+				}
+				break;
+			}
+			case insertSlicerType.pivotTable: {
+				break;
+			}
+		}
+		return res;
+	};
+
+	CT_slicerCacheDefinition.prototype.getFilterObj = function () {
+		var res = null;
+		switch (this._type) {
+			case insertSlicerType.table: {
+				//пока беру первый элемент, поскольку не очень понятно в каких случаях их вообще может быть несколько
+				var tableCache = this.extLst[0];
+				var table = this.ws.getTableByName(tableCache.tableId);
+				if (table) {
+					var colId = table.getColIdByName(tableCache.column);
+					res = {obj: table, colId: colId}
 				}
 				break;
 			}

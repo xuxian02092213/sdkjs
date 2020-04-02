@@ -19964,13 +19964,34 @@
 		callback();
 	};
 
-	WorksheetView.prototype.setFilterValuesFromSlicer = function (name, obj) {
-
+	WorksheetView.prototype.setFilterValuesFromSlicer = function (name, val) {
+		//применяем данные от шейпа
+		//залоченность здесь не проверяем
+		//предполагается, что лок будет проверен на этапе взаимодествия с шейпом
+		//залочена таблица - залочена работа с контентом шейпа
+		var slicerCache = this.model.getSlicerCacheBySourceName(name);
+		var obj = slicerCache.getFilterObj();
+		if (obj) {
+			switch (slicerCache._type) {
+				case window['AscCommonExcel'].insertSlicerType.table: {
+					//TODO сформировать объект autoFiltersObject
+					this.applyAutoFilter(val);
+					break;
+				}
+				case window['AscCommonExcel'].insertSlicerType.pivotTable: {
+					break;
+				}
+			}
+		}
 	};
 
 	WorksheetView.prototype.getFilterValuesBySlicerName = function (name) {
+		//получаем данные для отображения в шейпе
+		//в связанном шейпе хранится имя cSlicer
+		//чтобы получить скрытые/открытые значения используем slicerCache
+		//внутри получаем имя форматированной(сводной) таблицы и имя колонки
 		var slicerCache = this.model.getSlicerCacheBySourceName(name);
-		return slicerCache.getFilterValues();
+		return slicerCache ? slicerCache.getFilterValues() : null;
 	};
 
 
