@@ -19969,13 +19969,39 @@
 		//залоченность здесь не проверяем
 		//предполагается, что лок будет проверен на этапе взаимодествия с шейпом
 		//залочена таблица - залочена работа с контентом шейпа
+		var ws = this.model;
 		var slicerCache = this.model.getSlicerCacheBySourceName(name);
 		var obj = slicerCache.getFilterObj();
+
+		var createSimpleFilterOptions = function () {
+			//get values
+			var colId = obj.colId;
+			var table = obj.obj;
+			var displayName = table.DisplayName;
+
+			var rangeButton = new Asc.Range(table.Ref.c1 + colId, table.Ref.r1, table.Ref.c1 + colId, table.Ref.r1);
+			var cellId = ws.autoFilters._rangeToId(rangeButton);
+
+			//get filter object
+			var filterObj = new Asc.AutoFilterObj();
+			filterObj.type = c_oAscAutoFilterTypes.Filters;
+
+			//set menu object
+			var autoFilterObject = new Asc.AutoFiltersOptions();
+
+			autoFilterObject.asc_setCellId(cellId);
+			autoFilterObject.asc_setValues(val);
+			autoFilterObject.asc_setFilterObj(filterObj);
+			autoFilterObject.asc_setDiplayName(displayName);
+
+			return autoFilterObject;
+		};
+
 		if (obj) {
 			switch (slicerCache._type) {
 				case window['AscCommonExcel'].insertSlicerType.table: {
 					//TODO сформировать объект autoFiltersObject
-					this.applyAutoFilter(val);
+					this.applyAutoFilter();
 					break;
 				}
 				case window['AscCommonExcel'].insertSlicerType.pivotTable: {
@@ -19994,6 +20020,30 @@
 		return slicerCache ? slicerCache.getFilterValues() : null;
 	};
 
+	WorksheetView.prototype.updateSlicerViewAfterTableChange = function (tableName) {
+		var slicers = this.model.getSlicersByTableName(tableName);
+		for (var i = 0; i < slicers.length; i++) {
+			var filterValues = this.getFilterValuesBySlicerName(slicers[i].Name);
+			//update current view
+			//updateView(slicers[i].Name, filterValues)
+		}
+	};
+
+	WorksheetView.prototype.updateSlicerAfterChangeTable = function (type, tableName, val) {
+		/*var slicers = this.model.getSlicersByTableName(tableName);
+		for (var i = 0; i < slicers.length; i++) {
+			switch (type) {
+				case window['AscCommonExcel'].insertSlicerType.table: {
+					//TODO сформировать объект autoFiltersObject
+					this.applyAutoFilter();
+					break;
+				}
+				case window['AscCommonExcel'].insertSlicerType.pivotTable: {
+					break;
+				}
+			}
+		}*/
+	};
 
 	//------------------------------------------------------------export---------------------------------------------------
     window['AscCommonExcel'] = window['AscCommonExcel'] || {};

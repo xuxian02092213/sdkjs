@@ -7799,6 +7799,21 @@
 		return null;
 	};
 
+	Worksheet.prototype.getSlicersByTableName = function (val) {
+		var res = [];
+		for (var i = 0; i < this.aSlicers.length; i++) {
+			var cache = this.aSlicers[i].cache;
+			//пока сделал только для форматированных таблиц
+			if (cache) {
+				var tableCache = this.extLst[0];
+				var table = cache.extLst[0];
+				if (table && table.tableId === val) {
+					res.push(this.aSlicers[i]);
+				}
+			}
+		}
+		return res.length ? res : null;
+	};
 
 //-------------------------------------------------------------------------------------------------
 	var g_nCellOffsetFlag = 0;
