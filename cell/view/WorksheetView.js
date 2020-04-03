@@ -19907,6 +19907,26 @@
 		return res;
 	};
 
+	/*
+	//интерфейс
+	отдаём массив данных для интерефейса - beforeInsertSlicer
+	добавляем срезы от интерфейса - insertSlicers
+
+	//данные для отображения
+	генерируем данные для отображения в шейпа по имени - getFilterValuesBySlicerName
+
+
+	//обновление view
+	после применения автофильтра изменяем отображения на основне данных модели по имени ф/т - updateSlicerViewAfterTableChange
+
+	//обновляем модель среза
+	принимаем данные от шейпа для того чтобы изменить ф/т - setFilterValuesFromSlicer
+
+	изменяется имя колонки ф/т - changeSlicerAfterSetTableColName
+	изменяется имя ф/т - setSlicerTableName
+	удаляем срез - deleteSlicer
+	*/
+
 	WorksheetView.prototype.beforeInsertSlicer = function () {
 		//чтобы лишний раз не проверять - может быть взять информацию из cellinfo?
 		var table = this.model.autoFilters.getTableByActiveCell();
