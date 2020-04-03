@@ -4538,7 +4538,7 @@ var editor;
     };
     spreadsheet_api.prototype.asc_insertSlicer = function (arr) {
       //пока возвращаю только данные о ф/т
-      return this.wb.insertSlicer(arr);
+      return this.wb.insertSlicers(arr);
     };
 
 

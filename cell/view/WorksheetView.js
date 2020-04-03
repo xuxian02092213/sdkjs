@@ -19925,7 +19925,7 @@
 		return null;
 	};
 
-	WorksheetView.prototype.insertSlicer = function (arr) {
+	WorksheetView.prototype.insertSlicers = function (arr) {
 		var t = this;
 		var type;
 

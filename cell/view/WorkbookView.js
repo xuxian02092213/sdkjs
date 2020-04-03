@@ -3314,7 +3314,7 @@
 	};
 
 	WorkbookView.prototype.insertSlicer = function (arr) {
-		return this.getWorksheet().insertSlicer(arr);
+		return this.getWorksheet().insertSlicers(arr);
 	};
 
   //------------------------------------------------------------export---------------------------------------------------
