@@ -7805,7 +7805,6 @@
 			var cache = this.aSlicers[i].cache;
 			//пока сделал только для форматированных таблиц
 			if (cache) {
-				var tableCache = this.extLst[0];
 				var table = cache.extLst[0];
 				if (table && table.tableId === val) {
 					res.push(this.aSlicers[i]);
@@ -7813,6 +7812,39 @@
 			}
 		}
 		return res.length ? res : null;
+	};
+
+	Worksheet.prototype.changeSlicerAfterSetTableColName = function (tableName, oldVal, newVal) {
+		//TODO history
+		var slicers = this.getSlicersByTableName(tableName);
+		if (slicers) {
+			for (var i = 0; i < slicers.length; i++) {
+				if (slicers[i].caption === oldVal) {
+					slicers[i].setCaption(newVal);
+					slicers[i].cache.setSourceName(newVal);
+					//внутри tableSlicerCache ещё прописан id колонки
+					//в нашем редакторе id колонки генерируется на сохранение. нужно их будет связывать
+					//я пока ориентируюсь на имя родителя -> sourceName
+					//или необходимо вводить id колонок и таблиц -> при совместном редактировнии будут проблемы
+					//id форматом допускается только числовые, поэтому m_sUserId не получится добавить
+					//если только далее при сохранении перегенерировать...
+					//TODO если не вводить id, тогда вместо него в поле column записывать имя колонки
+				}
+			}
+		}
+	};
+
+	Worksheet.prototype.setSlicerTableName = function (tableName, newTableName) {
+		//TODO history
+		var slicerCaches = this.aSlicerCaches;
+		if (slicerCaches) {
+			for (var i = 0; i < slicerCaches.length; i++) {
+				var tableSlicerCache = slicerCaches[i].getTableSlicerCache();
+				if (tableSlicerCache && tableSlicerCache.tableId === tableName) {
+					tableSlicerCache.setTableName(newTableName);
+				}
+			}
+		}
 	};
 
 //-------------------------------------------------------------------------------------------------

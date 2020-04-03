@@ -88,6 +88,10 @@
 	};
 	CT_slicer.prototype.initPostOpen = function () {
 	};
+	CT_slicer.prototype.setCaption = function (val) {
+		//TODO history
+		this.caption = val;
+	};
 
 	function CT_slicerCacheDefinition(ws) {
 		this.pivotTables = [];//SlicerCachePivotTable
@@ -185,6 +189,15 @@
 		return res;
 	};
 
+	CT_slicerCacheDefinition.prototype.setSourceName = function (val) {
+		//TODO history
+		this.sourceName = val;
+	};
+
+	CT_slicerCacheDefinition.prototype.getTableSlicerCache = function () {
+		return this.extLst ? this.extLst[0] : null;
+	};
+
 
 	function CT_slicerCacheData() {
 		this.olap = null;//OlapSlicerCache
@@ -240,6 +253,11 @@
 
 		return this;
 	}
+
+	CT_tableSlicerCache.prototype.setTableName = function (val) {
+		//TODO history
+		this.tableId = val;
+	};
 
 	function CT_tabularSlicerCache() {
 		this.items = [];//TabularSlicerCacheItem
