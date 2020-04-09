@@ -19930,7 +19930,7 @@
 	WorksheetView.prototype.beforeInsertSlicer = function () {
 		//чтобы лишний раз не проверять - может быть взять информацию из cellinfo?
 		var table = this.model.autoFilters.getTableByActiveCell();
-		if(table) {
+		if (table) {
 			var res = [];
 			for (var j = 0; j < table.TableColumns.length; j++) {
 				res.push(table.TableColumns[j].Name);
@@ -19960,7 +19960,7 @@
 
 		//чтобы лишний раз не проверять - может быть взять информацию из cellinfo?
 		var obj = this.model.autoFilters.getTableByActiveCell();
-		if(obj) {
+		if (obj) {
 			type = window['AscCommonExcel'].insertSlicerType.table;
 		} else if (false/*obj = getPivotByactiveCell*/) {
 			type = window['AscCommonExcel'].insertSlicerType.pivotTable;
@@ -20021,7 +20021,7 @@
 			switch (slicerCache._type) {
 				case window['AscCommonExcel'].insertSlicerType.table: {
 					//TODO сформировать объект autoFiltersObject
-					this.applyAutoFilter();
+					this.applyAutoFilter(createSimpleFilterOptions());
 					break;
 				}
 				case window['AscCommonExcel'].insertSlicerType.pivotTable: {
