@@ -4124,7 +4124,7 @@
 				var worksheet = this.worksheet, textIndexMap = {}, isDateTimeFormat, dataValue, values = [];
 				//для срезов необходимо отображать все значения, в тч скрытые другими фильтрами в данной таблице
 				//флаг fullValues - для срезов
-				var _hideValues = [];
+				var _hideValues = [], textIndexMapHideValues = {};
 
 				var addValueToMenuObj = function (val, text, visible, count, _arr, hiddenType) {
 					var res = new AutoFiltersOptionsElements();
@@ -4214,7 +4214,10 @@
 
 					//not apply filter by current button
 					if (fullValues && null === currentFilterColumn && worksheet.getRowHidden(i) === true) {
-						textIndexMap[textLowerCase] =  _hideValues.length;
+						if (textIndexMapHideValues.hasOwnProperty(textLowerCase)) {
+							continue;
+						}
+						textIndexMapHideValues[textLowerCase] =  _hideValues.length;
 						addValueToMenuObj(val, text, false, _hideValues.length, _hideValues);
 						continue;
 					}
@@ -4233,6 +4236,10 @@
 								hideValue(false, i);
 							}
 
+							if (textIndexMapHideValues.hasOwnProperty(textLowerCase)) {
+								_hideValues.splice(textIndexMapHideValues[textLowerCase], 1);
+							}
+
 							addValueToMenuObj(val, text, visible, count, values);
 
 							textIndexMap[textLowerCase] = count;
@@ -4241,16 +4248,24 @@
 							//ввожу дополнительный тип для отображения значений в срезах
 							//0 - скрыт данным фильтром и другим, 1 - скрыт только другим фильтром
 							//необходимо ввести константу
+							if (textIndexMapHideValues.hasOwnProperty(textLowerCase)) {
+								continue;
+							}
+
 							var hiddenType = 0;
 							if (!currentFilterColumn.isHideValue(isDateTimeFormat ? val : text, isDateTimeFormat)) {
 								hiddenType = 1;
 							}
-							textIndexMap[textLowerCase] =  _hideValues.length;
+							textIndexMapHideValues[textLowerCase] =  _hideValues.length;
 							addValueToMenuObj(val, text, false, _hideValues.length, _hideValues, hiddenType);
 						}
 					} else {
 						hideValue(false, i);
 						addValueToMenuObj(val, text, true, count, values);
+
+						if (textIndexMapHideValues.hasOwnProperty(textLowerCase)) {
+							_hideValues.splice(textIndexMapHideValues[textLowerCase], 1);
+						}
 
 						textIndexMap[textLowerCase] = count;
 						count++;
