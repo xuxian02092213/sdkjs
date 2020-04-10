@@ -78,7 +78,7 @@
 			this.day = null;
 			this.repeats = 1;
 
-			this.hiddenType = null;
+			this.hiddenType = undefined;
 		}
 		AutoFiltersOptionsElements.prototype = {
 			constructor: AutoFiltersOptionsElements,
@@ -4119,11 +4119,11 @@
 			},
 
 			getOpenAndClosedValues: function (filter, colId, doOpenHide, fullValues) {
-
-				fullValues = true;
+				//fullValues = true;
 				var isTablePart = !filter.isAutoFilter(), autoFilter = filter.getAutoFilter(), ref = filter.Ref;
-				var filterColumns = autoFilter.FilterColumns;
 				var worksheet = this.worksheet, textIndexMap = {}, isDateTimeFormat, dataValue, values = [];
+				//для срезов необходимо отображать все значения, в тч скрытые другими фильтрами в данной таблице
+				//флаг fullValues - для срезов
 				var _hideValues = [];
 
 				var addValueToMenuObj = function (val, text, visible, count, _arr, hiddenType) {
@@ -4187,7 +4187,7 @@
 					}
 
 					//not apply filter by current button
-					if (null === currentFilterColumn && worksheet.getRowHidden(i) === true) {
+					if (!fullValues && null === currentFilterColumn && worksheet.getRowHidden(i) === true) {
 						individualCount++;
 						continue;
 					}
@@ -4212,6 +4212,13 @@
 						continue;
 					}
 
+					//not apply filter by current button
+					if (fullValues && null === currentFilterColumn && worksheet.getRowHidden(i) === true) {
+						textIndexMap[textLowerCase] =  _hideValues.length;
+						addValueToMenuObj(val, text, false, _hideValues.length, _hideValues);
+						continue;
+					}
+
 					//apply filter by current button
 					if (null !== currentFilterColumn) {
 						if (!autoFilter.hiddenByAnotherFilter(worksheet, colId, i, ref.c1))//filter another button
@@ -4231,10 +4238,14 @@
 							textIndexMap[textLowerCase] = count;
 							count++;
 						} else if (fullValues) {
+							//ввожу дополнительный тип для отображения значений в срезах
+							//0 - скрыт данным фильтром и другим, 1 - скрыт только другим фильтром
+							//необходимо ввести константу
 							var hiddenType = 0;
 							if (!currentFilterColumn.isHideValue(isDateTimeFormat ? val : text, isDateTimeFormat)) {
 								hiddenType = 1;
 							}
+							textIndexMap[textLowerCase] =  _hideValues.length;
 							addValueToMenuObj(val, text, false, _hideValues.length, _hideValues, hiddenType);
 						}
 					} else {
@@ -4251,8 +4262,11 @@
 				if (doOpenHide) {
 					worksheet.workbook.dependencyFormulas.unlockRecal();
 				}
-
-				return {values: this._sortArrayMinMax(values), automaticRowCount: automaticRowCount, ignoreCustomFilter: ignoreCustomFilter};
+				var _values = this._sortArrayMinMax(values);
+				if(fullValues) {
+					_values = _values.concat(_hideValues);
+				}
+				return {values: _values, automaticRowCount: automaticRowCount, ignoreCustomFilter: ignoreCustomFilter};
 			},
 			
 			_getTrueColId: function(filter, colId, checkShowButton)
