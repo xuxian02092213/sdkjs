@@ -33,15 +33,35 @@
 "use strict";
 
 (function() {
+
+    function CStyleInfo() {
+        this.pen = {
+            left: null,
+            top: null,
+            right: null,
+            bottom: null
+        }
+        this.brush = null;
+        this.font = null;
+        this.fontSize = null;
+    }
+
     function CSlicer() {
         AscFormat.CShape.call(this);
         this.name = null;
 
         this.recalcInfo.recalculateHeader = false;
         this.recalcInfo.recalculateButtons = false;
+        this.recalcInfo.recalculateStyles = false;
 
         this.header = null;
-        this.buttons = [];
+        this.styles = {
+            selected: new CStyleInfo(),
+            unselected: new CStyleInfo(),
+            hoveredSelected: new CStyleInfo(),
+            hoveredUnselected: new CStyleInfo()
+        };
+        this.buttonsContainer = new CButtonsContainer(this);
     }
     CSlicer.prototype = Object.create(AscFormat.CShape.prototype);
     CSlicer.prototype.constructor = CSlicer;
@@ -55,7 +75,7 @@
 
     CSlicer.prototype.recalculate = function () {
         AscFormat.ExecuteNoHistory(function () {
-            CShape.prototype.recalculate.call(this);
+            AscFormat.CShape.prototype.recalculate.call(this);
             if(this.recalcInfo.recalculateHeader) {
                 this.recalculateHeader();
                 this.recalcInfo.recalculateHeader = true;
@@ -64,7 +84,7 @@
                 this.recalculateHeader();
                 this.recalcInfo.recalculateHeader = true;
             }
-        });
+        }, this, []);
     };
 
     CSlicer.prototype.recalculateHeader = function() {
@@ -80,13 +100,13 @@
         this.header.recalculate();
     };
 
+
     CSlicer.prototype.recalculateButtons = function() {
-        this.header = null;
+        this.buttonsContainer.clear();
         var oView = this.getSlicerView();
         if(!oView) {
             return;
         }
-        this.buttons.length = 0;
         var oCache = this.worksheet.getSlicerCacheBySourceName(this.name);
         if(!oCache) {
             return;
@@ -95,20 +115,97 @@
         if(!oValues) {
             return;
         }
+        if(oValues.values.length === 0) {
+            return;
+        }
+        var nColumnCount = 1;
+        if(oView.columnCount !== null) {
+            nColumnCount = oView.columnCount;
+        }
+        this.buttonsContainer.setColumnsCount(nColumnCount);
+        for(var nValueIndex = 0; nValueIndex < oValues.values.length; ++nValueIndex) {
+            this.buttonsContainer.addButton(new CButton(this, oValues.values));
+        }
+        this.buttonsContainer.recalculate();
+    };
+
+    CSlicer.prototype.getBrushByState = function (nType) {
+        var oRet = this.styles.unselected;
+        switch (nType) {
+            case BUTTON_STATE_SELECTED: {
+                break;
+            }
+            case  BUTTON_STATE_UNSELECTED: {
+                break;
+            }
+            case  BUTTON_STATE_HOVERED_SELECTED: {
+                break;
+            }
+            case  BUTTON_STATE_HOVERED_UNSELECTED: {
+                break;
+            }
+        }
+        return oRet;
     };
 
 
-    function CButton(slicer) {
+    var BUTTON_STATE_SELECTED = 0;
+    var BUTTON_STATE_UNSELECTED = 1;
+    var BUTTON_STATE_HOVERED_SELECTED = 2;
+    var BUTTON_STATE_HOVERED_UNSELECTED = 3;
+    function CButton(slicer, options) {
         AscFormat.CShape.call(this);
         this.slicer = slicer;
+        this.options = options;
+        this.state = BUTTON_STATE_UNSELECTED;
+        this.extX = 0;
+        this.extY = 0;
+        this.worksheet = slicer.worksheet;
+        this.createTextBody();
     }
     CButton.prototype = Object.create(AscFormat.CShape.prototype);
-    CButton.prototype.constructor = CButton;
+    CButton.prototype.recalculate = function() {
+        if(this.recalcInfo.recalculateContent) {
+        }
+        AscFormat.CShape.prototype.recalculate();
+    };
+
+    CButton.prototype.recalculateContent = function () {
+
+    };
 
     function CHeader(slicer) {
         this.slicer = slicer;
         this.label = null;
         this.buttons = [];
+    }
+
+    function CButtonsContainer(slicer) {
+        this.slicer = slicer;
+        this.buttons = [];
+        this.extX = 0;
+        this.extY = 0;
+        this.contentW = 0;
+        this.contentH = 0;
+        this.columnCount = 1;
+        this.scrollTop = 0;
+        this.scroll = new CScroll(this);
+    }
+    CButtonsContainer.prototype.clear = function() {
+        this.buttons.length = 0;
+    };
+    CButtonsContainer.prototype.addButton = function (oButton) {
+        this.buttons.push(oButton);
+    }
+    CButtonsContainer.prototype.setColumnsCount = function (nCount) {
+        this.columnCount = nCount;
+    }
+    CButtonsContainer.prototype.recalculate = function() {
+
+    };
+    function CScroll(parent, bHor) {
+        this.parent = parent;
+        this.bHor = bHor;
     }
 })()
 
