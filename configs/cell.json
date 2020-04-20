@@ -145,6 +145,7 @@
 			"cell/model/DrawingObjects/Format/GroupPrototype.js",
 			"cell/model/DrawingObjects/Format/ChartSpacePrototype.js",
 			"common/Drawings/Format/LockedCanvas.js",
+			"common/Drawings/Format/SlicerView.js",
 			"cell/model/PivotTables.js",
 
 			"word/Editor/DocumentContentElementBase.js",
