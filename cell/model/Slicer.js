@@ -61,7 +61,6 @@
 		this.startItem = null;
 		this.columnCount = null;
 		this.showCaption = null;
-		this.columnCount = null;
 		this.style = null;
 		this.lockedPosition = null;
 		this.rowHeight = null;
