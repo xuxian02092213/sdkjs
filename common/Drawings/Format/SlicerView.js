@@ -38,6 +38,17 @@
     var BOTTOM_PADDING = 3;
     var TOP_PADDING = 2
     var SPACE_BETWEEN = 1.5;
+
+    var STYLE_TYPE = {};
+    STYLE_TYPE.HEADER = 0;
+    STYLE_TYPE.SELECTED_DATA = 1;
+    STYLE_TYPE.SELECTED_NO_DATA = 2;
+    STYLE_TYPE.UNSELECTED_DATA = 3;
+    STYLE_TYPE.UNSELECTED_NO_DATA = 4;
+    STYLE_TYPE.HOVERED_SELECTED_DATA = 5;
+    STYLE_TYPE.HOVERED_SELECTED_NO_DATA = 6;
+    STYLE_TYPE.HOVERED_UNSELECTED_DATA = 7;
+    STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA = 8;
     function CStyleInfo() {
         this.pen = {
             left: null,
@@ -46,8 +57,12 @@
             bottom: null
         }
         this.brush = null;
-        this.font = null;
-        this.fontSize = null;
+        this.txStyles = null;
+        var t = this;
+        AscFormat.ExecuteNoHistory(function(){
+            t.txStyles = new CStyles(false);
+        }, this, []);
+
     }
 
     function CTextBox(txBody, transformText) {
@@ -63,8 +78,8 @@
         this.recalcInfo.recalculateStyles = false;
         this.header = null;
         this.styles = {};
-        for(var key in BUTTON_STATE) {
-            if(BUTTON_STATE.hasOwnProperty(key)) {
+        for(var key in STYLE_TYPE) {
+            if(STYLE_TYPE.hasOwnProperty(key)) {
                 this.styles[key] = new CStyleInfo();
             }
         }
@@ -84,6 +99,9 @@
     CSlicer.prototype.recalculate = function () {
         AscFormat.ExecuteNoHistory(function () {
             AscFormat.CShape.prototype.recalculate.call(this);
+            if(this.recalcInfo.recalculateStyles) {
+                this.recalculateStyles();
+            }
             if(this.recalcInfo.recalculateHeader) {
                 this.recalculateHeader();
                 this.recalcInfo.recalculateHeader = true;
@@ -92,6 +110,7 @@
                 this.recalculateHeader();
                 this.recalcInfo.recalculateHeader = true;
             }
+
         }, this, []);
     };
     CSlicer.prototype.recalculateHeader = function() {
@@ -128,8 +147,11 @@
         }
         this.buttonsContainer.recalculate();
     };
-    CSlicer.prototype.getBrushByState = function (nType) {
-        return this.styles[nType];
+    CSlicer.prototype.getPen = function (nType) {
+        return this.styles[nType].pen;
+    };
+    CSlicer.prototype.getBrush = function (nType) {
+        return this.styles[nType].brush;
     };
     CSlicer.prototype.getColumnsCount = function() {
         var oView = this.getSlicerView();
@@ -153,12 +175,22 @@
         }
         return nRet;
     };
+    CSlicer.prototype.getTxStyles = function (nType) {
+        return this.styles[nType].txStyles;
+    };
+
+    function CHeader(slicer) {
+        this.slicer = slicer;
+        this.label = null;
+        this.buttons = [];
+    }
 
     var BUTTON_STATE = {};
     BUTTON_STATE.SELECTED = 0;
     BUTTON_STATE.UNSELECTED = 1;
     BUTTON_STATE.HOVERED_SELECTED = 2;
     BUTTON_STATE.HOVERED_UNSELECTED = 3;
+
     function CButton(slicer, options) {
         AscFormat.CShape.call(this);
         this.slicer = slicer;
@@ -182,6 +214,47 @@
             if(this.textBoxes.hasOwnProperty(key)) {
                 if(this.textBoxes[key].txBody === this.txBody) {
                     nRet = key;
+                    var bEmpty = this.txBody.content.Is_Empty();
+                    if(bEmpty) {
+                        switch (key) {
+                            case BUTTON_STATE.SELECTED: {
+                                if(bEmpty) {
+                                    nRet = STYLE_TYPE.SELECTED_NO_DATA;
+                                }
+                                else {
+                                    nRet = STYLE_TYPE.SELECTED_DATA;
+                                }
+                                break;
+                            }
+                            case BUTTON_STATE.UNSELECTED: {
+                                if(bEmpty) {
+                                    nRet = STYLE_TYPE.UNSELECTED_NO_DATA;
+                                }
+                                else {
+                                    nRet = STYLE_TYPE.HOVERED_SELECTED_DATA;
+                                }
+                                break;
+                            }
+                            case BUTTON_STATE.HOVERED_SELECTED: {
+                                if(bEmpty) {
+                                    nRet = STYLE_TYPE.HOVERED_SELECTED_NO_DATA;
+                                }
+                                else {
+                                    nRet = STYLE_TYPE.HOVERED_SELECTED_DATA;
+                                }
+                                break;
+                            }
+                            case BUTTON_STATE.HOVERED_UNSELECTED: {
+                                if(bEmpty) {
+                                    nRet = STYLE_TYPE.HOVERED_SELECTED_NO_DATA;
+                                }
+                                else {
+                                    nRet = STYLE_TYPE.HOVERED_SELECTED_DATA;
+                                }
+                                break;
+                            }
+                        }
+                    }
                     break;
                 }
             }
@@ -189,28 +262,39 @@
         return nRet;
     };
     CButton.prototype.getString = function() {
-        if(this.options && typeof this.options.text) {
-            return this.options.text
+        if(this.options && typeof this.options.text === "string") {
+            return this.options.text;
         }
         return "";
     };
-    CButton.prototype.recalculateTxState = function() {
-
+    CButton.prototype.Get_Styles = function() {
+        return this.slicer.getTxStyles(this.getTxBodyType());
     };
     CButton.prototype.recalculate = function() {
         var bRecalcContent = this.recalcInfo.recalculateContent;
         AscFormat.CShape.prototype.recalculate();
-        
+        if(bRecalcContent) {
+
+        }
     };
+    CButton.prototype.recalculateBrush = function () {
+        //Empty procedure. Set of brushes for all states will be recalculated in CSlicer
+    };
+    CButton.prototype.recalculatePen = function () {
+        //Empty procedure. Set of pens for all states will be recalculated in CSlicer
+    };
+
     CButton.prototype.recalculateContent = function () {
+        for(var key in BUTTON_STATE) {
+            if(BUTTON_STATE.hasOwnProperty(key)) {
+
+            }
+        }
+    };
+    CButton.prototype.getBodyPr = function () {
 
     };
 
-    function CHeader(slicer) {
-        this.slicer = slicer;
-        this.label = null;
-        this.buttons = [];
-    }
     function CButtonsContainer(slicer) {
         this.slicer = slicer;
         this.buttons = [];
