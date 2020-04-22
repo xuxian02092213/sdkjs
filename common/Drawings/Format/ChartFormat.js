@@ -1972,7 +1972,7 @@ CDLbl.prototype =
         ret.setDefault();
         ret.anchor = 1;
         var oBaseBodyPr = new AscFormat.CBodyPr();
-        
+
         if(this.txPr && this.txPr.bodyPr)
         {
             oBaseBodyPr.merge(this.txPr.bodyPr);
@@ -2015,7 +2015,7 @@ CDLbl.prototype =
              }
          }
          //
- 
+
          switch (nVert)
          {
              case AscFormat.nVertTTeaVert:
@@ -2039,7 +2039,7 @@ CDLbl.prototype =
                  ret.bIns = SCALE_INSET_COEFF*0.5;
                  break;
              }
-        } 
+        }
         return ret;
     },
 
@@ -2185,7 +2185,7 @@ CDLbl.prototype =
 
         if(dLbl.idx != null)
             this.setIdx(dLbl.idx);
-        
+
         if(dLbl.layout != null)
         {
             this.setLayout(dLbl.layout.createDuplicate());
@@ -2274,7 +2274,7 @@ CDLbl.prototype =
         this.x = x;
         this.y = y;
 
-    
+
             this.calcX = this.x;
             this.calcY = this.y;
 
@@ -2527,7 +2527,7 @@ function CPlotArea()
     this.localTransform = new AscCommon.CMatrix();
     this.transform = new AscCommon.CMatrix();
     this.invertTransform = new AscCommon.CMatrix();
-    
+
     this.Id = g_oIdCounter.Get_NewId();
     g_oTableId.Add(this, this.Id);
 }
@@ -2658,7 +2658,7 @@ CPlotArea.prototype =
         {
             c.setSpPr(this.spPr.createDuplicate());
         }
-        
+
         var len = this.axId.length;
         for(i = 0; i < len; i++)
         {
@@ -8242,7 +8242,7 @@ CLegend.prototype =
     {
         this.Id = r.GetString2();
     },
-    
+
     updateLegendPos: function() {
         if (this.overlay) {
             if (c_oAscChartLegendShowSettings.left === this.legendPos) {
@@ -8631,7 +8631,7 @@ CLegendEntry.prototype =
         }
             }
 };
-    
+
 function CLineChart()
 {
     this.axId       = [];
@@ -9606,7 +9606,7 @@ CNumRef.prototype =
         {
             c.setNumCache(this.numCache.createDuplicate());
         }
-        return c;        
+        return c;
     },
 
     getObjectType: function()
@@ -13670,7 +13670,7 @@ CYVal.prototype =
         {
             copy.setNumRef(this.numRef.createDuplicate());
         }
-        
+
         return copy;
     },
 
@@ -13865,7 +13865,7 @@ CChart.prototype =
     createDuplicate: function()
     {
         var c = new CChart();
-        
+
         c.autoTitleDeleted = this.autoTitleDeleted;
         if(this.backWall)
         {
@@ -13883,13 +13883,13 @@ CChart.prototype =
         {
             c.setLegend(this.legend.createDuplicate());
         }
-        
+
         var Count = this.pivotFmts.length;
         for ( var i = 0; i < Count; i++ )
         {
             c.setPivotFmts(this.pivotFmts[i].createDuplicate());
         }
-        
+
         if ( this.plotArea )
         {
             c.setPlotArea(this.plotArea.createDuplicate());
@@ -13900,12 +13900,12 @@ CChart.prototype =
         {
             c.setSideWall(this.sideWall.createDuplicate());
         }
-        
+
         if ( this.title )
         {
             c.setTitle(this.title.createDuplicate());
         }
-        
+
         if ( this.view3D )
         {
             c.setView3D(this.view3D.createDuplicate());
@@ -14246,21 +14246,7 @@ function CheckContentTextAndAdd(oContent, sText)
 function AddToContentFromString(content, str)
 {
 	content.MoveCursorToStartPos(false);
-	for (var oIterator = str.getUnicodeIterator(); oIterator.check(); oIterator.next())
-	{
-		var nCharCode = oIterator.value();
-
-		if (9 === nCharCode) // \t
-			content.AddToParagraph(new ParaTab(), false);
-		if (10 === nCharCode) // \n
-			content.AddToParagraph(new ParaNewLine(break_Line), false);
-		else if (13 === nCharCode) // \r
-			continue;
-		else if (32 === nCharCode) // space
-			content.AddToParagraph(new ParaSpace(), false);
-		else
-			content.AddToParagraph(new ParaText(nCharCode), false);
-	}
+	content.AddText(str);
 }
 
 function CValAxisLabels(chart, axis)
@@ -14729,12 +14715,12 @@ function CreateMarkerGeometryByType(type, src)
     window['AscFormat'].CreateMarkerGeometryByType = CreateMarkerGeometryByType;
 
     window['AscFormat'].NEW_WORKSHEET_DRAWING_DOCUMENT = null;
-    
+
     window['AscFormat'].AX_POS_L = AX_POS_L;
     window['AscFormat'].AX_POS_T = AX_POS_T;
     window['AscFormat'].AX_POS_R = AX_POS_R;
     window['AscFormat'].AX_POS_B = AX_POS_B;
-    
+
     window['AscFormat'].CROSSES_AUTO_ZERO = CROSSES_AUTO_ZERO;
     window['AscFormat'].CROSSES_MAX = CROSSES_MAX;
     window['AscFormat'].CROSSES_MIN = CROSSES_MIN;

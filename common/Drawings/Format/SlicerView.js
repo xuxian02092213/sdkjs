@@ -185,27 +185,31 @@
         this.buttons = [];
     }
 
-    var BUTTON_STATE = {};
-    BUTTON_STATE.SELECTED = 0;
-    BUTTON_STATE.UNSELECTED = 1;
-    BUTTON_STATE.HOVERED_SELECTED = 2;
-    BUTTON_STATE.HOVERED_UNSELECTED = 3;
-
     function CButton(slicer, options) {
         AscFormat.CShape.call(this);
         this.slicer = slicer;
         this.options = options;
-        this.state = BUTTON_STATE.UNSELECTED;
+        this.state = STYLE_TYPE.UNSELECTED_DATA;
         this.worksheet = slicer.worksheet;
         this.setBDeleted(false);
         AscFormat.CheckSpPrXfrm3(this, false);
         this.textBoxes = {};
-        for(var key in BUTTON_STATE) {
-            if(BUTTON_STATE.hasOwnProperty(key)) {
+        for(var key in STYLE_TYPE) {
+            if(STYLE_TYPE.hasOwnProperty(key)) {
                 this.createTextBody();
                 this.textBoxes[key] = new CTextBox(this.txBody, new AscCommon.CMatrix());
             }
         }
+        this.bodyPr = new AscFormat.CBodyPr();
+        this.bodyPr.setDefault();
+        this.bodyPr.anchor = 1;//vertical align ctr
+        this.bodyPr.lIns = LEFT_PADDING;
+        this.bodyPr.rIns = RIGHT_PADDING;
+        this.bodyPr.tIns = 0;
+        this.bodyPr.bIns = 0;
+        this.bodyPr.bIns = 0;
+        this.bodyPr.horzOverflow = AscFormat.nOTClip;
+        this.bodyPr.vertOverflow = AscFormat.nOTClip;
     }
     CButton.prototype = Object.create(AscFormat.CShape.prototype);
     CButton.prototype.getTxBodyType = function () {
@@ -214,47 +218,6 @@
             if(this.textBoxes.hasOwnProperty(key)) {
                 if(this.textBoxes[key].txBody === this.txBody) {
                     nRet = key;
-                    var bEmpty = this.txBody.content.Is_Empty();
-                    if(bEmpty) {
-                        switch (key) {
-                            case BUTTON_STATE.SELECTED: {
-                                if(bEmpty) {
-                                    nRet = STYLE_TYPE.SELECTED_NO_DATA;
-                                }
-                                else {
-                                    nRet = STYLE_TYPE.SELECTED_DATA;
-                                }
-                                break;
-                            }
-                            case BUTTON_STATE.UNSELECTED: {
-                                if(bEmpty) {
-                                    nRet = STYLE_TYPE.UNSELECTED_NO_DATA;
-                                }
-                                else {
-                                    nRet = STYLE_TYPE.HOVERED_SELECTED_DATA;
-                                }
-                                break;
-                            }
-                            case BUTTON_STATE.HOVERED_SELECTED: {
-                                if(bEmpty) {
-                                    nRet = STYLE_TYPE.HOVERED_SELECTED_NO_DATA;
-                                }
-                                else {
-                                    nRet = STYLE_TYPE.HOVERED_SELECTED_DATA;
-                                }
-                                break;
-                            }
-                            case BUTTON_STATE.HOVERED_UNSELECTED: {
-                                if(bEmpty) {
-                                    nRet = STYLE_TYPE.HOVERED_SELECTED_NO_DATA;
-                                }
-                                else {
-                                    nRet = STYLE_TYPE.HOVERED_SELECTED_DATA;
-                                }
-                                break;
-                            }
-                        }
-                    }
                     break;
                 }
             }
@@ -284,15 +247,61 @@
         //Empty procedure. Set of pens for all states will be recalculated in CSlicer
     };
 
-    CButton.prototype.recalculateContent = function () {
-        for(var key in BUTTON_STATE) {
-            if(BUTTON_STATE.hasOwnProperty(key)) {
+    CButton.prototype.checkContentFit = function(sText) {
+        var oContent = this.getDocContent();
+        oContent.ClearContent(true);
+        AscFormat.AddToContentFromString(oContent, sText);
+        AscFormat.CShape.prototype.recalculateContent.call(this);
+        var oFirstParagraph = oContent.Content[0];
+        return oFirstParagraph.Lines.length === 1;
+    };
 
+    CButton.prototype.recalculateContent = function () {
+        var sText = this.getString(), oMetrics, oContent, oFirstParagraph, sFitText;
+        for(var key in STYLE_TYPE) {
+            if(STYLE_TYPE.hasOwnProperty(key)) {
+                this.txBody = this.textBoxes[key].txBody;
+                if(this.checkContentFit(sText)) {
+                    continue;
+                }
+                var nLeftPos = 1, nRightPos = sText.length;
+                var nMiddlePos;
+                var sEnd = "...";
+                sFitText = sText.slice(0, nLeftPos);
+                sFitText += sEnd;
+                if(!this.checkContentFit(sFitText)) {
+                    while (nRightPos - nLeftPos > 1) {
+                        nMiddlePos = (nRightPos + nLeftPos) / 2 + 0.5 >> 0;
+                        sFitText = sText.slice(0, nMiddlePos - 1);
+                        sFitText += sEnd;
+                        if(!this.checkContentFit(sFitText)) {
+                            nRightPos = nMiddlePos;
+                        }
+                        else {
+                            nLeftPos = nMiddlePos;
+                        }
+                    }
+                    sFitText = sText.slice(0, nLeftPos);
+                    sFitText += sEnd;
+                    this.checkContentFit(sFitText);
+                }
+                else {
+                    var bFound = false;
+                    for(var i = sEnd.length - 1; i > -1; i--) {
+                        sFitText = sEnd.slice(0, i);
+                        if(this.checkContentFit(sFitText)) {
+                            bFound = true;
+                        }
+                    }
+                    if(!bFound) {
+                        this.checkContentFit("");
+                    }
+                }
             }
         }
     };
     CButton.prototype.getBodyPr = function () {
-
+        return this.bodyPr;
     };
 
     function CButtonsContainer(slicer) {
