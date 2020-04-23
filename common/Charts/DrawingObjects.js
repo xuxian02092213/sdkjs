@@ -2390,12 +2390,6 @@ function DrawingObjects() {
                     worksheet.setSelectionShape(true);
                 });
             }, []);
-
-
-
-
-
-
         }
     };
 
@@ -2433,9 +2427,9 @@ function DrawingObjects() {
                         return;
                     }
                     var nSlicerCount = aNames.length;
-                    var dSlicerWidth = 2 * 2.54;//
-                    var dSlicerHeight = 2.76 * 2.54;
-                    var dSlicerInset = 20;
+                    var dSlicerWidth = 2 * 25.4;//
+                    var dSlicerHeight = 2.76 * 25.4;
+                    var dSlicerInset = 10;
                     var dTotalWidth = dSlicerWidth + nSlicerCount * dSlicerInset;
                     var dTotalHeight = dSlicerHeight + nSlicerCount * dSlicerInset;
                     var dLeft = worksheet.getCellLeft(oVisibleRange.c1, 3);
@@ -2443,19 +2437,21 @@ function DrawingObjects() {
                     var dRight = worksheet.getCellLeft(oVisibleRange.c2, 3) + worksheet.getColumnWidth(oVisibleRange.c2, 3);
                     var dBottom = worksheet.getCellTop(oVisibleRange.r2, 3) + worksheet.getRowHeight(oVisibleRange.r2, 3);
                     _this.controller.resetSelection();
-                    var dStartPosX = (dLeft + dRight) / 2.0 - dTotalWidth / 2;
-                    var dStartPosY = (dTop + dBottom) / 2.0 - dTotalHeight / 2;
+                    var dStartPosX = Math.max(0, (dLeft + dRight) / 2.0 - dTotalWidth / 2);
+                    var dStartPosY = Math.max(0, (dTop + dBottom) / 2.0 - dTotalHeight / 2);
                     var oSlicer, x, y;
                     for(var nSlicerIndex = 0; nSlicerIndex < nSlicerCount; ++nSlicerIndex) {
                         oSlicer = new AscFormat.CSlicer();
                         oSlicer.setName(aNames[nSlicerIndex]);
                         x = dStartPosX + dSlicerInset * nSlicerIndex;
                         y = dStartPosY + dSlicerInset * nSlicerIndex;
-                        oSlicer.setTransformParams(x, y, dSlicerWidth, dSlicerHeight, 0, false, false);
+                        oSlicer.setBDeleted(false);
                         oSlicer.setWorksheet(worksheet.model);
+                        oSlicer.setTransformParams(x, y, dSlicerWidth, dSlicerHeight, 0, false, false);
                         oSlicer.addToDrawingObjects(undefined, AscCommon.c_oAscCellAnchorType.cellanchorTwoCell);
                         oSlicer.checkDrawingBaseCoords();
                     }
+                    _this.controller.startRecalculate();
                     oSlicer.select(_this.controller, 0);
                     worksheet.setSelectionShape(true);
                 });

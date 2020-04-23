@@ -624,7 +624,7 @@ function CheckSpPrXfrm2(object)
                 else
                 {
                     object.spPr.xfrm.setOffX(AscFormat.isRealNumber(object.x) ? object.x : 0);
-                    object.spPr.xfrm.setOffY(AscFormat.isRealNumber(object.y) ? object.x : 0);
+                    object.spPr.xfrm.setOffY(AscFormat.isRealNumber(object.y) ? object.y : 0);
                 }
                 object.spPr.xfrm.setExtX(AscFormat.isRealNumber(object.extX) ? object.extX : 0);
                 object.spPr.xfrm.setExtY(AscFormat.isRealNumber(object.extY) ? object.extY : 0);
@@ -1759,7 +1759,7 @@ DrawingObjectsController.prototype =
 		var oTargetDocContent = this.getTargetDocContent(undefined, true);
 		if (oTargetDocContent)
 			return oTargetDocContent.RecalculateCurPos(bUpdateX, bUpdateY);
-        
+
         return {X : 0, Y : 0, Height : 0, PageNum : 0, Internal : {Line : 0, Page : 0, Range : 0}, Transform : null};
 	},
 
@@ -1990,7 +1990,7 @@ DrawingObjectsController.prototype =
     {
         return this.getLeftTopSelectedFromArray(this.getDrawingObjects(), pageIndex);
     },
-	
+
 	createWatermarkImage: function(sImageUrl)
 	{
         return AscFormat.ExecuteNoHistory(function(){
@@ -2174,7 +2174,7 @@ DrawingObjectsController.prototype =
     {
 		if (undefined !== drawingDocument.BeginDrawTracking)
             drawingDocument.BeginDrawTracking();
-		
+
         var i;
         if(this.selection.textSelection)
         {
@@ -2312,7 +2312,7 @@ DrawingObjectsController.prototype =
         }
 
 
-      
+
 		if (undefined !== drawingDocument.EndDrawTracking)
 			drawingDocument.EndDrawTracking();
 
@@ -3459,7 +3459,7 @@ DrawingObjectsController.prototype =
         }
         return _ret;
     },
-    
+
     getConnectorsForCheck2: function(){
         var aConnectors = this.getConnectorsForCheck();
         var oGroupMaps = {};
@@ -6423,8 +6423,8 @@ DrawingObjectsController.prototype =
                 this.resetConnectors(this.selectedObjects);
                 for(var i = 0; i < this.selectedObjects.length; ++i)
                 {
-                    
-                    this.selectedObjects[i].deleteDrawingBase(true);                    
+
+                    this.selectedObjects[i].deleteDrawingBase(true);
                     if(this.selectedObjects[i].signatureLine){
                         var oApi = this.getEditorApi();
                         if(oApi){
@@ -8596,7 +8596,7 @@ DrawingObjectsController.prototype =
                             image_props.description = undefined;
                         if(image_props.anchor !== new_image_props.anchor)
                             image_props.anchor = undefined;
-                        
+
                     }
 
 

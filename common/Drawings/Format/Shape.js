@@ -43,7 +43,7 @@ function (window, undefined) {
 var g_memory = AscFonts.g_memory;
 var DecodeBase64Char = AscFonts.DecodeBase64Char;
 var b64_decode = AscFonts.b64_decode;
-    
+
 var c_oAscSizeRelFromH = AscCommon.c_oAscSizeRelFromH;
 var c_oAscSizeRelFromV = AscCommon.c_oAscSizeRelFromV;
 var CMatrix = AscCommon.CMatrix;
@@ -363,7 +363,7 @@ function CopyRunToPPTX(Run, Paragraph, bHyper)
         var Item = Run.Content[CurPos];
         if (   Item.Type !== para_End       && Item.Type !== para_Drawing     && Item.Type !== para_Comment
             && Item.Type !== para_PageCount && Item.Type !== para_FootnoteRef && Item.Type !== para_FootnoteReference
-            && Item.Type !== para_PageNum   && Item.Type !== para_FieldChar   && Item.Type !== para_Bookmark 
+            && Item.Type !== para_PageNum   && Item.Type !== para_FieldChar   && Item.Type !== para_Bookmark
             && Item.Type !== para_RevisionMove && Item.Type !== para_InstrText)
         {
             NewRun.Add_ToContent( PosToAdd, Item.Copy(), false );
@@ -4170,7 +4170,7 @@ CShape.prototype.checkExtentsByDocContent = function(bForce, bNeedRecalc)
                             return;
                         }
                     }
-                
+
                     this.bCheckAutoFitFlag = true;
 
                     this.tmpFontScale = undefined;
@@ -4724,10 +4724,10 @@ CShape.prototype.draw = function (graphics, transform, transformText, pageIndex)
     var _transform = transform ? transform : this.transform;
     var _transform_text = transformText ? transformText : this.transformText;
     var geometry = this.calcGeometry || this.spPr && this.spPr.geometry;
-	
+
 	this.drawShdw &&  this.drawShdw(graphics);
     if (graphics.IsSlideBoundsCheckerType === true) {
-		
+
         graphics.transform3(_transform);
         if (!this.spPr || null == geometry || geometry.pathLst.length === 0 || (geometry.pathLst.length === 1 && geometry.pathLst[0].ArrPathCommandInfo.length === 0) || !graphics.IsShapeNeedBounds(geometry.preset)) {
             graphics._s();
@@ -5598,8 +5598,9 @@ CShape.prototype.hitInInnerArea = function (x, y) {
         }
         var x_t = invert_transform.TransformPointX(x, y);
         var y_t = invert_transform.TransformPointY(x, y);
-        if (isRealObject(this.spPr) && isRealObject(this.spPr.geometry) && this.spPr.geometry.pathLst.length > 0 && !(this.getObjectType && this.getObjectType() === AscDFH.historyitem_type_ChartSpace))
-            return this.spPr.geometry.hitInInnerArea(this.getCanvasContext(), x_t, y_t);
+        var oGeometry = this.spPr && this.spPr.geometry || this.calcGeometry;
+        if (isRealObject(oGeometry) && oGeometry.pathLst.length > 0 && !(this.getObjectType && this.getObjectType() === AscDFH.historyitem_type_ChartSpace))
+            return oGeometry.hitInInnerArea(this.getCanvasContext(), x_t, y_t);
         if(this.getObjectType() === AscDFH.historyitem_type_Shape)
         {
             return false;

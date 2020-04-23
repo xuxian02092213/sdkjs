@@ -40,15 +40,16 @@
     var SPACE_BETWEEN = 1.5;
 
     var STYLE_TYPE = {};
-    STYLE_TYPE.HEADER = 0;
-    STYLE_TYPE.SELECTED_DATA = 1;
-    STYLE_TYPE.SELECTED_NO_DATA = 2;
-    STYLE_TYPE.UNSELECTED_DATA = 3;
-    STYLE_TYPE.UNSELECTED_NO_DATA = 4;
-    STYLE_TYPE.HOVERED_SELECTED_DATA = 5;
-    STYLE_TYPE.HOVERED_SELECTED_NO_DATA = 6;
-    STYLE_TYPE.HOVERED_UNSELECTED_DATA = 7;
-    STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA = 8;
+    STYLE_TYPE.WHOLE = 0;
+    STYLE_TYPE.HEADER = 1;
+    STYLE_TYPE.SELECTED_DATA = 2;
+    STYLE_TYPE.SELECTED_NO_DATA = 3;
+    STYLE_TYPE.UNSELECTED_DATA = 4;
+    STYLE_TYPE.UNSELECTED_NO_DATA = 5;
+    STYLE_TYPE.HOVERED_SELECTED_DATA = 6;
+    STYLE_TYPE.HOVERED_SELECTED_NO_DATA = 7;
+    STYLE_TYPE.HOVERED_UNSELECTED_DATA = 8;
+    STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA = 9;
     function CStyleInfo() {
         this.pen = {
             left: null,
@@ -74,14 +75,14 @@
         AscFormat.CShape.call(this);
         this.name = null;
 
-        this.recalcInfo.recalculateHeader = false;
-        this.recalcInfo.recalculateButtons = false;
-        this.recalcInfo.recalculateStyles = false;
+        this.recalcInfo.recalculateHeader = true;
+        this.recalcInfo.recalculateButtons = true;
+        this.recalcInfo.recalculateStyles = true;
         this.header = null;
         this.styles = {};
         for(var key in STYLE_TYPE) {
             if(STYLE_TYPE.hasOwnProperty(key)) {
-                this.styles[key] = new CStyleInfo();
+                this.styles[STYLE_TYPE[key]] = new CStyleInfo();
             }
         }
         this.buttonsContainer = new CButtonsContainer(this);
@@ -91,7 +92,22 @@
     CSlicer.prototype.setName = function(val) {
         this.name = val;
     };
-
+    CSlicer.prototype.recalculateBrush = function() {
+        var oStyle = this.styles[STYLE_TYPE.WHOLE];
+        this.brush = oStyle.brush;
+        var oParents = this.getParentObjects();
+        this.brush.calculate(oParents.theme, oParents.slide, oParents.layout, oParents.master, {R:0, G:0, B:0, A: 255});
+    };
+    CSlicer.prototype.recalculatePen = function() {
+        var oStyle = this.styles[STYLE_TYPE.WHOLE];
+        this.pen = oStyle.pen.left;//TODO
+        var oParents = this.getParentObjects();
+        this.pen.calculate(oParents.theme, oParents.slide, oParents.layout, oParents.master, {R:0, G:0, B:0, A: 255});
+    };
+    CSlicer.prototype.recalculateGeometry = function() {
+        this.calcGeometry = AscFormat.CreateGeometry("rect");
+        this.calcGeometry.Recalculate(this.extX, this.extY);
+    };
     CSlicer.prototype.canRotate = function() {
         return false;
     };
@@ -103,10 +119,10 @@
     };
     CSlicer.prototype.recalculate = function () {
         AscFormat.ExecuteNoHistory(function () {
-            AscFormat.CShape.prototype.recalculate.call(this);
             if(this.recalcInfo.recalculateStyles) {
                 this.recalculateStyles();
             }
+            AscFormat.CShape.prototype.recalculate.call(this);
             if(this.recalcInfo.recalculateHeader) {
                 this.recalculateHeader();
                 this.recalcInfo.recalculateHeader = true;
@@ -126,12 +142,16 @@
                 oStyle.brush = new AscFormat.CreateUnfilFromRGB(255, 255, 255);
                 oStyle.pen.left = new AscFormat.CLn();
                 oStyle.pen.left.setFill(new AscFormat.CreateUnfilFromRGB(0, 0, 0));
+                oStyle.pen.left.setW(0);
                 oStyle.pen.top = new AscFormat.CLn();
                 oStyle.pen.top.setFill(new AscFormat.CreateUnfilFromRGB(0, 0, 0));
+                oStyle.pen.top.setW(0);
                 oStyle.pen.right = new AscFormat.CLn();
                 oStyle.pen.right.setFill(new AscFormat.CreateUnfilFromRGB(0, 0, 0));
-                oStyle.pen.button = new AscFormat.CLn();
-                oStyle.pen.button.setFill(new AscFormat.CreateUnfilFromRGB(0, 0, 0));
+                oStyle.pen.right.setW(0);
+                oStyle.pen.bottom = new AscFormat.CLn();
+                oStyle.pen.bottom.setFill(new AscFormat.CreateUnfilFromRGB(0, 0, 0));
+                oStyle.pen.bottom.setW(0);
                 switch (key) {
 
                 }
@@ -225,7 +245,7 @@
         for(var key in STYLE_TYPE) {
             if(STYLE_TYPE.hasOwnProperty(key)) {
                 this.createTextBody();
-                this.textBoxes[key] = new CTextBox(this.txBody, new AscCommon.CMatrix());
+                this.textBoxes[STYLE_TYPE[key]] = new CTextBox(this.txBody, new AscCommon.CMatrix());
             }
         }
         this.bodyPr = new AscFormat.CBodyPr();
@@ -288,7 +308,7 @@
         var sText = this.getString(), oMetrics, oContent, oFirstParagraph, sFitText;
         for(var key in STYLE_TYPE) {
             if(STYLE_TYPE.hasOwnProperty(key)) {
-                this.txBody = this.textBoxes[key].txBody;
+                this.txBody = this.textBoxes[STYLE_TYPE[key]].txBody;
                 if(this.checkContentFit(sText)) {
                     continue;
                 }
