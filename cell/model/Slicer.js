@@ -114,7 +114,7 @@
 				//TODO для генерации имени нужна отдельная функция
 				this.name = "Slicer_" + name;
 				var tableCache = new CT_tableSlicerCache();
-				tableCache.tableId = obj.name;
+				tableCache.tableId = obj.DisplayName;
 				tableCache.column = name;
 				this.extLst.push(tableCache);
 				break;

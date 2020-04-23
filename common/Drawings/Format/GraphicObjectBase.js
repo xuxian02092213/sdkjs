@@ -862,11 +862,20 @@
     };
     CGraphicObjectBase.prototype.setTransformParams = function(x, y, extX, extY, rot, flipH, flipV)
     {
-        this.x = x;
-        this.y = y;
-        this.extX = extX;
-        this.extY = extY;
-        AscFormat.CheckSpPrXfrm3(this);
+        if(!this.spPr)
+        {
+            this.setSpPr(new AscFormat.CSpPr());
+            this.spPr.setParent(this);
+        }
+        if(!this.spPr.xfrm)
+        {
+            this.spPr.setXfrm(new AscFormat.CXfrm());
+            this.spPr.xfrm.setParent(this.spPr);
+        }
+        this.spPr.xfrm.setOffX(x);
+        this.spPr.xfrm.setOffY(y);
+        this.spPr.xfrm.setExtX(extX);
+        this.spPr.xfrm.setExtY(extY);
         this.spPr.xfrm.setRot(rot);
         this.spPr.xfrm.setFlipH(flipH);
         this.spPr.xfrm.setFlipV(flipV);

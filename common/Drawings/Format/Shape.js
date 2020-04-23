@@ -4657,10 +4657,12 @@ CShape.prototype.haveSelectedDrawingInContent = function()
 };
 
 
-CShape.prototype.clipTextRect = function(graphics)
+CShape.prototype.clipTextRect = function(graphics, transform, transformText, pageIndex)
 {
     if(this.clipRect)
     {
+        var transform_ = transform ? transform : this.transform;
+        var transformText_ = transformText ? transformText : this.transformText;
         var clip_rect = this.clipRect;
         var oBodyPr = this.getBodyPr();
         if(!this.bWordShape)
@@ -4672,17 +4674,17 @@ CShape.prototype.clipTextRect = function(graphics)
         }
         if(!oBodyPr || !oBodyPr.upright)
         {
-            graphics.transform3(this.transform);
+            graphics.transform3(transform_);
             graphics.AddClipRect(clip_rect.x, clip_rect.y, clip_rect.w, clip_rect.h);
 
             graphics.SetIntegerGrid(false);
-            graphics.transform3(this.transformText, true);
+            graphics.transform3(transformText_, true);
         }
         else
         {
             var oTransform = new CMatrix();
-            var cX = this.transform.TransformPointX(this.extX/2, this.extY/2);
-            var cY = this.transform.TransformPointY(this.extX/2, this.extY/2);
+            var cX = transform_.TransformPointX(this.extX/2, this.extY/2);
+            var cY = transform_.TransformPointY(this.extX/2, this.extY/2);
 
             if(checkNormalRotate(this.rot))
             {
@@ -4699,7 +4701,7 @@ CShape.prototype.clipTextRect = function(graphics)
             graphics.AddClipRect(clip_rect.x, clip_rect.y, clip_rect.w, clip_rect.h);
 
             graphics.SetIntegerGrid(false);
-            graphics.transform3(this.transformText, true);
+            graphics.transform3(transformText_, true);
         }
     }
 };
@@ -4895,7 +4897,7 @@ CShape.prototype.draw = function (graphics, transform, transformText, pageIndex)
                 if(this instanceof CShape)
                 {
                     if(!(oController && (AscFormat.getTargetTextObject(oController) === this)))
-                        this.clipTextRect(graphics);
+                        this.clipTextRect(graphics, transform, transformText, pageIndex);
                 }
                 graphics.transform3(transform_text, true);
                 if (graphics.CheckUseFonts2 !== undefined)
@@ -4915,7 +4917,7 @@ CShape.prototype.draw = function (graphics, transform, transformText, pageIndex)
 
                 graphics.SaveGrState();
                 graphics.SetIntegerGrid(false);
-                this.clipTextRect(graphics);
+                this.clipTextRect(graphics, transform, transformText, pageIndex);
                 var result_page_index = AscFormat.isRealNumber(graphics.shapePageIndex) ? graphics.shapePageIndex : old_start_page;
 
                 if (graphics.CheckUseFonts2 !== undefined)
