@@ -79,7 +79,7 @@
 		if (!cache) {
 			cache = new CT_slicerCacheDefinition(this.ws);
 			cache.init(name, obj, type);
-			this.aSlicerCaches.push(cache);
+			this.ws.aSlicerCaches.push(cache);
 		} else {
 			cache = cache.obj;
 		}
@@ -95,7 +95,7 @@
 	function CT_slicerCacheDefinition(ws) {
 		this.pivotTables = [];//SlicerCachePivotTable
 		this.data = null;//CSlicerCacheData
-		this.extLst = null;
+		this.extLst = [];
 		this.name = null;
 		//<xsd:attribute ref="xr10:uid" use="optional"/>
 		this.sourceName = null;

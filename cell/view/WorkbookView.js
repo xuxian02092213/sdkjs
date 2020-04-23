@@ -64,7 +64,7 @@
   var c_oAscAsyncAction = asc.c_oAscAsyncAction;
   var c_oAscFontRenderingModeType = asc.c_oAscFontRenderingModeType;
   var c_oAscAsyncActionType = asc.c_oAscAsyncActionType;
-  
+
   var g_clipboardExcel = AscCommonExcel.g_clipboardExcel;
 
 
@@ -469,7 +469,7 @@
 				  var table = self.getSelectionInfo().formatTableInfo;
 				  return table && self.changeFormatTableInfo(table.tableName, Asc.c_oAscChangeTableStyleInfo.rowTotal, !table.lastRow);
 			  },
-			  
+
 			  //special paste
 			  "hideSpecialPasteOptions": function () {
 				  self.handlers.trigger("hideSpecialPasteOptions");
@@ -1287,7 +1287,7 @@
     }
     asc_applyFunction(callback, ct);
   };
-  
+
   WorkbookView.prototype._onUpdateCursor = function (cursor) {
   	var newHtmlCursor = AscCommon.g_oHtmlCursor.value(cursor);
   	if (this.element.style.cursor !== newHtmlCursor) {
@@ -2224,7 +2224,7 @@
     ws = t.getWorksheet();
     g_clipboardExcel.pasteData(ws, _format, data1, data2, text_data, null, doNotShowButton);
   };
-  
+
   WorkbookView.prototype.specialPasteData = function(props) {
     if (!this.getCellEditMode()) {
 		this.getWorksheet().specialPaste(props);
@@ -2884,7 +2884,7 @@
 	WorkbookView.prototype.getTableStyles = function (props, bPivotTable) {
 		var wb = this.model;
 		var t = this;
-		
+
 		var result = [];
 		var canvas = document.createElement('canvas');
 		var tableStyleInfo;
@@ -2985,11 +2985,11 @@
 
 	var ySize = (h - 1) - 2 * startY;
 	var xSize = w - 2 * startX;
-	
+
 	var stepY = (ySize) / row;
 	var stepX = (xSize) / col;
 	var lineStepX = (xSize - 1) / 5;
-	
+
 	var whiteColor = new CColor(255, 255, 255);
 	var blackColor = new CColor(0, 0, 0);
 
@@ -3002,7 +3002,7 @@
 
 	ctx.setFillStyle(whiteColor);
 	ctx.fillRect(0, 0, xSize + 2 * startX, ySize + 2 * startY);
-	
+
 	var calculateLineVer = function(color, x, y1, y2)
 	{
 		ctx.beginPath();
@@ -3013,7 +3013,7 @@
 		ctx.stroke();
 		ctx.closePath();
 	};
-	
+
 	var calculateLineHor = function(color, x1, y, x2)
 	{
 		ctx.beginPath();
@@ -3024,7 +3024,7 @@
 		ctx.stroke();
 		ctx.closePath();
 	};
-	
+
 	var calculateRect = function(color, x1, y1, w, h)
 	{
 		ctx.beginPath();
@@ -3060,14 +3060,14 @@
 				compiledStylesArr[i] = [];
 			}
 			compiledStylesArr[i][j] = curStyle;
-			
+
 			//fill
 			color = curStyle && curStyle.fill && curStyle.fill.bg();
 			if(color)
 			{
 				calculateRect(color, j * stepX, i * stepY, stepX, stepY);
 			}
-			
+
 			//borders
 			//left
 			prevStyle = (j - 1 >= 0) ? compiledStylesArr[i][j - 1] : null;
@@ -3095,7 +3095,7 @@
 			{
 				calculateLineHor(color.c, j * stepX, (i + 1) * stepY, (j + 1) * stepX);
 			}
-			
+
 			//marks
 			color = (curStyle && curStyle.font && curStyle.font.c) || defaultColor;
 			calculateLineHor(color, j * lineStepX + 3, (i + 1) * stepY - stepY / 2, (j + 1) * lineStepX - 2);
@@ -3313,7 +3313,7 @@
 		return this.getWorksheet().beforeInsertSlicer();
 	};
 
-	WorkbookView.prototype.insertSlicer = function (arr) {
+	WorkbookView.prototype.insertSlicers = function (arr) {
 		return this.getWorksheet().insertSlicers(arr);
 	};
 

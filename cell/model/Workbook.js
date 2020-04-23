@@ -934,11 +934,11 @@
 		delTableName: function(tableName, bConvertTableFormulaToRef) {
 			this.buildDependency();
 			var defName = this.getDefNameByName(tableName);
-			
+
 			this.addToChangedDefName(defName);
 			var notifyData = {type: c_oNotifyType.ChangeDefName, from: defName.getUndoDefName(), to: null, bConvertTableFormulaToRef: bConvertTableFormulaToRef};
 			this._broadcastDefName(tableName, notifyData);
-			
+
 			this._delDefName(tableName, null);
 			if (defName) {
 				defName.removeDependencies();
@@ -3619,7 +3619,7 @@
 			this.sheetPr = wsFrom.sheetPr.clone();
 
 		this.selectionRange = wsFrom.selectionRange.clone(this);
-		
+
 		if(wsFrom.PagePrintOptions) {
 			this.PagePrintOptions = wsFrom.PagePrintOptions.clone(this);
 		}
@@ -6404,7 +6404,7 @@
 			var tablePart = this.TableParts[index];
 			this.workbook.dependencyFormulas.delTableName(tablePart.DisplayName, bConvertTableFormulaToRef);
 			tablePart.removeDependencies();
-			
+
 			//delete table
 			this.TableParts.splice(index, 1);
 		}
@@ -6417,7 +6417,7 @@
 				tablePart.removeDependencies();
 			}
 		}
-		
+
 	};
 	Worksheet.prototype.checkPivotReportLocationForError = function(ranges, exceptPivot) {
 		for (var i = 0; i < ranges.length; ++i) {
@@ -7708,7 +7708,7 @@
 		History.StartTransaction();
 
 		//TODO недостаточно ли вместо всей данной длинной структуры использовать только tableId(name) и columnName?
-		var slicer = new window['AscCommonExcel'].CT_slicer(this);
+		var slicer = new window['Asc'].CT_slicer(this);
 		slicer.init(name, obj, type);
 		this.aSlicers.push(slicer);
 
@@ -8103,7 +8103,7 @@
 		}
 		return (0 <= isWordEnter) &&
 		(true !== options.isWholeCell || options.findWhat.length === cellText.length);
-	
+
 	};
 	Cell.prototype.isNullText=function(){
 		return this.isNullTextString() && !this.formulaParsed;
@@ -10513,7 +10513,7 @@
 	Range.prototype.setValueData = function(val){
 		History.Create_NewPoint();
 		History.StartTransaction();
-		
+
 		this._foreach(function(cell){
 			cell.setValueData(val);
 		});
@@ -12672,7 +12672,7 @@
 			});
 			return oCell ? fAddSortElems(oCell, row, col) : null;
 		};
-		
+
 		putElem = false;
 		if (isSortColor) {
 			var newArrayNeedColor = [];

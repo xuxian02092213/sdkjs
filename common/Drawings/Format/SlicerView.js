@@ -113,6 +113,26 @@
 
         }, this, []);
     };
+    CSlicer.prototype.recalculateStyles = function() {
+        for(var key in this.styles) {
+            if(this.styles.hasOwnProperty(key)) {
+                var oStyle = this.styles[key];
+                oStyle.txStyles = this.recalculateTextStyles(0);
+                oStyle.brush = new AscFormat.CreateUnfilFromRGB(255, 255, 255);
+                oStyle.pen.left = new AscFormat.CLn();
+                oStyle.pen.left.setFill(new AscFormat.CreateUnfilFromRGB(0, 0, 0));
+                oStyle.pen.top = new AscFormat.CLn();
+                oStyle.pen.top.setFill(new AscFormat.CreateUnfilFromRGB(0, 0, 0));
+                oStyle.pen.right = new AscFormat.CLn();
+                oStyle.pen.right.setFill(new AscFormat.CreateUnfilFromRGB(0, 0, 0));
+                oStyle.pen.button = new AscFormat.CLn();
+                oStyle.pen.button.setFill(new AscFormat.CreateUnfilFromRGB(0, 0, 0));
+                switch (key) {
+
+                }
+            }
+        }
+    };
     CSlicer.prototype.recalculateHeader = function() {
         this.header = null;
         var oView = this.getSlicerView();
@@ -184,6 +204,9 @@
         this.label = null;
         this.buttons = [];
     }
+    CHeader.prototype.recalculate = function () {
+
+    };
 
     function CButton(slicer, options) {
         AscFormat.CShape.call(this);
@@ -312,7 +335,8 @@
         this.contentW = 0;
         this.contentH = 0;
         this.scrollTop = 0;
-        this.scroll = new CScroll(this);
+        this.scrollLeft = 0;
+        this.scroll = new CScroll(this, false);
     }
     CButtonsContainer.prototype.clear = function() {
         this.buttons.length = 0;
@@ -345,9 +369,19 @@
             oButton.recalculate();
         }
     };
+
+    var nScrollWidth = 10;
     function CScroll(parent, bHor) {
         this.parent = parent;
         this.bHor = bHor;
+        this.extX = 0;
+        this.extY = 0;
+
+    }
+
+    CScroll.prototype.update = function () {
+        if(this.bHor) {
+        }
     }
 })()
 
