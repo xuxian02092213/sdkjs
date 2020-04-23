@@ -226,7 +226,7 @@
         if(!oView) {
             return 1;
         }
-        var nRet = 15;
+        var nRet = 0.26 * 25.4;
         if(AscFormat.isRealNumber(oView.rowHeight)) {
             nRet = oView.rowHeight * g_dKoef_emu_to_mm;
         }
