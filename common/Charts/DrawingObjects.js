@@ -405,7 +405,7 @@ function getCurrentTime() {
     return currDate.getTime();
 }
 
-function roundPlus(x, n) { //x - число, n - количество знаков 
+function roundPlus(x, n) { //x - число, n - количество знаков
     if ( isNaN(x) || isNaN(n) ) return false;
     var m = Math.pow(10,n);
     return Math.round(x * m) / m;
@@ -1836,7 +1836,7 @@ function DrawingObjects() {
     //-----------------------------------------------------------------------------------
 
     _this.init = function(currentSheet) {
- 
+
         if (!window['IS_NATIVE_EDITOR']) {
             setInterval(drawTaskFunction, 5);
         }
@@ -2422,6 +2422,47 @@ function DrawingObjects() {
 
     };
 
+    _this.addSlicers = function(aNames) {
+        if (_this.canEdit()) {
+            if(Array.isArray(aNames) && aNames.length > 0) {
+                var oVisibleRange = worksheet.getVisibleRange();
+                _this.objectLocker.reset();
+                _this.objectLocker.addObjectId(AscCommon.g_oIdCounter.Get_NewId());
+                _this.objectLocker.checkObjects(function (bLock) {
+                    if (bLock !== true) {
+                        return;
+                    }
+                    var nSlicerCount = aNames.length;
+                    var dSlicerWidth = 2 * 2.54;//
+                    var dSlicerHeight = 2.76 * 2.54;
+                    var dSlicerInset = 20;
+                    var dTotalWidth = dSlicerWidth + nSlicerCount * dSlicerInset;
+                    var dTotalHeight = dSlicerHeight + nSlicerCount * dSlicerInset;
+                    var dLeft = worksheet.getCellLeft(oVisibleRange.c1, 3);
+                    var dTop = worksheet.getCellTop(oVisibleRange.r1, 3);
+                    var dRight = worksheet.getCellLeft(oVisibleRange.c2, 3) + worksheet.getColumnWidth(oVisibleRange.c2, 3);
+                    var dBottom = worksheet.getCellTop(oVisibleRange.r2, 3) + worksheet.getRowHeight(oVisibleRange.r2, 3);
+                    _this.controller.resetSelection();
+                    var dStartPosX = (dLeft + dRight) / 2.0 - dTotalWidth / 2;
+                    var dStartPosY = (dTop + dBottom) / 2.0 - dTotalHeight / 2;
+                    var oSlicer, x, y;
+                    for(var nSlicerIndex = 0; nSlicerIndex < nSlicerCount; ++nSlicerIndex) {
+                        oSlicer = new AscFormat.CSlicer();
+                        oSlicer.setName(aNames[nSlicerIndex]);
+                        x = dStartPosX + dSlicerInset * nSlicerIndex;
+                        y = dStartPosY + dSlicerInset * nSlicerIndex;
+                        oSlicer.setTransformParams(x, y, dSlicerWidth, dSlicerHeight, 0, false, false);
+                        oSlicer.setWorksheet(worksheet.model);
+                        oSlicer.addToDrawingObjects(undefined, AscCommon.c_oAscCellAnchorType.cellanchorTwoCell);
+                        oSlicer.checkDrawingBaseCoords();
+                    }
+                    oSlicer.select(_this.controller, 0);
+                    worksheet.setSelectionShape(true);
+                });
+
+            }
+        }
+    };
     _this.addSignatureLine = function(sGuid, sSigner, sSigner2, sEmail, Width, Height, sImgUrl)
     {
         _this.objectLocker.reset();
@@ -2658,7 +2699,7 @@ function DrawingObjects() {
                     var max_r = 0, max_c = 0;
 
                     var series = oNewChartSpace.getAllSeries(), ser;
-					
+
 					function fFillCell(oCell, sNumFormat, value)
 					{
 						var oCellValue = new AscCommonExcel.CCellValue();
@@ -2675,7 +2716,7 @@ function DrawingObjects() {
 						oCell.setNumFormat(sNumFormat);
 						oCell.setValueData(new AscCommonExcel.UndoRedoData_CellValueData(null, oCellValue));
 					}
-					
+
                     function fillTableFromRef(ref)
                     {
                         var cache = ref.numCache ? ref.numCache : (ref.strCache ? ref.strCache : null);
@@ -3015,7 +3056,7 @@ function DrawingObjects() {
                     _this.checkSparklineGroupMinMaxVal(oSparklineGroup);
                 }, _this, []);
             }
-            
+
             if(oDrawingContext instanceof AscCommonExcel.CPdfPrinter)
             {
                 graphics.SaveGrState();
@@ -3046,7 +3087,7 @@ function DrawingObjects() {
 
 				sparkline.oCacheView.draw(graphics, offsetX, offsetY);
 
-                
+
             }
             if(oDrawingContext instanceof AscCommonExcel.CPdfPrinter)
             {

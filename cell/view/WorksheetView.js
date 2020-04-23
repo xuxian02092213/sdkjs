@@ -2317,7 +2317,7 @@
 				//pageClipRectWidth - ширина страницы без учёта измененного(*scale) хеадера - как при 100%
 				//поэтому при расчтетах из него вычетаем размер заголовка как при 100%
 				//смещение слева/сверху рассчитывается с учётом измененной ширины заголовков - поэтому домножаем её на printScale
-				
+
 				clipLeft = printPagesData.pageClipRectLeft;
 				clipTop =  printPagesData.pageClipRectTop;
 				clipWidth = printPagesData.pageClipRectWidth - changedCellLeft;
@@ -2465,7 +2465,7 @@
 		//automatic -> width/height = undefined
 		//define print scale
 		var t = this;
-		
+
 		var pageOptions = t.model.PagePrintOptions;
 		var pageSetup = pageOptions.asc_getPageSetup();
 
@@ -3701,7 +3701,7 @@
                                     }
                                     graphics.SetBaseTransform(_baseTransform);
                                 }
-    
+
 
                                 graphics.save();
                                 var oMatrix = new AscCommon.CMatrix();
@@ -4293,7 +4293,7 @@
 			if(printRanges && printRanges.length) {
 				//необходимо закрасить всю визуальную область за исключением printRanges
 				//TODO долгие операции! возможно стоит изначально в данном режиме рисовать только ту часть таблицы, которая пойдёт на печать
-				
+
 				var rangesBackground;
 				for(var i = 0; i < printRanges.length; i++) {
 					if(i === 0) {
@@ -6073,7 +6073,7 @@
         }
 
         var rowHeight = this._getRowHeight(row);
-        
+
         // ToDo dDigitsCount нужно рассчитывать исходя не из дефалтового шрифта и размера, а исходя из текущего шрифта и размера ячейки
         if (angle === 0) {
             str = c.getValue2(dDigitsCount, makeFnIsGoodNumFormat(fl, colWidth));
@@ -6138,11 +6138,11 @@
                         var angleSin = Math.sin(angle * Math.PI / 180.0);
                         if (angle > 0) {
                             textBound.dx = (colWidth - tm.height) / 2;
-                        } 
+                        }
                         if (angle < 0) {
                             textBound.dx = (colWidth - tm.height * angleSin) / 2;
                             textBound.dy = (rowHeight - tm.width) / 2;
-                        } 
+                        }
                         ha = 0;
                     }
                 }
@@ -8219,8 +8219,8 @@
         var ar = this._getSelection().getLast();
         var mc = this.model.getMergedByCell(activeCell.row, activeCell.col);
         var c = mc ? (dc < 0 ? mc.c1 : dc > 0 ? Math.min(mc.c2, this.nColsCount - 1 - dc) : activeCell.col) :
-          activeCell.col;	
-        var r = mc ? (dr < 0 ? mc.r1 : dr > 0 ? Math.min(mc.r2, this.nRowsCount - 1 - dr) : activeCell.row) :	
+          activeCell.col;
+        var r = mc ? (dr < 0 ? mc.r1 : dr > 0 ? Math.min(mc.r2, this.nRowsCount - 1 - dr) : activeCell.row) :
           activeCell.row;
         var p = this._calcCellPosition(c, r, dc, dr);
         ar.assign(p.col, p.row, p.col, p.row);
@@ -13853,7 +13853,7 @@
 			var findResult = this.model.lastFindOptions.findResults.values;
 			for (var row in findResult) {
 				for (var col in findResult[row]) {
-                    var r = row; 
+                    var r = row;
                     var c = col;
 					if (!this.model.lastFindOptions.scanByRows) {
 						tmp = c;
@@ -13960,8 +13960,8 @@
                 };
 
             return !needLockCell ? onReplaceCallback(true) :
-                this._isLockedCells(aReplaceCells[options.indexInArray], /*subType*/null, onReplaceCallback); 
-		};   
+                this._isLockedCells(aReplaceCells[options.indexInArray], /*subType*/null, onReplaceCallback);
+		};
 
 	WorksheetView.prototype.findCell = function (reference) {
 		var mc;
@@ -19969,6 +19969,7 @@
 		//TODO lock
 		//+ lock def names
 		callback(obj);
+		t.objectRender.addSlicers(arr);
 	};
 
 	WorksheetView.prototype.deleteSlicer = function (name) {

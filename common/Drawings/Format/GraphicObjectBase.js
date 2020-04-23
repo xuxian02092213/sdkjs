@@ -417,13 +417,13 @@
         return new CGraphicBounds(Math.min.apply(Math, aCheckX), Math.min.apply(Math, aCheckY), Math.max.apply(Math, aCheckX), Math.max.apply(Math, aCheckY));
     };
 
-    
+
     /**
      * Set default recalculate info
      * @memberof CGraphicObjectBase
      */
     CGraphicObjectBase.prototype.setRecalculateInfo = function(){};
-    
+
     /**
      * Get object Id
      * @memberof CGraphicObjectBase
@@ -815,9 +815,6 @@
         return oProps;
     };
 
-
-
-
     CGraphicObjectBase.prototype.CheckCorrect = function(){
         return this.checkCorrect();
     };
@@ -862,6 +859,17 @@
             this.drawingBase.ext.cy = fExtY;
             this.handleUpdateExtents();
         }
+    };
+    CGraphicObjectBase.prototype.setTransformParams = function(x, y, extX, extY, rot, flipH, flipV)
+    {
+        this.x = x;
+        this.y = y;
+        this.extX = extX;
+        this.extY = extY;
+        AscFormat.CheckSpPrXfrm3(this);
+        this.spPr.xfrm.setRot(rot);
+        this.spPr.xfrm.setFlipH(flipH);
+        this.spPr.xfrm.setFlipV(flipV);
     };
 
     CGraphicObjectBase.prototype.getPlaceholderType = function()

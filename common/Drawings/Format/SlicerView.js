@@ -73,6 +73,7 @@
     function CSlicer() {
         AscFormat.CShape.call(this);
         this.name = null;
+
         this.recalcInfo.recalculateHeader = false;
         this.recalcInfo.recalculateButtons = false;
         this.recalcInfo.recalculateStyles = false;
@@ -87,6 +88,10 @@
     }
     CSlicer.prototype = Object.create(AscFormat.CShape.prototype);
     CSlicer.prototype.constructor = CSlicer;
+    CSlicer.prototype.setName = function(val) {
+        this.name = val;
+    };
+
     CSlicer.prototype.canRotate = function() {
         return false;
     };
@@ -383,5 +388,7 @@
         if(this.bHor) {
         }
     }
+    window['AscFormat'] = window['AscFormat'] || {};
+    window['AscFormat'].CSlicer = CSlicer;
 })()
 
