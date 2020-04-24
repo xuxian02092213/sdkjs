@@ -50,21 +50,6 @@
     STYLE_TYPE.HOVERED_SELECTED_NO_DATA = 7;
     STYLE_TYPE.HOVERED_UNSELECTED_DATA = 8;
     STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA = 9;
-    function CStyleInfo() {
-        this.pen = {
-            left: null,
-            top: null,
-            right: null,
-            bottom: null
-        }
-        this.brush = null;
-        this.txStyles = null;
-        var t = this;
-        AscFormat.ExecuteNoHistory(function(){
-            t.txStyles = new CStyles(false);
-        }, this, []);
-
-    }
 
     function CTextBox(txBody, transformText) {
         this.txBody = txBody;
@@ -77,14 +62,12 @@
 
         this.recalcInfo.recalculateHeader = true;
         this.recalcInfo.recalculateButtons = true;
-        this.recalcInfo.recalculateStyles = true;
         this.header = null;
-        this.styles = {};
-        for(var key in STYLE_TYPE) {
-            if(STYLE_TYPE.hasOwnProperty(key)) {
-                this.styles[STYLE_TYPE[key]] = new CStyleInfo();
-            }
-        }
+
+        AscFormat.ExecuteNoHistory(function() {
+            this.txStyles = new CStyles(false);
+        }, this, []);
+
         this.buttonsContainer = new CButtonsContainer(this);
     }
     CSlicer.prototype = Object.create(AscFormat.CShape.prototype);
@@ -92,17 +75,40 @@
     CSlicer.prototype.setName = function(val) {
         this.name = val;
     };
+    CSlicer.prototype.getFont = function(nType) {
+        var oFont = new AscCommonExcel.Font();//TODO: Take font from slicerStyle when it will be implemented.
+        return oFont;
+    };
+    CSlicer.prototype.getFill = function(nType) {
+        var oFill;
+        oFill = new AscCommonExcel.Fill();//TODO: Take background from styles when in will be implemented
+        oFill.fromColor(new AscCommonExcel.RgbColor(0xFFFFFF));
+        return oFill;
+    };
+    CSlicer.prototype.getBorder = function(nType) {
+        var oBorder = new AscCommonExcel.Border(null);
+        oBorder.l = new AscCommonExcel.BorderProp();
+        oBorder.l.setStyle(AscCommon.c_oAscBorderStyles.Thin);
+        oBorder.l.c = AscCommonExcel.createRgbColor(0, 0, 0);
+        oBorder.t = new AscCommonExcel.BorderProp();
+        oBorder.t.setStyle(AscCommon.c_oAscBorderStyles.Thin);
+        oBorder.t.c = AscCommonExcel.createRgbColor(0, 0, 0);
+        oBorder.r = new AscCommonExcel.BorderProp();
+        oBorder.r.setStyle(AscCommon.c_oAscBorderStyles.Thin);
+        oBorder.r.c = AscCommonExcel.createRgbColor(0, 0, 0);
+        oBorder.b = new AscCommonExcel.BorderProp();
+        oBorder.b.setStyle(AscCommon.c_oAscBorderStyles.Thin);
+        oBorder.b.c = AscCommonExcel.createRgbColor(0, 0, 0);
+        return oBorder;
+    };
     CSlicer.prototype.recalculateBrush = function() {
-        var oStyle = this.styles[STYLE_TYPE.WHOLE];
-        this.brush = oStyle.brush;
+        var oFill = this.getFill(STYLE_TYPE.WHOLE);
         var oParents = this.getParentObjects();
+        this.brush = AscCommonExcel.convertFillToUnifill(oFill);
         this.brush.calculate(oParents.theme, oParents.slide, oParents.layout, oParents.master, {R:0, G:0, B:0, A: 255});
     };
     CSlicer.prototype.recalculatePen = function() {
-        var oStyle = this.styles[STYLE_TYPE.WHOLE];
-        this.pen = oStyle.pen.left;//TODO
-        var oParents = this.getParentObjects();
-        this.pen.calculate(oParents.theme, oParents.slide, oParents.layout, oParents.master, {R:0, G:0, B:0, A: 255});
+        this.pen = null;
     };
     CSlicer.prototype.recalculateGeometry = function() {
         this.calcGeometry = AscFormat.CreateGeometry("rect");
@@ -123,9 +129,6 @@
     };
     CSlicer.prototype.recalculate = function () {
         AscFormat.ExecuteNoHistory(function () {
-            if(this.recalcInfo.recalculateStyles) {
-                this.recalculateStyles();
-            }
             AscFormat.CShape.prototype.recalculate.call(this);
             if(this.recalcInfo.recalculateHeader) {
                 this.recalculateHeader();
@@ -137,37 +140,6 @@
             }
 
         }, this, []);
-    };
-    CSlicer.prototype.recalculateStyles = function() {
-
-        var oParents = this.getParentObjects();
-        for(var key in this.styles) {
-            if(this.styles.hasOwnProperty(key)) {
-                var oStyle = this.styles[key];
-                oStyle.txStyles = this.recalculateTextStyles(0);
-                oStyle.brush = new AscFormat.CreateUnfilFromRGB(255, 255, 255);
-                oStyle.brush.calculate(oParents.theme, oParents.slide, oParents.layout, oParents.master, {R:0, G:0, B:0, A: 255});
-                oStyle.pen.left = new AscFormat.CLn();
-                oStyle.pen.left.setFill(new AscFormat.CreateUnfilFromRGB(0, 0, 0));
-                oStyle.pen.left.setW(0);
-                oStyle.pen.left.calculate(oParents.theme, oParents.slide, oParents.layout, oParents.master, {R:0, G:0, B:0, A: 255});
-                oStyle.pen.top = new AscFormat.CLn();
-                oStyle.pen.top.setFill(new AscFormat.CreateUnfilFromRGB(0, 0, 0));
-                oStyle.pen.top.setW(0);
-                oStyle.pen.top.calculate(oParents.theme, oParents.slide, oParents.layout, oParents.master, {R:0, G:0, B:0, A: 255});
-                oStyle.pen.right = new AscFormat.CLn();
-                oStyle.pen.right.setFill(new AscFormat.CreateUnfilFromRGB(0, 0, 0));
-                oStyle.pen.right.setW(0);
-                oStyle.pen.right.calculate(oParents.theme, oParents.slide, oParents.layout, oParents.master, {R:0, G:0, B:0, A: 255});
-                oStyle.pen.bottom = new AscFormat.CLn();
-                oStyle.pen.bottom.setFill(new AscFormat.CreateUnfilFromRGB(0, 0, 0));
-                oStyle.pen.bottom.setW(0);
-                oStyle.pen.bottom.calculate(oParents.theme, oParents.slide, oParents.layout, oParents.master, {R:0, G:0, B:0, A: 255});
-                switch (key) {
-
-                }
-            }
-        }
     };
     CSlicer.prototype.recalculateHeader = function() {
         this.header = null;
@@ -204,12 +176,6 @@
         }
         this.buttonsContainer.recalculate();
     };
-    CSlicer.prototype.getPen = function (nType) {
-        return this.styles[nType].pen;
-    };
-    CSlicer.prototype.getBrush = function (nType) {
-        return this.styles[nType].brush;
-    };
     CSlicer.prototype.getColumnsCount = function() {
         var oView = this.getSlicerView();
         if(!oView) {
@@ -233,7 +199,10 @@
         return nRet;
     };
     CSlicer.prototype.getTxStyles = function (nType) {
-        return this.styles[nType].txStyles;
+        var oFont = this.getFont(nType);
+        this.txStyles.Default.TextPr.InitDefault();
+        this.txStyles.Default.TextPr.FillFromExcelFont(oFont);
+        return {styles: this.txStyles, lastId: undefined};
     };
     CSlicer.prototype.draw = function (graphics, transform, transformText, pageIndex) {
         var r = graphics.updatedRect;
@@ -243,12 +212,39 @@
             }
         }
         AscFormat.CShape.prototype.draw.call(this, graphics, transform, transformText, pageIndex);
-        if(graphics.IsSlideBoundsCheckerType !== true) {
-            if(this.header) {
-                this.header.draw(graphics, transform, transformText, pageIndex);
-            }
-            this.buttonsContainer.draw(graphics, transform, transformText, pageIndex);
+        if(graphics.IsSlideBoundsCheckerType) {
+            return;
         }
+
+        var oBorder = this.getBorder(STYLE_TYPE.WHOLE);
+        if(oBorder) {
+            var oTransform = transform || this.transform;
+            graphics.SaveGrState();
+            graphics.transform3(oTransform);
+            var oSide;
+            oSide = oBorder.l;
+            if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                graphics.drawVerLine(1, 0, 0, this.extY, 0);
+            }
+            oSide = oBorder.t;
+            if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                graphics.drawHorLine(1, 0, 0, this.extX, 0);
+            }
+            oSide = oBorder.r;
+            if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                graphics.drawVerLine(1, this.extX, 0, this.extY, 0);
+            }
+            oSide = oBorder.b;
+            if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                graphics.drawHorLine(1, this.extY, 0, this.extX, 0);
+            }
+            graphics.drawVerLine()
+            graphics.RestoreGrState();
+        }
+        if(this.header) {
+            this.header.draw(graphics, transform, transformText, pageIndex);
+        }
+        this.buttonsContainer.draw(graphics, transform, transformText, pageIndex);
     }
     CSlicer.prototype.handleUpdateExtents = function () {
         this.recalcInfo.recalculateHeader = true;
@@ -330,7 +326,7 @@
         //Empty procedure. Set of brushes for all states will be recalculated in CSlicer
     };
     CButton.prototype.recalculatePen = function () {
-        //Empty procedure. Set of pens for all states will be recalculated in CSlicer
+        this.pen = null;
     };
     CButton.prototype.recalculateContent = function () {
         var sText = this.getString(), oMetrics, oContent, oFirstParagraph, sFitText;
@@ -349,9 +345,36 @@
         this.calcGeometry.Recalculate(this.extX, this.extY);
     };
     CButton.prototype.draw = function (graphics, transform, transformText, pageIndex) {
-        this.brush = this.slicer.getBrush(this.state);
-        this.pen = this.slicer.getPen(this.state).left;
+        this.brush = AscCommonExcel.convertFillToUnifill(this.slicer.getFill(this.state));
         AscFormat.CShape.prototype.draw.call(this, graphics, transform, transformText, pageIndex);
+        if(graphics.IsSlideBoundsCheckerType) {
+            return;
+        }
+        var oBorder = this.slicer.getBorder(this.state);
+        if(oBorder) {
+            var oTransform = transform || this.transform;
+            graphics.SaveGrState();
+            graphics.transform3(oTransform);
+            var oSide;
+            oSide = oBorder.l;
+            if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                graphics.drawVerLine(0, 0, 0, this.extY, 0);
+            }
+            oSide = oBorder.t;
+            if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                graphics.drawHorLine(0, 0, 0, this.extX, 0);
+            }
+            oSide = oBorder.r;
+            if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                graphics.drawVerLine(2, this.extX, 0, this.extY, 0);
+            }
+            oSide = oBorder.b;
+            if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                graphics.drawHorLine(2, this.extY, 0, this.extX, 0);
+            }
+            graphics.drawVerLine()
+            graphics.RestoreGrState();
+        }
     };
 
     function CButtonsContainer(slicer) {
