@@ -44,7 +44,8 @@
     var HEADER_BOTTOM_PADDING = HEADER_TOP_PADDING;
     var HEADER_LEFT_PADDING = LEFT_PADDING;
     var HEADER_RIGHT_PADDING = 2*RIGHT_PADDING + 2*HEADER_BUTTON_WIDTH;
-
+    var SCROLL_WIDTH = 3;
+    var SCROLLER_WIDTH = 3;
     var STYLE_TYPE = {};
     STYLE_TYPE.WHOLE = 0;
     STYLE_TYPE.HEADER = 1;
@@ -184,8 +185,8 @@
         }
         var nWidth = this.extX;
         var nHeight = this.extY;
-        this.buttonsContainer.x = 0;
-        this.buttonsContainer.y = 0;
+        this.buttonsContainer.x = LEFT_PADDING;
+        this.buttonsContainer.y = TOP_PADDING;
         if(this.header) {
             nHeight -= this.header.extY;
             this.buttonsContainer.y += this.header.extY;
@@ -540,7 +541,7 @@
         this.contentH = 0;
         this.scrollTop = 0;
         this.scrollLeft = 0;
-        this.scroll = new CScroll(this, false);
+        this.scroll = new CScroll(this);
     }
     CButtonsContainer.prototype.clear = function() {
         this.buttons.length = 0;
@@ -557,28 +558,52 @@
     CButtonsContainer.prototype.getFill = function (nType) {
         return this.slicer.getFill(nType);
     };
+    CButtonsContainer.prototype.getButtonHeight = function () {
+        return this.slicer.getButtonHeight();
+    };
+    CButtonsContainer.prototype.getColumnsCount = function () {
+        return this.slicer.getColumnsCount();
+    };
+    CButtonsContainer.prototype.getRowsCount = function () {
+        return ((this.buttons.length - 1) / this.getColumnsCount() >> 0) + 1;
+    };
+    CButtonsContainer.prototype.getRowsInFrame = function () {
+        return (this.extY + SPACE_BETWEEN) / (this.getButtonHeight() + SPACE_BETWEEN)  >> 0
+    };
+    CButtonsContainer.prototype.getTotalHeight = function () {
+        var nRowsCount = this.getRowsCount();
+        return  this.getButtonHeight() * nRowsCount + SPACE_BETWEEN * (nRowsCount - 1);
+    };
     CButtonsContainer.prototype.recalculate = function() {
-
-        var nColumnCount = this.slicer.getColumnsCount();
+        var nColumnCount = this.getColumnsCount();
         var nSpaceCount = nColumnCount - 1;
-        var dButtonWidth = Math.max(0, this.extX - nSpaceCount * SPACE_BETWEEN) / nColumnCount;
-        var dButtonHeight = this.slicer.getButtonHeight();
+        var bScroll = false, dButtonWidth, dButtonHeight, dTotalHeight;
+        dButtonHeight = this.getButtonHeight();
+        dTotalHeight = this.getTotalHeight();
+        if(dTotalHeight <= this.extY) {
+            dButtonWidth = Math.max(0, this.extX - nSpaceCount * SPACE_BETWEEN) / nColumnCount;
+        }
+        else {
+            bScroll = true;
+            dButtonWidth = Math.max(0, this.extX - SCROLL_WIDTH - SPACE_BETWEEN - nSpaceCount * SPACE_BETWEEN) / nColumnCount;
+        }
         var nColumn, nRow, nButtonIndex, oButton, x ,y;
         for(nButtonIndex = 0; nButtonIndex < this.buttons.length; ++nButtonIndex) {
             nColumn = nButtonIndex % nColumnCount;
             nRow = nButtonIndex / nColumnCount >> 0;
             oButton = this.buttons[nButtonIndex];
-            x = this.x + LEFT_PADDING + (dButtonWidth + SPACE_BETWEEN) * nColumn;
-            y = this.y + TOP_PADDING + (dButtonHeight + SPACE_BETWEEN) * nRow;
+            x = this.x + (dButtonWidth + SPACE_BETWEEN) * nColumn;
+            y = this.y + (dButtonHeight + SPACE_BETWEEN) * nRow;
             oButton.setTransformParams(x, y, dButtonWidth, dButtonHeight, 0, false, false);
             oButton.recalculate();
         }
+        this.scroll.bVisible = bScroll;
     };
     CButtonsContainer.prototype.draw = function (graphics) {
         if(this.buttons.length > 0) {
-            graphics.transform3(this.slicer.transform);
             graphics.SaveGrState();
-            graphics.AddClipRect(this.x, this.y, this.slicer.extX, this.extY);
+            graphics.transform3(this.slicer.transform);
+            graphics.AddClipRect(0, this.y - SPACE_BETWEEN, this.slicer.extX, this.extY + SPACE_BETWEEN);
             var oButton;
             var oMT = AscCommon.global_MatrixTransformer;
             var oBaseTr = new AscCommon.CMatrix();
@@ -588,31 +613,40 @@
                 oButton = this.buttons[nButton];
                 oButton.draw(graphics, oBaseTr);
             }
-            this.scroll.draw(graphics);
             graphics.RestoreGrState();
+            this.scroll.draw(graphics);
         }
     };
     CButtonsContainer.prototype.getFullTransformMatrix = function () {
         var oMT = AscCommon.global_MatrixTransformer;
         return oMT.CreateDublicateM(this.slicer.transform);
     };
-    var nScrollWidth = 10;
-    function CScroll(parent, bHor) {
+    function CScroll(parent) {
         this.parent = parent;
-        this.bHor = bHor;
         this.extX = 0;
         this.extY = 0;
         this.bVisible = false
-
     }
     CScroll.prototype.update = function () {
-        if(this.bHor) {
-        }
     }
     CScroll.prototype.draw = function(graphics) {
         if(!this.bVisible) {
             return;
         }
+        var nRowsInFrame = this.parent.getRowsInFrame();
+        var nRowsCount = this.parent.getRowsCount();
+        var dScrollerHeight = Math.max(this.parent.extY/ 4, this.parent.extY * (this.parent.extY / this.parent.getTotalHeight()));
+        var dYPos = this.parent.y;
+        dYPos += (this.parent.extY - dScrollerHeight) * (this.parent.scrollTop / (nRowsCount - nRowsInFrame));
+        var dXPos = this.parent.x + this.parent.extX - SCROLL_WIDTH;
+        graphics.SaveGrState();
+        graphics.transform3(this.parent.getFullTransformMatrix());
+        graphics.AddSmartRect(dXPos, dYPos, SCROLL_WIDTH, dScrollerHeight, 0);
+        // graphics.drawVerLine(1, dXPos, dYPos, dYPos + dScrollerHeight, 0);
+        // graphics.drawHorLine(1, dYPos, dXPos, dXPos + SCROLL_WIDTH, 0);
+        // graphics.drawVerLine(1, dXPos + SCROLL_WIDTH, dYPos, dYPos + dScrollerHeight, 0);
+        // graphics.drawHorLine(1, dYPos + dScrollerHeight, dXPos, dXPos + SCROLL_WIDTH, 0);
+        graphics.RestoreGrState();
     }
     window['AscFormat'] = window['AscFormat'] || {};
     window['AscFormat'].CSlicer = CSlicer;
