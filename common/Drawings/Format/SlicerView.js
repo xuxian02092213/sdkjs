@@ -232,7 +232,7 @@
         this.txStyles.Default.TextPr.InitDefault();
         this.txStyles.Default.TextPr.FillFromExcelFont(oFont);
         this.txStyles.Default.TextPr.FillFromExcelFont(oFont);
-        this.txStyles.Default.ParaPr.SetSpacing(undefined, undefined, 0, 0, undefined, undefined);
+        this.txStyles.Default.ParaPr.SetSpacing(1, undefined, 0, 0, undefined, undefined);
         return {styles: this.txStyles, lastId: undefined};
     };
     CSlicer.prototype.draw = function (graphics, transform, transformText, pageIndex) {
