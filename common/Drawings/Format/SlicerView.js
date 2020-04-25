@@ -39,6 +39,12 @@
     var TOP_PADDING = 2
     var SPACE_BETWEEN = 1.5;
 
+    var HEADER_BUTTON_WIDTH = RIGHT_PADDING * 175 / 73;
+    var HEADER_TOP_PADDING = RIGHT_PADDING;
+    var HEADER_BOTTOM_PADDING = HEADER_TOP_PADDING;
+    var HEADER_LEFT_PADDING = LEFT_PADDING;
+    var HEADER_RIGHT_PADDING = 2*RIGHT_PADDING + 2*HEADER_BUTTON_WIDTH;
+
     var STYLE_TYPE = {};
     STYLE_TYPE.WHOLE = 0;
     STYLE_TYPE.HEADER = 1;
@@ -87,15 +93,17 @@
     };
     CSlicer.prototype.getBorder = function(nType) {
         var oBorder = new AscCommonExcel.Border(null);
-        oBorder.l = new AscCommonExcel.BorderProp();
-        oBorder.l.setStyle(AscCommon.c_oAscBorderStyles.Thin);
-        oBorder.l.c = AscCommonExcel.createRgbColor(0, 0, 0);
-        oBorder.t = new AscCommonExcel.BorderProp();
-        oBorder.t.setStyle(AscCommon.c_oAscBorderStyles.Thin);
-        oBorder.t.c = AscCommonExcel.createRgbColor(0, 0, 0);
-        oBorder.r = new AscCommonExcel.BorderProp();
-        oBorder.r.setStyle(AscCommon.c_oAscBorderStyles.Thin);
-        oBorder.r.c = AscCommonExcel.createRgbColor(0, 0, 0);
+        if(nType !== STYLE_TYPE.HEADER) {
+            oBorder.l = new AscCommonExcel.BorderProp();
+            oBorder.l.setStyle(AscCommon.c_oAscBorderStyles.Thin);
+            oBorder.l.c = AscCommonExcel.createRgbColor(0, 0, 0);
+            oBorder.t = new AscCommonExcel.BorderProp();
+            oBorder.t.setStyle(AscCommon.c_oAscBorderStyles.Thin);
+            oBorder.t.c = AscCommonExcel.createRgbColor(0, 0, 0);
+            oBorder.r = new AscCommonExcel.BorderProp();
+            oBorder.r.setStyle(AscCommon.c_oAscBorderStyles.Thin);
+            oBorder.r.c = AscCommonExcel.createRgbColor(0, 0, 0);
+        }
         oBorder.b = new AscCommonExcel.BorderProp();
         oBorder.b.setStyle(AscCommon.c_oAscBorderStyles.Thin);
         oBorder.b.c = AscCommonExcel.createRgbColor(0, 0, 0);
@@ -147,10 +155,10 @@
         if(!oView) {
             return;
         }
-        if(false === oView.showCaption) {
+        if(false === oView.showCaption || !(typeof oView.caption === "string" && oView.caption.length > 1)) {
             return;
         }
-        this.header = new CHeader(this);
+        this.header = new CHeader(this, oView.caption);
         this.header.recalculate();
     };
     CSlicer.prototype.recalculateButtons = function() {
@@ -172,8 +180,18 @@
             return;
         }
         for(var nValue = 0; nValue < oValues.values.length; ++nValue) {
-            this.buttonsContainer.addButton(new CButton(this, oValues.values[nValue]));
+            this.buttonsContainer.addButton(new CButton(this.buttonsContainer, oValues.values[nValue]));
         }
+        var nWidth = this.extX;
+        var nHeight = this.extY;
+        this.buttonsContainer.x = 0;
+        this.buttonsContainer.y = 0;
+        if(this.header) {
+            nHeight -= this.header.extY;
+            this.buttonsContainer.y += this.header.extY;
+        }
+        this.buttonsContainer.extX = Math.max(nWidth - LEFT_PADDING - RIGHT_PADDING, 0);
+        this.buttonsContainer.extY = Math.max(nHeight - TOP_PADDING - BOTTOM_PADDING, 0);
         this.buttonsContainer.recalculate();
     };
     CSlicer.prototype.getColumnsCount = function() {
@@ -184,6 +202,17 @@
         var nRet = 1;
         if(AscFormat.isRealNumber(oView.columnCount)) {
             nRet = oView.columnCount;
+        }
+        return nRet;
+    };
+    CSlicer.prototype.getCaption = function() {
+        var oView = this.getSlicerView();
+        if(!oView) {
+            return "";
+        }
+        var nRet = "";
+        if(typeof oView.caption === "string") {
+            nRet = oView.caption;
         }
         return nRet;
     };
@@ -202,6 +231,8 @@
         var oFont = this.getFont(nType);
         this.txStyles.Default.TextPr.InitDefault();
         this.txStyles.Default.TextPr.FillFromExcelFont(oFont);
+        this.txStyles.Default.TextPr.FillFromExcelFont(oFont);
+        this.txStyles.Default.ParaPr.SetSpacing(undefined, undefined, 0, 0, undefined, undefined);
         return {styles: this.txStyles, lastId: undefined};
     };
     CSlicer.prototype.draw = function (graphics, transform, transformText, pageIndex) {
@@ -255,24 +286,140 @@
     function CHeader(slicer) {
         AscFormat.CShape.call(this);
         this.slicer = slicer;
+        this.worksheet = slicer.worksheet;
         this.txBody = null;
         this.buttons = [];
+        this.buttons.push(new CButton(this, {text: "M"}));
+        this.buttons.push(new CButton(this, {text: "C"}));
         this.setBDeleted(false);
+        this.setTransformParams(0, 0, 0, 0, 0, false, false);
+        this.createTextBody();
+        this.bodyPr = new AscFormat.CBodyPr();
+        this.bodyPr.setDefault();
+        this.bodyPr.anchor = 1;//vertical align ctr
+        this.bodyPr.lIns = HEADER_LEFT_PADDING;
+        this.bodyPr.rIns = HEADER_RIGHT_PADDING;
+        this.bodyPr.tIns = HEADER_TOP_PADDING;
+        this.bodyPr.bIns = HEADER_BOTTOM_PADDING;
+        this.bodyPr.horzOverflow = AscFormat.nOTClip;
+        this.bodyPr.vertOverflow = AscFormat.nOTClip;
     }
     CHeader.prototype = Object.create(AscFormat.CShape.prototype);
-    CHeader.prototype.recalculate = function () {
-
+    CHeader.prototype.getString = function() {
+        return this.slicer.getCaption();
+    };
+    CHeader.prototype.Get_Styles = function() {
+        return this.slicer.getTxStyles(STYLE_TYPE.HEADER);
+    };
+    CHeader.prototype.recalculateBrush = function () {
+        //Empty procedure. Set of brushes for all states will be recalculated in CSlicer
+    };
+    CHeader.prototype.recalculatePen = function () {
+        this.pen = null;
+    };
+    CHeader.prototype.recalculateContent = function () {
+        if(this.bRecalcContent) {
+            return;
+        }
+        this.setTransformParams(0, 0, this.slicer.extX, HEADER_BUTTON_WIDTH, 0, false, false);
+        this.recalculateGeometry();
+        this.recalculateTransform();
+        this.txBody.recalculateOneString(this.getString());
+        var dHeight = this.contentHeight + HEADER_TOP_PADDING + HEADER_BOTTOM_PADDING;
+        dHeight = Math.max(dHeight, HEADER_BUTTON_WIDTH + 1);
+        this.setTransformParams(0, 0, this.slicer.extX, dHeight, 0, false, false);
+        this.recalcInfo.recalculateContent = false;
+        this.bRecalcContent = true;
+        this.recalculate();
+        this.recalculateButtons();
+        this.bRecalcContent = false;
+    };
+    CHeader.prototype.getBodyPr = function () {
+        return this.bodyPr;
+    };
+    CHeader.prototype.recalculateGeometry = function() {
+        this.calcGeometry = AscFormat.CreateGeometry("rect");
+        this.calcGeometry.Recalculate(this.extX, this.extY);
+    };
+    CHeader.prototype.recalculateButtons = function() {
+        var oButton = this.buttons[1];
+        var x, y;
+        x = this.extX - RIGHT_PADDING - HEADER_BUTTON_WIDTH;
+        y = this.extY / 2 - HEADER_BUTTON_WIDTH / 2;
+        oButton.setTransformParams(x, y, HEADER_BUTTON_WIDTH, HEADER_BUTTON_WIDTH, 0, false, false);
+        oButton.recalculate();
+        oButton = this.buttons[0];
+        x = this.extX - 2*RIGHT_PADDING - 2*HEADER_BUTTON_WIDTH;
+        oButton.setTransformParams(x, y, HEADER_BUTTON_WIDTH, HEADER_BUTTON_WIDTH, 0, false, false);
+        oButton.recalculate();
     };
     CHeader.prototype.draw = function (graphics) {
 
+        var oMT = AscCommon.global_MatrixTransformer;
+        var oTransform = this.transform.CreateDublicate();
+        oMT.MultiplyAppend(oTransform, this.slicer.transform);
+        var oTransformText = this.transformText.CreateDublicate();
+        oMT.MultiplyAppend(oTransformText, this.slicer.transform);
+        AscFormat.CShape.prototype.draw.call(this, graphics, oTransform, oTransformText);
+        if(graphics.IsSlideBoundsCheckerType) {
+            return;
+        }
+        this.buttons[0].draw(graphics);
+        this.buttons[1].draw(graphics);
+        var oBorder = this.slicer.getBorder(STYLE_TYPE.HEADER);
+        if(oBorder) {
+            graphics.SaveGrState();
+            graphics.transform3(oTransform);
+            var oSide, bDrawn = false;
+            oSide = oBorder.l;
+            if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                graphics.drawVerLine(1, 0, 0, this.extY, 0);
+                bDrawn = true;
+            }
+            oSide = oBorder.t;
+            if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                graphics.drawHorLine(1, 0, 0, this.extX, 0);
+                bDrawn = true;
+            }
+            oSide = oBorder.r;
+            if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                graphics.drawVerLine(1, this.extX, 0, this.extY, 0);
+                bDrawn = true;
+            }
+            oSide = oBorder.b;
+            if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                if(bDrawn) {
+                    graphics.drawHorLine(1, this.extY, 0, this.extX, 0);
+                }
+                else {
+                    graphics.drawHorLine(1, this.extY, LEFT_PADDING, this.slicer.extX - RIGHT_PADDING, 0);
+                }
+            }
+            graphics.drawVerLine()
+            graphics.RestoreGrState();
+        }
     };
-
-    function CButton(slicer, options) {
+    CHeader.prototype.getTxStyles = function (nType) {
+        return this.slicer.getTxStyles(nType);
+    };
+    CHeader.prototype.getBorder = function (nType) {
+        return this.slicer.getBorder(nType);
+    };
+    CHeader.prototype.getFill = function (nType) {
+        return this.slicer.getFill(nType);
+    };
+    CHeader.prototype.getFullTransformMatrix = function () {
+        var oMT = AscCommon.global_MatrixTransformer;
+        var oTransform = oMT.CreateDublicateM(this.transform);
+        oMT.MultiplyAppend(oTransform, this.slicer.transform);
+        return oTransform;
+    };
+    function CButton(parent, options) {
         AscFormat.CShape.call(this);
-        this.slicer = slicer;
+        this.parent = parent;
         this.options = options;
         this.state = STYLE_TYPE.UNSELECTED_DATA;
-        this.worksheet = slicer.worksheet;
+        this.worksheet = parent.worksheet;
         this.setBDeleted(false);
         AscFormat.CheckSpPrXfrm3(this);
         this.textBoxes = {};
@@ -313,7 +460,7 @@
         return "";
     };
     CButton.prototype.Get_Styles = function() {
-        return this.slicer.getTxStyles(this.getTxBodyType());
+        return this.parent.getTxStyles(this.getTxBodyType());
     };
     CButton.prototype.recalculate = function() {
         var bRecalcContent = this.recalcInfo.recalculateContent;
@@ -344,15 +491,20 @@
         this.calcGeometry = AscFormat.CreateGeometry("rect");
         this.calcGeometry.Recalculate(this.extX, this.extY);
     };
-    CButton.prototype.draw = function (graphics, transform, transformText, pageIndex) {
-        this.brush = AscCommonExcel.convertFillToUnifill(this.slicer.getFill(this.state));
-        AscFormat.CShape.prototype.draw.call(this, graphics, transform, transformText, pageIndex);
+    CButton.prototype.draw = function (graphics) {
+        this.brush = AscCommonExcel.convertFillToUnifill(this.parent.getFill(this.state));
+        var oMT = AscCommon.global_MatrixTransformer;
+        var oTransform = oMT.CreateDublicateM(this.transform);
+        var oParentTransform = this.parent.getFullTransformMatrix();
+        oParentTransform && oMT.MultiplyAppend(oTransform, oParentTransform);
+        var oTransformText = oMT.CreateDublicateM(this.transformText);
+        oParentTransform && oMT.MultiplyAppend(oTransformText, oParentTransform);
+        AscFormat.CShape.prototype.draw.call(this, graphics, oTransform, oTransformText, 0);
         if(graphics.IsSlideBoundsCheckerType) {
             return;
         }
-        var oBorder = this.slicer.getBorder(this.state);
+        var oBorder = this.parent.getBorder(this.state);
         if(oBorder) {
-            var oTransform = transform || this.transform;
             graphics.SaveGrState();
             graphics.transform3(oTransform);
             var oSide;
@@ -395,19 +547,18 @@
     };
     CButtonsContainer.prototype.addButton = function (oButton) {
         this.buttons.push(oButton);
-    }
+    };
+    CButtonsContainer.prototype.getTxStyles = function (nType) {
+        return this.slicer.getTxStyles(nType);
+    };
+    CButtonsContainer.prototype.getBorder = function (nType) {
+        return this.slicer.getBorder(nType);
+    };
+    CButtonsContainer.prototype.getFill = function (nType) {
+        return this.slicer.getFill(nType);
+    };
     CButtonsContainer.prototype.recalculate = function() {
-        var nWidth = this.slicer.extX;
-        var nHeight = this.slicer.extY;
 
-        this.x = 0;
-        this.y = TOP_PADDING;
-        if(this.slicer.header) {
-            nHeight -= this.slicer.header.extY;
-            this.y += this.slicer.header.extY;
-        }
-        this.extX = Math.max(nWidth - LEFT_PADDING - RIGHT_PADDING, 0);
-        this.extY = Math.max(nHeight - TOP_PADDING - BOTTOM_PADDING, 0);
         var nColumnCount = this.slicer.getColumnsCount();
         var nSpaceCount = nColumnCount - 1;
         var dButtonWidth = Math.max(0, this.extX - nSpaceCount * SPACE_BETWEEN) / nColumnCount;
@@ -417,35 +568,34 @@
             nColumn = nButtonIndex % nColumnCount;
             nRow = nButtonIndex / nColumnCount >> 0;
             oButton = this.buttons[nButtonIndex];
-            x = LEFT_PADDING + (dButtonWidth + SPACE_BETWEEN) * nColumn;
-            y = TOP_PADDING + (dButtonHeight + SPACE_BETWEEN) * nRow;
+            x = this.x + LEFT_PADDING + (dButtonWidth + SPACE_BETWEEN) * nColumn;
+            y = this.y + TOP_PADDING + (dButtonHeight + SPACE_BETWEEN) * nRow;
             oButton.setTransformParams(x, y, dButtonWidth, dButtonHeight, 0, false, false);
             oButton.recalculate();
         }
     };
-    CButtonsContainer.prototype.draw = function (graphics, transform, transformText, pageIndex) {
+    CButtonsContainer.prototype.draw = function (graphics) {
         if(this.buttons.length > 0) {
             graphics.transform3(this.slicer.transform);
             graphics.SaveGrState();
-            graphics.AddClipRect(this.x, 0, this.slicer.extX, this.extY);
-            var oButton, oTransform, oTransformText;
+            graphics.AddClipRect(this.x, this.y, this.slicer.extX, this.extY);
+            var oButton;
             var oMT = AscCommon.global_MatrixTransformer;
             var oBaseTr = new AscCommon.CMatrix();
             oMT.TranslateAppend(oBaseTr, -this.scrollLeft, -this.scrollTop);
             oMT.MultiplyAppend(oBaseTr, this.slicer.transform);
             for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
                 oButton = this.buttons[nButton];
-                oTransform = oMT.CreateDublicateM(oButton.transform);
-                oMT.MultiplyAppend(oTransform, oBaseTr);
-                oTransformText = oMT.CreateDublicateM(oButton.transformText);
-                oMT.MultiplyAppend(oTransformText, oBaseTr);
-                oButton.draw(graphics, oTransform, oTransformText);
+                oButton.draw(graphics, oBaseTr);
             }
             this.scroll.draw(graphics);
             graphics.RestoreGrState();
         }
     };
-
+    CButtonsContainer.prototype.getFullTransformMatrix = function () {
+        var oMT = AscCommon.global_MatrixTransformer;
+        return oMT.CreateDublicateM(this.slicer.transform);
+    };
     var nScrollWidth = 10;
     function CScroll(parent, bHor) {
         this.parent = parent;
