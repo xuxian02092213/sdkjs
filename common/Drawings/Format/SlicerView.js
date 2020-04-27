@@ -44,8 +44,7 @@
     var HEADER_BOTTOM_PADDING = HEADER_TOP_PADDING;
     var HEADER_LEFT_PADDING = LEFT_PADDING;
     var HEADER_RIGHT_PADDING = 2*RIGHT_PADDING + 2*HEADER_BUTTON_WIDTH;
-    var SCROLL_WIDTH = 3;
-    var SCROLLER_WIDTH = 3;
+    var SCROLL_WIDTH = 9 * 25.4 / 96;
     var STYLE_TYPE = {};
     STYLE_TYPE.WHOLE = 0;
     STYLE_TYPE.HEADER = 1;
@@ -57,6 +56,19 @@
     STYLE_TYPE.HOVERED_SELECTED_NO_DATA = 7;
     STYLE_TYPE.HOVERED_UNSELECTED_DATA = 8;
     STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA = 9;
+
+    var SCROLL_COLORS = {};
+    SCROLL_COLORS[STYLE_TYPE.WHOLE] = 0xF1F1F1;
+    SCROLL_COLORS[STYLE_TYPE.HEADER] = 0xF1F1F1;
+    SCROLL_COLORS[STYLE_TYPE.SELECTED_DATA] = 0xADADAD;
+    SCROLL_COLORS[STYLE_TYPE.SELECTED_NO_DATA] = 0xADADAD;
+    SCROLL_COLORS[STYLE_TYPE.UNSELECTED_DATA] = 0xF1F1F1;
+    SCROLL_COLORS[STYLE_TYPE.UNSELECTED_NO_DATA] = 0xF1F1F1;
+    SCROLL_COLORS[STYLE_TYPE.HOVERED_SELECTED_DATA] = 0xCFCFCF;
+    SCROLL_COLORS[STYLE_TYPE.HOVERED_SELECTED_NO_DATA] = 0xCFCFCF;
+    SCROLL_COLORS[STYLE_TYPE.HOVERED_UNSELECTED_DATA] = 0xCFCFCF;
+    SCROLL_COLORS[STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA] = 0xCFCFCF;
+
 
     function CTextBox(txBody, transformText) {
         this.txBody = txBody;
@@ -415,6 +427,7 @@
         oMT.MultiplyAppend(oTransform, this.slicer.transform);
         return oTransform;
     };
+
     function CButton(parent, options) {
         AscFormat.CShape.call(this);
         this.parent = parent;
@@ -621,11 +634,14 @@
         var oMT = AscCommon.global_MatrixTransformer;
         return oMT.CreateDublicateM(this.slicer.transform);
     };
+
     function CScroll(parent) {
         this.parent = parent;
         this.extX = 0;
         this.extY = 0;
         this.bVisible = false
+
+        this.state = STYLE_TYPE.UNSELECTED_DATA;
     }
     CScroll.prototype.update = function () {
     }
@@ -641,7 +657,12 @@
         var dXPos = this.parent.x + this.parent.extX - SCROLL_WIDTH;
         graphics.SaveGrState();
         graphics.transform3(this.parent.getFullTransformMatrix());
+        var nColor = SCROLL_COLORS[this.state];
+        graphics.p_color(0xCE, 0xCE, 0xCE, 0xFF);
+        graphics.b_color1((nColor >> 16) & 0xFF, (nColor >> 8) & 0xFF, nColor & 0xFF, 0xFF);
         graphics.AddSmartRect(dXPos, dYPos, SCROLL_WIDTH, dScrollerHeight, 0);
+        graphics.df();
+        //graphics.ds();
         // graphics.drawVerLine(1, dXPos, dYPos, dYPos + dScrollerHeight, 0);
         // graphics.drawHorLine(1, dYPos, dXPos, dXPos + SCROLL_WIDTH, 0);
         // graphics.drawVerLine(1, dXPos + SCROLL_WIDTH, dYPos, dYPos + dScrollerHeight, 0);
