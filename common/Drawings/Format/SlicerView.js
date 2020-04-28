@@ -123,6 +123,7 @@
     };
     CSlicer.prototype.getFont = function(nType) {
         var oFont = new AscCommonExcel.Font();//TODO: Take font from slicerStyle when it will be implemented.
+        oFont.setSize(11);
         if(nType === STYLE_TYPE.HEADER) {
             oFont.setBold(true);
         }
@@ -132,28 +133,46 @@
         var oFill;
         oFill = new AscCommonExcel.Fill();//TODO: Take background from styles when in will be implemented
         var nColor = 0xFFFFFF;
-        if(HOVERED_STATES[nType]) {
-            nColor = 0x0000FF;
+        if(!HOVERED_STATES[nType]) {
+            oFill.fromColor(new AscCommonExcel.RgbColor(nColor));
         }
-        oFill.fromColor(new AscCommonExcel.RgbColor(nColor));
+        else {
+            var oGF = new AscCommonExcel.GradientFill();
+            var oGS = new AscCommonExcel.GradientStop();
+            oGS.position = 0;
+            oGS.color = AscCommonExcel.createRgbColor(248, 225, 98);
+            oGF.stop.push(oGS);
+            oGS = new AscCommonExcel.GradientStop();
+            oGS.color = AscCommonExcel.createRgbColor(252, 247, 224);
+            oGS.position = 1;
+            oGF.stop.push(oGS);
+            oGF.degree = 90;
+            oFill.gradientFill = oGF;
+        }
         return oFill;
     };
     CSlicer.prototype.getBorder = function(nType) {
+        var r = 91, g = 155, b = 213;
+        if(nType !== STYLE_TYPE.HEADER && nType !== STYLE_TYPE.WHOLE) {
+            r = 204;
+            g = 204;
+            b = 204;
+        }
         var oBorder = new AscCommonExcel.Border(null);
         if(nType !== STYLE_TYPE.HEADER) {
             oBorder.l = new AscCommonExcel.BorderProp();
             oBorder.l.setStyle(AscCommon.c_oAscBorderStyles.Thin);
-            oBorder.l.c = AscCommonExcel.createRgbColor(0, 0, 0);
+            oBorder.l.c = AscCommonExcel.createRgbColor(r, g, b);
             oBorder.t = new AscCommonExcel.BorderProp();
             oBorder.t.setStyle(AscCommon.c_oAscBorderStyles.Thin);
-            oBorder.t.c = AscCommonExcel.createRgbColor(0, 0, 0);
+            oBorder.t.c = AscCommonExcel.createRgbColor(r, g, b);
             oBorder.r = new AscCommonExcel.BorderProp();
             oBorder.r.setStyle(AscCommon.c_oAscBorderStyles.Thin);
-            oBorder.r.c = AscCommonExcel.createRgbColor(0, 0, 0);
+            oBorder.r.c = AscCommonExcel.createRgbColor(r, g, b);
         }
         oBorder.b = new AscCommonExcel.BorderProp();
         oBorder.b.setStyle(AscCommon.c_oAscBorderStyles.Thin);
-        oBorder.b.c = AscCommonExcel.createRgbColor(0, 0, 0);
+        oBorder.b.c = AscCommonExcel.createRgbColor(r, g, b);
         return oBorder;
     };
     CSlicer.prototype.recalculateBrush = function() {
@@ -305,21 +324,47 @@
             var oSide;
             oSide = oBorder.l;
             if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                if(oSide.c) {
+                    graphics.p_color(oSide.c.getR(), oSide.c.getG(), oSide.c.getB(), 255);
+                }
+                else {
+                    graphics.p_color(0, 0, 0, 255);
+                }
                 graphics.drawVerLine(1, 0, 0, this.extY, 0);
             }
             oSide = oBorder.t;
             if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                if(oSide.c) {
+
+                    graphics.p_color(oSide.c.getR(), oSide.c.getG(), oSide.c.getB(), 255);
+                }
+                else {
+                    graphics.p_color(0, 0, 0, 255);
+                }
                 graphics.drawHorLine(1, 0, 0, this.extX, 0);
             }
             oSide = oBorder.r;
             if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                if(oSide.c) {
+
+                    graphics.p_color(oSide.c.getR(), oSide.c.getG(), oSide.c.getB(), 255);
+                }
+                else {
+                    graphics.p_color(0, 0, 0, 255);
+                }
                 graphics.drawVerLine(1, this.extX, 0, this.extY, 0);
             }
             oSide = oBorder.b;
             if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                if(oSide.c) {
+
+                    graphics.p_color(oSide.c.getR(), oSide.c.getG(), oSide.c.getB(), 255);
+                }
+                else {
+                    graphics.p_color(0, 0, 0);
+                }
                 graphics.drawHorLine(1, this.extY, 0, this.extX, 0);
             }
-            graphics.drawVerLine();
             graphics.RestoreGrState();
         }
         if(this.header) {
@@ -495,21 +540,49 @@
             var oSide, bDrawn = false;
             oSide = oBorder.l;
             if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                if(oSide.c) {
+
+                    graphics.p_color(oSide.c.getR(), oSide.c.getG(), oSide.c.getB(), 255);
+                }
+                else {
+                    graphics.p_color(0, 0, 0);
+                }
                 graphics.drawVerLine(1, 0, 0, this.extY, 0);
                 bDrawn = true;
             }
             oSide = oBorder.t;
             if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                if(oSide.c) {
+
+                    graphics.p_color(oSide.c.getR(), oSide.c.getG(), oSide.c.getB(), 255);
+                }
+                else {
+                    graphics.p_color(0, 0, 0);
+                }
                 graphics.drawHorLine(1, 0, 0, this.extX, 0);
                 bDrawn = true;
             }
             oSide = oBorder.r;
             if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                if(oSide.c) {
+
+                    graphics.p_color(oSide.c.getR(), oSide.c.getG(), oSide.c.getB(), 255);
+                }
+                else {
+                      graphics.p_color(0, 0, 0, 255);
+                }
                 graphics.drawVerLine(1, this.extX, 0, this.extY, 0);
                 bDrawn = true;
             }
             oSide = oBorder.b;
             if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                if(oSide.c) {
+
+                    graphics.p_color(oSide.c.getR(), oSide.c.getG(), oSide.c.getB(), 255);
+                }
+                else {
+                    graphics.p_color(0, 0, 0);
+                }
                 if(bDrawn) {
                     graphics.drawHorLine(1, this.extY, 0, this.extX, 0);
                 }
@@ -685,18 +758,46 @@
             var oSide;
             oSide = oBorder.l;
             if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                if(oSide.c) {
+
+                    graphics.p_color(oSide.c.getR(), oSide.c.getG(), oSide.c.getB(), 255);
+                }
+                else {
+                    graphics.p_color(0, 0, 0);
+                }
                 graphics.drawVerLine(0, 0, 0, this.extY, 0);
             }
             oSide = oBorder.t;
             if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                if(oSide.c) {
+
+                    graphics.p_color(oSide.c.getR(), oSide.c.getG(), oSide.c.getB(), 255);
+                }
+                else {
+                    graphics.p_color(0, 0, 0);
+                }
                 graphics.drawHorLine(0, 0, 0, this.extX, 0);
             }
             oSide = oBorder.r;
             if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                if(oSide.c) {
+
+                    graphics.p_color(oSide.c.getR(), oSide.c.getG(), oSide.c.getB(), 255);
+                }
+                else {
+                    graphics.p_color(0, 0, 0);
+                }
                 graphics.drawVerLine(2, this.extX, 0, this.extY, 0);
             }
             oSide = oBorder.b;
             if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
+                if(oSide.c) {
+
+                    graphics.p_color(oSide.c.getR(), oSide.c.getG(), oSide.c.getB(), 255);
+                }
+                else {
+                    graphics.p_color(0, 0, 0);
+                }
                 graphics.drawHorLine(2, this.extY, 0, this.extX, 0);
             }
             graphics.drawVerLine();
