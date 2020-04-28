@@ -2281,7 +2281,7 @@
 				drawingCtx.AddClipRect(clipLeftShape, clipTopShape, clipWidthShape, clipHeightShape);
 
 				drawingCtx.DocumentRenderer.SetBaseTransform(oBaseTransform);
-				t.objectRender.showDrawingObjectsEx(false, null, drawingPrintOptions);
+				t.objectRender.print(drawingPrintOptions);
 				drawingCtx.DocumentRenderer.SetBaseTransform(oOldBaseTransform);
 				t.visibleRange = tmpVisibleRange;
 
@@ -20258,9 +20258,14 @@
 		}
 	};
 
-	/*
+    WorksheetView.prototype.getDrawingDocument = function() {
+        if(this.model) {
+            return this.model.getDrawingDocument();
+        }
+        return null;
+    };
 	//интерфейс
-	отдаём массив данных для интерефейса - beforeInsertSlicer
+	/*отдаём массив данных для интерефейса - beforeInsertSlicer
 	добавляем срезы от интерфейса - insertSlicers
 
 	//данные для отображения

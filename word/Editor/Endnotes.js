@@ -216,7 +216,7 @@ CEndnotesController.prototype.Get_PageContentStartPos = function(nPageAbs, nColu
 	if (!oColumn)
 		return {X : 0, Y : 0, XLimit : 0, YLimit : 0};
 
-	return {X : oColumn.X, Y : oColumn.Y + oColumn.Height, XLimit : oColumn.XLimit, YLimit : oColumn.YLimit - oColumn.Y};
+	return {X : oColumn.X, Y : oColumn.Y + oColumn.Height, XLimit : oColumn.XLimit, YLimit : oColumn.YLimit};
 };
 CEndnotesController.prototype.OnContentReDraw = function(StartPageAbs, EndPageAbs)
 {
@@ -283,6 +283,7 @@ CEndnotesController.prototype.GetEndnoteNumberOnPage = function(nPageAbs, nColum
  */
 CEndnotesController.prototype.Reset = function(nPageIndex, oSectPr)
 {
+	this.Pages.length = nPageIndex;
 	if (!this.Pages[nPageIndex])
 		this.Pages[nPageIndex] = new CEndnotePage();
 
@@ -354,14 +355,19 @@ CEndnotesController.prototype.HaveEndnotes = function(oSectPr, isFinal)
 			var oPage = this.Pages[nCurPage];
 			if (oPage.Endnotes.length > 0)
 			{
-				return (oSectPr === oPage.Endnotes[oPage.Endnotes.length].GetReferenceSectPr());
+				return (oSectPr === oPage.Endnotes[oPage.Endnotes.length - 1].GetReferenceSectPr());
 			}
 		}
 	}
 
 	return false;
 };
-CEndnotesController.prototype.Reset2 = function(nPageAbs, nColumnAbs, oSectPr, nSectionIndex, isFinal)
+CEndnotesController.prototype.ClearSection = function(nSectionIndex)
+{
+	this.Sections.length = nSectionIndex;
+	this.Sections[nSectionIndex] = new CEndnoteSection();
+};
+CEndnotesController.prototype.FillSection = function(nPageAbs, nColumnAbs, oSectPr, nSectionIndex, isFinal)
 {
 	var oSection = this.private_UpdateSection(oSectPr, nSectionIndex, isFinal, nPageAbs);
 	if (oSection.Endnotes.length <= 0)
@@ -478,6 +484,11 @@ CEndnotesController.prototype.Recalculate = function(X, Y, XLimit, YLimit, nPage
 			{
 				oColumn.EndPos = nPos;
 				oColumn.Elements.push(oEndnote);
+
+				var oBounds = oEndnote.GetPageBounds(nRelativePage);
+				_Y += oBounds.Bottom - oBounds.Top;
+				oColumn.Height = _Y - Y;
+
 				return recalcresult2_NextPage;
 			}
 		}

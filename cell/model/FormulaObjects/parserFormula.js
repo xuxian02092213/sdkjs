@@ -739,6 +739,9 @@ parserHelp.setDigitSeparator(AscCommon.g_oDefaultCultureInfo.NumberDecimalSepara
 	cString.prototype.tocString = function () {
 		return this;
 	};
+	cString.prototype.getValue = function () {
+		return this.value.replace(/\"\"/g, "\"");
+	};
 
 	/**
 	 * @constructor
