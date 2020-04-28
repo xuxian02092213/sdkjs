@@ -297,6 +297,7 @@ function handleFloatObjects(drawingObjectsController, drawingArr, e, x, y, group
         switch(drawing.getObjectType())
         {
             case AscDFH.historyitem_type_Shape:
+            case AscDFH.historyitem_type_SlicerView:
             case AscDFH.historyitem_type_ImageShape:
             case AscDFH.historyitem_type_OleObject:
             case AscDFH.historyitem_type_Cnx:
@@ -492,6 +493,7 @@ function handleGroup(drawing, drawingObjectsController, e, x, y, group, pageInde
         switch (cur_grouped_object.getObjectType())
         {
             case AscDFH.historyitem_type_Shape:
+            case AscDFH.historyitem_type_SlicerView:
             case AscDFH.historyitem_type_ImageShape:
             case AscDFH.historyitem_type_OleObject:
             case AscDFH.historyitem_type_Cnx:

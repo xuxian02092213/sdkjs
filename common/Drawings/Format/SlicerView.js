@@ -33,10 +33,14 @@
 "use strict";
 
 (function() {
+
+    AscDFH.drawingsChangesMap[AscDFH.historyitem_SlicerViewName] = function(oClass, value){oClass.name = value;};
+    AscDFH.changesFactory[AscDFH.historyitem_SlicerViewName] = window['AscDFH'].CChangesDrawingsString;
+    
     var LEFT_PADDING = 3;
     var RIGHT_PADDING = 3;
     var BOTTOM_PADDING = 3;
-    var TOP_PADDING = 2
+    var TOP_PADDING = 2;
     var SPACE_BETWEEN = 1.5;
 
     var HEADER_BUTTON_WIDTH = RIGHT_PADDING * 175 / 73;
@@ -88,10 +92,16 @@
         }, this, []);
 
         this.buttonsContainer = new CButtonsContainer(this);
+
+        this.eventListener = false;
     }
     CSlicer.prototype = Object.create(AscFormat.CShape.prototype);
     CSlicer.prototype.constructor = CSlicer;
+    CSlicer.prototype.getObjectType = function () {
+        return AscDFH.historyitem_type_SlicerView;
+    };
     CSlicer.prototype.setName = function(val) {
+        History.Add(new AscDFH.CChangesDrawingsString(this, AscDFH.historyitem_SlicerViewName, this.name, val));
         this.name = val;
     };
     CSlicer.prototype.getFont = function(nType) {
@@ -282,18 +292,70 @@
             if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
                 graphics.drawHorLine(1, this.extY, 0, this.extX, 0);
             }
-            graphics.drawVerLine()
+            graphics.drawVerLine();
             graphics.RestoreGrState();
         }
         if(this.header) {
             this.header.draw(graphics, transform, transformText, pageIndex);
         }
         this.buttonsContainer.draw(graphics, transform, transformText, pageIndex);
-    }
+    };
     CSlicer.prototype.handleUpdateExtents = function () {
         this.recalcInfo.recalculateHeader = true;
         this.recalcInfo.recalculateButtons = true;
         AscFormat.CShape.prototype.handleUpdateExtents.call(this);
+    };
+    CSlicer.prototype.onUpdate = function () {
+        if(this.drawingBase) {
+            this.drawingBase.onUpdate();
+        }
+    };
+    CSlicer.prototype.onMouseMove = function (e, x, y) {
+        if(this.eventListener) {
+            if(!e.IsLocked) {
+                return this.onMouseUp(e, x, y);
+            }
+            return this.eventListener.onMouseMove(e, x, y);
+        }
+        var bRet = false;
+        if(this.header) {
+            bRet = bRet || this.header.onMouseMove(e, x, y);
+        }
+        bRet = bRet || this.buttonsContainer.onMouseMove(e, x, y);
+        return bRet;
+    };
+    CSlicer.prototype.onMouseDown = function (e, x, y) {
+        var bRet = false, bRes;
+        if(this.eventListener) {
+            this.eventListener.onMouseUp(e, x, y);
+            this.eventListener = null;
+        }
+        if(this.header) {
+            bRes = this.header.onMouseDown(e, x, y);
+            if(bRes) {
+                this.eventListener = this.header;
+            }
+            bRet = bRet || bRes;
+        }
+        bRes = this.buttonsContainer.onMouseDown(e, x, y);
+        if(bRes) {
+            this.eventListener = this.buttonsContainer;
+        }
+        bRet = bRet || bRes;
+        return bRet;
+    };
+    CSlicer.prototype.onMouseUp = function (e, x, y) {
+        var bRet = false;
+        if(this.eventListener) {
+            bRet = this.eventListener.onMouseDown(e, x, y);
+            this.eventListener = null;
+            return bRet;
+        }
+        if(this.header) {
+            bRet = bRet || this.header.onMouseUp(e, x, y);
+        }
+        bRet = bRet || this.buttonsContainer.onMouseUp(e, x, y);
+        return bRet;
     };
 
     function CHeader(slicer) {
@@ -316,6 +378,7 @@
         this.bodyPr.bIns = HEADER_BOTTOM_PADDING;
         this.bodyPr.horzOverflow = AscFormat.nOTClip;
         this.bodyPr.vertOverflow = AscFormat.nOTClip;
+        this.eventListener = null;
     }
     CHeader.prototype = Object.create(AscFormat.CShape.prototype);
     CHeader.prototype.getString = function() {
@@ -367,7 +430,6 @@
         oButton.recalculate();
     };
     CHeader.prototype.draw = function (graphics) {
-
         var oMT = AscCommon.global_MatrixTransformer;
         var oTransform = this.transform.CreateDublicate();
         oMT.MultiplyAppend(oTransform, this.slicer.transform);
@@ -408,7 +470,7 @@
                     graphics.drawHorLine(1, this.extY, LEFT_PADDING, this.slicer.extX - RIGHT_PADDING, 0);
                 }
             }
-            graphics.drawVerLine()
+            graphics.drawVerLine();
             graphics.RestoreGrState();
         }
     };
@@ -427,6 +489,34 @@
         oMT.MultiplyAppend(oTransform, this.slicer.transform);
         return oTransform;
     };
+    CHeader.prototype.onMouseMove = function (e, x, y) {
+        if(this.eventListener) {
+            return this.eventListener.onMouseMove(e, x, y);
+        }
+        var bRet = false;
+        bRet = bRet || this.buttons[0].onMouseMove(e, x, y);
+        bRet = bRet || this.buttons[1].onMouseMove(e, x, y);
+        return bRet;
+    };
+    CHeader.prototype.onMouseDown = function (e, x, y) {
+        if(this.eventListener) {
+            return this.eventListener.onMouseDown(e, x, y);
+        }
+        var bRet = false;
+        bRet = bRet || this.buttons[0].onMouseDown(e, x, y);
+        bRet = bRet || this.buttons[1].onMouseDown(e, x, y);
+        return bRet;
+    };
+    CHeader.prototype.onMouseUp = function (e, x, y) {
+        if(this.eventListener) {
+            return this.eventListener.onMouseUp(e, x, y);
+        }
+        var bRet = false;
+        bRet = bRet || this.buttons[0].onMouseUp(e, x, y);
+        bRet = bRet || this.buttons[1].onMouseUp(e, x, y);
+        return bRet;
+    };
+
 
     function CButton(parent, options) {
         AscFormat.CShape.call(this);
@@ -490,7 +580,7 @@
         this.pen = null;
     };
     CButton.prototype.recalculateContent = function () {
-        var sText = this.getString(), oMetrics, oContent, oFirstParagraph, sFitText;
+        var sText = this.getString();
         for(var key in STYLE_TYPE) {
             if(STYLE_TYPE.hasOwnProperty(key)) {
                 this.txBody = this.textBoxes[STYLE_TYPE[key]].txBody;
@@ -538,9 +628,25 @@
             if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
                 graphics.drawHorLine(2, this.extY, 0, this.extX, 0);
             }
-            graphics.drawVerLine()
+            graphics.drawVerLine();
             graphics.RestoreGrState();
         }
+    };
+    CButton.prototype.onMouseMove = function (e, x, y) {
+        var bRet = false;
+        var bHit = this.hit(x, y);
+        if(e.IsLocked) {
+            if(bHit) {
+
+            }
+        }
+        return bRet;
+    };
+    CButton.prototype.onMouseDown = function (e, x, y) {
+        return false;
+    };
+    CButton.prototype.onMouseUp = function (e, x, y) {
+        return false;
     };
 
     function CButtonsContainer(slicer) {
@@ -555,6 +661,7 @@
         this.scrollTop = 0;
         this.scrollLeft = 0;
         this.scroll = new CScroll(this);
+        this.eventListener = null;
     }
     CButtonsContainer.prototype.clear = function() {
         this.buttons.length = 0;
@@ -634,17 +741,60 @@
         var oMT = AscCommon.global_MatrixTransformer;
         return oMT.CreateDublicateM(this.slicer.transform);
     };
+    CButtonsContainer.prototype.onMouseMove = function (e, x, y) {
+        if(this.eventListener) {
+            return this.eventListener.onMouseMove(e, x, y);
+        }
+        var bRet = false;
+        for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
+            bRet = bRet || this.buttons[nButton].onMouseMove(e, x, y);
+        }
+        bRet = bRet || this.scroll.onMouseMove(e, x, y);
+        return bRet;
+    };
+    CButtonsContainer.prototype.onMouseDown = function (e, x, y) {
+        if(this.eventListener) {
+            this.eventListener.onMouseUp(e, x, y);
+            this.eventListener = null;
+        }
+        var bRet = false, bRes;
+        for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
+            bRet = bRet || this.buttons[nButton].onMouseDown(e, x, y);
+        }
+        bRes = this.scroll.onMouseDown(e, x, y);
+        if(bRes) {
+            this.eventListener = this.scroll;
+        }
+        bRet = bRet || bRes;
+        if(bRet) {
+            this.slicer.eventListener = this;
+        }
+        return bRet;
+    };
+    CButtonsContainer.prototype.onMouseUp = function (e, x, y) {
+        var bRet = false;
+        if(this.eventListener) {
+            bRet = this.eventListener.onMouseUp(e, x, y);
+            this.eventListener = null;
+            return bRet;
+        }
+        for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
+            bRet = bRet || this.buttons[nButton].onMouseUp(e, x, y);
+        }
+        bRet = bRet || this.scroll.onMouseUp(e, x, y);
+        return bRet;
+    };
 
     function CScroll(parent) {
         this.parent = parent;
         this.extX = 0;
         this.extY = 0;
-        this.bVisible = false
+        this.bVisible = false;
 
         this.state = STYLE_TYPE.UNSELECTED_DATA;
     }
     CScroll.prototype.update = function () {
-    }
+    };
     CScroll.prototype.draw = function(graphics) {
         if(!this.bVisible) {
             return;
@@ -668,8 +818,16 @@
         // graphics.drawVerLine(1, dXPos + SCROLL_WIDTH, dYPos, dYPos + dScrollerHeight, 0);
         // graphics.drawHorLine(1, dYPos + dScrollerHeight, dXPos, dXPos + SCROLL_WIDTH, 0);
         graphics.RestoreGrState();
-    }
+    };
+    CScroll.prototype.onMouseMove = function (e, x, y) {
+        return false;
+    };
+    CScroll.prototype.onMouseDown = function (e, x, y) {
+        return false;
+    };
+    CScroll.prototype.onMouseUp = function (e, x, y) {
+        return false;
+    };
     window['AscFormat'] = window['AscFormat'] || {};
     window['AscFormat'].CSlicer = CSlicer;
-})()
-
+})();

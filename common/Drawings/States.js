@@ -373,7 +373,12 @@ NullState.prototype =
     },
 
     onMouseMove: function(e, x, y, pageIndex)
-    {},
+    {
+        var aDrawins = this.drawingObjects.getDrawingArray();
+        for(var nDrawing = aDrawins.length - 1; nDrawing > -1; --nDrawing) {
+            
+        }
+    },
 
     onMouseUp: function(e, x, y, pageIndex)
     {}

@@ -1729,6 +1729,26 @@ GraphicOption.prototype.getOffset = function () {
             this.graphicObject.draw(graphics);
         }
     };
+    DrawingBase.prototype.getBoundsFromTo = function() {
+        return this.boundsFromTo;
+    };
+    DrawingBase.prototype.onUpdate = function () {
+        var oDO = this.getDrawingObjects();
+        if(!oDO) {
+            return;
+        }
+        var oB = this.getBoundsFromTo();
+        var c1 = oB.from.col;
+        var r1 = oB.from.row;
+        var c2 = oB.to.col;
+        var r2 = oB.to.row;
+        var oRange = new Asc.Range(c1, r1, c2, r2, true);
+        var oOffset = {
+            offsetX: 0, offsetY: 0
+        };
+        var oOptions = new AscFormat.GraphicOption(this.worksheet, null, oRange, oOffset);
+        oDO.showDrawingObjects(false, oOptions);
+    };
     //}
 
     //-----------------------------------------------------------------------------------
