@@ -36,7 +36,7 @@
 
     AscDFH.drawingsChangesMap[AscDFH.historyitem_SlicerViewName] = function(oClass, value){oClass.name = value;};
     AscDFH.changesFactory[AscDFH.historyitem_SlicerViewName] = window['AscDFH'].CChangesDrawingsString;
-    
+
     var LEFT_PADDING = 3;
     var RIGHT_PADDING = 3;
     var BOTTOM_PADDING = 3;
@@ -60,6 +60,23 @@
     STYLE_TYPE.HOVERED_SELECTED_NO_DATA = 7;
     STYLE_TYPE.HOVERED_UNSELECTED_DATA = 8;
     STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA = 9;
+
+
+    var INVERT_HOVER_STATE = {};
+    INVERT_HOVER_STATE[STYLE_TYPE.SELECTED_DATA] = STYLE_TYPE.HOVERED_SELECTED_DATA;
+    INVERT_HOVER_STATE[STYLE_TYPE.SELECTED_NO_DATA] = STYLE_TYPE.HOVERED_SELECTED_NO_DATA;
+    INVERT_HOVER_STATE[STYLE_TYPE.UNSELECTED_DATA] = STYLE_TYPE.HOVERED_UNSELECTED_DATA;
+    INVERT_HOVER_STATE[STYLE_TYPE.UNSELECTED_NO_DATA] = STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA;
+    INVERT_HOVER_STATE[STYLE_TYPE.HOVERED_SELECTED_DATA] = STYLE_TYPE.SELECTED_DATA;
+    INVERT_HOVER_STATE[STYLE_TYPE.HOVERED_SELECTED_NO_DATA] = STYLE_TYPE.SELECTED_NO_DATA;
+    INVERT_HOVER_STATE[STYLE_TYPE.HOVERED_UNSELECTED_DATA] = STYLE_TYPE.UNSELECTED_DATA;
+    INVERT_HOVER_STATE[STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA] = STYLE_TYPE.UNSELECTED_NO_DATA;
+
+    var HOVERED_STATES = {};
+    HOVERED_STATES[STYLE_TYPE.HOVERED_SELECTED_DATA] = true;
+    HOVERED_STATES[STYLE_TYPE.HOVERED_SELECTED_NO_DATA] = true;
+    HOVERED_STATES[STYLE_TYPE.HOVERED_UNSELECTED_DATA] = true;
+    HOVERED_STATES[STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA] = true;
 
     var SCROLL_COLORS = {};
     SCROLL_COLORS[STYLE_TYPE.WHOLE] = 0xF1F1F1;
@@ -91,9 +108,9 @@
             this.txStyles = new CStyles(false);
         }, this, []);
 
-        this.buttonsContainer = new CButtonsContainer(this);
+        this.buttonsContainer = null;
 
-        this.eventListener = false;
+        this.eventListener = null;
     }
     CSlicer.prototype = Object.create(AscFormat.CShape.prototype);
     CSlicer.prototype.constructor = CSlicer;
@@ -111,7 +128,11 @@
     CSlicer.prototype.getFill = function(nType) {
         var oFill;
         oFill = new AscCommonExcel.Fill();//TODO: Take background from styles when in will be implemented
-        oFill.fromColor(new AscCommonExcel.RgbColor(0xFFFFFF));
+        var nColor = 0xFFFFFF;
+        if(HOVERED_STATES[nType]) {
+            nColor = 0x0000FF;
+        }
+        oFill.fromColor(new AscCommonExcel.RgbColor(nColor));
         return oFill;
     };
     CSlicer.prototype.getBorder = function(nType) {
@@ -185,6 +206,9 @@
         this.header.recalculate();
     };
     CSlicer.prototype.recalculateButtons = function() {
+        if(!this.buttonsContainer) {
+            this.buttonsContainer = new CButtonsContainer(this);
+        }
         this.buttonsContainer.clear();
         var oView = this.getSlicerView();
         if(!oView) {
@@ -298,7 +322,9 @@
         if(this.header) {
             this.header.draw(graphics, transform, transformText, pageIndex);
         }
-        this.buttonsContainer.draw(graphics, transform, transformText, pageIndex);
+        if(this.buttonsContainer) {
+            this.buttonsContainer.draw(graphics, transform, transformText, pageIndex);
+        }
     };
     CSlicer.prototype.handleUpdateExtents = function () {
         this.recalcInfo.recalculateHeader = true;
@@ -321,7 +347,15 @@
         if(this.header) {
             bRet = bRet || this.header.onMouseMove(e, x, y);
         }
-        bRet = bRet || this.buttonsContainer.onMouseMove(e, x, y);
+        if(this.buttonsContainer) {
+            bRet = bRet || this.buttonsContainer.onMouseMove(e, x, y);
+        }
+        if(bRet) {
+            this.onUpdate();
+        }
+        if(this.hitInInnerArea(x, y)) {
+            bRet = true;
+        }
         return bRet;
     };
     CSlicer.prototype.onMouseDown = function (e, x, y) {
@@ -337,11 +371,16 @@
             }
             bRet = bRet || bRes;
         }
-        bRes = this.buttonsContainer.onMouseDown(e, x, y);
-        if(bRes) {
-            this.eventListener = this.buttonsContainer;
+        if(this.buttonsContainer) {
+            bRes = this.buttonsContainer.onMouseDown(e, x, y);
+            if(bRes) {
+                this.eventListener = this.buttonsContainer;
+            }
+            bRet = bRet || bRes;
         }
-        bRet = bRet || bRes;
+        if(bRet) {
+            this.onUpdate();
+        }
         return bRet;
     };
     CSlicer.prototype.onMouseUp = function (e, x, y) {
@@ -354,7 +393,12 @@
         if(this.header) {
             bRet = bRet || this.header.onMouseUp(e, x, y);
         }
-        bRet = bRet || this.buttonsContainer.onMouseUp(e, x, y);
+        if(this.buttonsContainer) {
+            bRet = bRet || this.buttonsContainer.onMouseUp(e, x, y);
+        }
+        if(bRet) {
+            this.onUpdate();
+        }
         return bRet;
     };
 
@@ -595,22 +639,46 @@
         this.calcGeometry = AscFormat.CreateGeometry("rect");
         this.calcGeometry.Recalculate(this.extX, this.extY);
     };
-    CButton.prototype.draw = function (graphics) {
-        this.brush = AscCommonExcel.convertFillToUnifill(this.parent.getFill(this.state));
+
+    CButton.prototype.recalculateTransform = function() {
+        AscFormat.CShape.prototype.recalculateTransform.call(this);
+        var oMT = AscCommon.global_MatrixTransformer;
+        var oParentTransform = this.parent.getFullTransformMatrix();
+        oParentTransform && oMT.MultiplyAppend(this.transform, oParentTransform);
+        this.invertTransform = oMT.Invert(this.transform);
+    };
+    CButton.prototype.recalculateTransformText = function() {
+        AscFormat.CShape.prototype.recalculateTransformText.call(this);
+        var oMT = AscCommon.global_MatrixTransformer;
+        var oParentTransform = this.parent.getFullTransformMatrix();
+        oParentTransform && oMT.MultiplyAppend(this.transformText, oParentTransform);
+        this.invertTransformText = oMT.Invert(this.transformText);
+    };
+    CButton.prototype.getFullTransform = function() {
         var oMT = AscCommon.global_MatrixTransformer;
         var oTransform = oMT.CreateDublicateM(this.transform);
         var oParentTransform = this.parent.getFullTransformMatrix();
         oParentTransform && oMT.MultiplyAppend(oTransform, oParentTransform);
+        return oTransform;
+    };
+    CButton.prototype.getFullTextTransform = function() {
+        var oMT = AscCommon.global_MatrixTransformer;
+        var oParentTransform = this.parent.getFullTransformMatrix();
         var oTransformText = oMT.CreateDublicateM(this.transformText);
         oParentTransform && oMT.MultiplyAppend(oTransformText, oParentTransform);
-        AscFormat.CShape.prototype.draw.call(this, graphics, oTransform, oTransformText, 0);
+        return oTransformText;
+    };
+
+    CButton.prototype.draw = function (graphics) {
+        this.brush = AscCommonExcel.convertFillToUnifill(this.parent.getFill(this.state));
+        AscFormat.CShape.prototype.draw.call(this, graphics);
         if(graphics.IsSlideBoundsCheckerType) {
             return;
         }
         var oBorder = this.parent.getBorder(this.state);
         if(oBorder) {
             graphics.SaveGrState();
-            graphics.transform3(oTransform);
+            graphics.transform3(this.transform);
             var oSide;
             oSide = oBorder.l;
             if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
@@ -634,10 +702,16 @@
     };
     CButton.prototype.onMouseMove = function (e, x, y) {
         var bRet = false;
-        var bHit = this.hit(x, y);
+        var bHit = this.hitInInnerArea(x, y);
         if(e.IsLocked) {
             if(bHit) {
 
+            }
+        }
+        else {
+            if(bHit && !HOVERED_STATES[this.state] || !bHit && HOVERED_STATES[this.state]) {
+                this.state = INVERT_HOVER_STATE[this.state];
+                bRet = true;
             }
         }
         return bRet;
@@ -651,6 +725,7 @@
 
     function CButtonsContainer(slicer) {
         this.slicer = slicer;
+        this.worksheet = slicer.worksheet;
         this.buttons = [];
         this.x = 0;
         this.y = 0;
@@ -741,31 +816,55 @@
         var oMT = AscCommon.global_MatrixTransformer;
         return oMT.CreateDublicateM(this.slicer.transform);
     };
+    CButtonsContainer.prototype.getInvFullTransformMatrix = function () {
+        var oM = this.getFullTransformMatrix();
+        return AscCommon.global_MatrixTransformer.Invert(oM);
+    };
+    CButtonsContainer.prototype.isInside = function (x, y) {
+        var tx = this.slicer.invertTransform.TransformPointX(x, y);
+        var ty = this.slicer.invertTransform.TransformPointY(x, y);
+        return tx >= this.x && ty >= this.y &&
+            tx <= this.x + this.extX && ty <= this.y + this.extY;
+    };
     CButtonsContainer.prototype.onMouseMove = function (e, x, y) {
+
         if(this.eventListener) {
             return this.eventListener.onMouseMove(e, x, y);
         }
         var bRet = false;
+
+        var tx = x;
+        var ty = y;
+        if(!this.isInside(x, y)) {
+            tx = -1000;
+        }
         for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
-            bRet = bRet || this.buttons[nButton].onMouseMove(e, x, y);
+            bRet = bRet || this.buttons[nButton].onMouseMove(e, tx, ty);
         }
         bRet = bRet || this.scroll.onMouseMove(e, x, y);
         return bRet;
     };
     CButtonsContainer.prototype.onMouseDown = function (e, x, y) {
+
         if(this.eventListener) {
             this.eventListener.onMouseUp(e, x, y);
             this.eventListener = null;
         }
         var bRet = false, bRes;
-        for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
-            bRet = bRet || this.buttons[nButton].onMouseDown(e, x, y);
+        var tx = x;
+        var ty = y;
+        if(!this.isInside(x, y)) {
+            tx = -1000;
         }
-        bRes = this.scroll.onMouseDown(e, x, y);
+        for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
+            bRet = bRet || this.buttons[nButton].onMouseDown(e, tx, ty);
+        }
+        bRes = this.scroll.onMouseDown(e, tx, ty);
         if(bRes) {
             this.eventListener = this.scroll;
         }
         bRet = bRet || bRes;
+
         if(bRet) {
             this.slicer.eventListener = this;
         }
