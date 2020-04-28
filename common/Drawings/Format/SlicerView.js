@@ -123,6 +123,9 @@
     };
     CSlicer.prototype.getFont = function(nType) {
         var oFont = new AscCommonExcel.Font();//TODO: Take font from slicerStyle when it will be implemented.
+        if(nType === STYLE_TYPE.HEADER) {
+            oFont.setBold(true);
+        }
         return oFont;
     };
     CSlicer.prototype.getFill = function(nType) {
@@ -894,22 +897,62 @@
     }
     CScroll.prototype.update = function () {
     };
+    CScroll.prototype.getRailHeight = function() {
+        return this.parent.extY;
+    };
+    CScroll.prototype.getRailWidth = function() {
+        return SCROLL_WIDTH;
+    };
+    CScroll.prototype.getScrollerWidth = function() {
+        return SCROLL_WIDTH;
+    };
+    CScroll.prototype.getScrollerHeight = function() {
+        var dRailH = this.getRailHeight();
+        var dMinRailH = dRailH / 4;
+        return Math.max(dMinRailH, dRailH * (dRailH / this.parent.getTotalHeight()));
+    };
+    CScroll.prototype.getPosX = function () {
+        return this.parent.x + this.parent.extX - this.getRailWidth();
+    };
+    CScroll.prototype.getPosY = function () {
+        return this.parent.y;
+    };
+    CScroll.prototype.getRailPosX = function () {
+        return this.getPosX();
+    };
+    CScroll.prototype.getRailPosY = function () {
+        return this.getPosY();
+    };
+    CScroll.prototype.getScrollerX = function() {
+        return this.getRailPosX() +  this.getRailWidth() / 2 - this.getRailWidth() / 2;
+    };
+    CScroll.prototype.getScrollerY = function() {
+        return this.getRailPosY() + (this.getRailHeight() - this.getScrollerHeight()) * (this.parent.scrollTop / (this.parent.getRowsCount() - this.parent.getRowsInFrame()));
+    };
+    CScroll.prototype.hit = function(x, y) {
+        var oInv = this.parent.getInvFullTransformMatrix();
+        var tx = oInv.TransformPointX(x, y);
+        var ty = oInv.TransformPointY(x, y);
+        var l = this.getRailPosX();
+        var t = this.getRailPosY();
+        var r = l + this.getRailWidth();
+        var b = t + this.getRailHeight();
+        return tx >= l && tx <= r && ty >= t && ty <= b;
+    };
     CScroll.prototype.draw = function(graphics) {
         if(!this.bVisible) {
             return;
         }
-        var nRowsInFrame = this.parent.getRowsInFrame();
-        var nRowsCount = this.parent.getRowsCount();
-        var dScrollerHeight = Math.max(this.parent.extY/ 4, this.parent.extY * (this.parent.extY / this.parent.getTotalHeight()));
-        var dYPos = this.parent.y;
-        dYPos += (this.parent.extY - dScrollerHeight) * (this.parent.scrollTop / (nRowsCount - nRowsInFrame));
-        var dXPos = this.parent.x + this.parent.extX - SCROLL_WIDTH;
+        var dScrollerHeight = this.getScrollerHeight();
+        var dXPos = this.getScrollerX();
+        var dYPos = this.getScrollerY();
+        var dScrollerWidth = this.getScrollerWidth();
         graphics.SaveGrState();
         graphics.transform3(this.parent.getFullTransformMatrix());
         var nColor = SCROLL_COLORS[this.state];
         graphics.p_color(0xCE, 0xCE, 0xCE, 0xFF);
         graphics.b_color1((nColor >> 16) & 0xFF, (nColor >> 8) & 0xFF, nColor & 0xFF, 0xFF);
-        graphics.AddSmartRect(dXPos, dYPos, SCROLL_WIDTH, dScrollerHeight, 0);
+        graphics.AddSmartRect(dXPos, dYPos, dScrollerWidth, dScrollerHeight, 0);
         graphics.df();
         //graphics.ds();
         // graphics.drawVerLine(1, dXPos, dYPos, dYPos + dScrollerHeight, 0);
@@ -919,7 +962,13 @@
         graphics.RestoreGrState();
     };
     CScroll.prototype.onMouseMove = function (e, x, y) {
-        return false;
+        var bRet = false;
+        var bHit = this.hit(x, y);
+        if(bHit && !HOVERED_STATES[this.state] || !bHit && HOVERED_STATES[this.state]) {
+            this.state = INVERT_HOVER_STATE[this.state];
+            bRet = true;
+        }
+        return bRet;
     };
     CScroll.prototype.onMouseDown = function (e, x, y) {
         return false;
