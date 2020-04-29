@@ -48,7 +48,8 @@
     var HEADER_BOTTOM_PADDING = HEADER_TOP_PADDING;
     var HEADER_LEFT_PADDING = LEFT_PADDING;
     var HEADER_RIGHT_PADDING = 2*RIGHT_PADDING + 2*HEADER_BUTTON_WIDTH;
-    var SCROLL_WIDTH = 9 * 25.4 / 96;
+    var SCROLL_WIDTH = 15 * 25.4 / 96;
+    var SCROLLER_WIDTH = 13 * 25.4 / 96;
     var STYLE_TYPE = {};
     STYLE_TYPE.WHOLE = 0;
     STYLE_TYPE.HEADER = 1;
@@ -456,8 +457,8 @@
         this.worksheet = slicer.worksheet;
         this.txBody = null;
         this.buttons = [];
-        this.buttons.push(new CButton(this, {text: "M"}));
-        this.buttons.push(new CButton(this, {text: "C"}));
+        this.buttons.push(new CButton(this, null));
+        this.buttons.push(new CButton(this, null));
         this.setBDeleted(false);
         this.setTransformParams(0, 0, 0, 0, 0, false, false);
         this.createTextBody();
@@ -647,22 +648,24 @@
         this.setBDeleted(false);
         AscFormat.CheckSpPrXfrm3(this);
         this.textBoxes = {};
-        for(var key in STYLE_TYPE) {
-            if(STYLE_TYPE.hasOwnProperty(key)) {
-                this.createTextBody();
-                this.textBoxes[STYLE_TYPE[key]] = new CTextBox(this.txBody, new AscCommon.CMatrix());
+        if(options) {
+            for(var key in STYLE_TYPE) {
+                if(STYLE_TYPE.hasOwnProperty(key)) {
+                    this.createTextBody();
+                    this.textBoxes[STYLE_TYPE[key]] = new CTextBox(this.txBody, new AscCommon.CMatrix());
+                }
             }
+            this.bodyPr = new AscFormat.CBodyPr();
+            this.bodyPr.setDefault();
+            this.bodyPr.anchor = 1;//vertical align ctr
+            this.bodyPr.lIns = LEFT_PADDING;
+            this.bodyPr.rIns = RIGHT_PADDING;
+            this.bodyPr.tIns = 0;
+            this.bodyPr.bIns = 0;
+            this.bodyPr.bIns = 0;
+            this.bodyPr.horzOverflow = AscFormat.nOTClip;
+            this.bodyPr.vertOverflow = AscFormat.nOTClip;
         }
-        this.bodyPr = new AscFormat.CBodyPr();
-        this.bodyPr.setDefault();
-        this.bodyPr.anchor = 1;//vertical align ctr
-        this.bodyPr.lIns = LEFT_PADDING;
-        this.bodyPr.rIns = RIGHT_PADDING;
-        this.bodyPr.tIns = 0;
-        this.bodyPr.bIns = 0;
-        this.bodyPr.bIns = 0;
-        this.bodyPr.horzOverflow = AscFormat.nOTClip;
-        this.bodyPr.vertOverflow = AscFormat.nOTClip;
     }
     CButton.prototype = Object.create(AscFormat.CShape.prototype);
     CButton.prototype.getTxBodyType = function () {
@@ -701,9 +704,9 @@
     };
     CButton.prototype.recalculateContent = function () {
         var sText = this.getString();
-        for(var key in STYLE_TYPE) {
-            if(STYLE_TYPE.hasOwnProperty(key)) {
-                this.txBody = this.textBoxes[STYLE_TYPE[key]].txBody;
+        for(var key in this.textBoxes) {
+            if(this.textBoxes.hasOwnProperty(key)) {
+                this.txBody = this.textBoxes[key].txBody;
                 this.txBody.recalculateOneString(sText);
             }
         }
@@ -993,73 +996,154 @@
         this.extX = 0;
         this.extY = 0;
         this.bVisible = false;
-
+        this.buttons = [];
+        this.buttons[0] = new CButton(this, null);
+        this.buttons[1] = new CButton(this, null);
         this.state = STYLE_TYPE.UNSELECTED_DATA;
     }
-    CScroll.prototype.update = function () {
+    CScroll.prototype.getTxStyles = function () {
+        return this.parent.getTxStyles();
     };
-    CScroll.prototype.getRailHeight = function() {
+    CScroll.prototype.getFullTransformMatrix = function () {
+        return this.parent.getFullTransformMatrix();
+    };
+    CScroll.prototype.getInvFullTransformMatrix = function () {
+        return this.parent.getInvFullTransformMatrix();
+    };
+    CScroll.prototype.getFill = function (nType) {
+        var oFill = new AscCommonExcel.Fill();
+        oFill.fromColor(new AscCommonExcel.RgbColor(SCROLL_COLORS[nType]));
+        return oFill;
+    };
+    CScroll.prototype.getBorder = function(nType) {
+        var r, g, b;
+        r = 0xCE;
+        g = 0xCE;
+        b = 0xCE;
+        var oBorder = new AscCommonExcel.Border(null);
+        oBorder.l = new AscCommonExcel.BorderProp();
+        oBorder.l.setStyle(AscCommon.c_oAscBorderStyles.Thin);
+        oBorder.l.c = AscCommonExcel.createRgbColor(r, g, b);
+        oBorder.t = new AscCommonExcel.BorderProp();
+        oBorder.t.setStyle(AscCommon.c_oAscBorderStyles.Thin);
+        oBorder.t.c = AscCommonExcel.createRgbColor(r, g, b);
+        oBorder.r = new AscCommonExcel.BorderProp();
+        oBorder.r.setStyle(AscCommon.c_oAscBorderStyles.Thin);
+        oBorder.r.c = AscCommonExcel.createRgbColor(r, g, b);
+        oBorder.b = new AscCommonExcel.BorderProp();
+        oBorder.b.setStyle(AscCommon.c_oAscBorderStyles.Thin);
+        oBorder.b.c = AscCommonExcel.createRgbColor(r, g, b);
+        return oBorder;
+    };
+    CScroll.prototype.getPosX = function () {
+        return this.parent.x + this.parent.extX - this.getWidth();
+    };
+    CScroll.prototype.getPosY = function () {
+        return this.parent.y;
+    };
+    CScroll.prototype.getHeight = function() {
         return this.parent.extY;
     };
-    CScroll.prototype.getRailWidth = function() {
+    CScroll.prototype.getWidth = function() {
         return SCROLL_WIDTH;
     };
+    CScroll.prototype.getButtonContainerPosX = function(nIndex) {
+        return this.getPosX();
+    };
+    CScroll.prototype.getButtonContainerPosY = function(nIndex) {
+        var dRet = 0;
+        if(nIndex === 0) {
+            dRet = this.getPosY();
+        }
+        else {
+            dRet = this.getPosY() + this.getHeight() - this.getButtonContainerSize();
+        }
+        return dRet;
+    };
+    CScroll.prototype.getButtonContainerSize = function() {
+        return this.getWidth();
+    };
+    CScroll.prototype.getButtonPosX = function (nIndex) {
+        return this.getButtonContainerPosX(nIndex) + this.getButtonContainerSize() / 2 - this.getButtonSize() / 2;
+    };
+    CScroll.prototype.getButtonPosY = function (nIndex) {
+        return this.getButtonContainerPosY(nIndex) + this.getButtonContainerSize() / 2 - this.getButtonSize() / 2;
+    };
+    CScroll.prototype.getButtonSize = function () {
+        return this.getScrollerWidth();
+    };
+    CScroll.prototype.getRailPosX = function () {
+        return this.getPosX() + this.getWidth() / 2 - this.getRailWidth() / 2;
+    };
+    CScroll.prototype.getRailPosY = function () {
+        return this.getPosY() + this.getButtonContainerSize();
+    };
+    CScroll.prototype.getRailHeight = function() {
+        return this.getHeight() - 2 * this.getButtonContainerSize();
+    };
+    CScroll.prototype.getRailWidth = function() {
+        return SCROLLER_WIDTH;
+    };
+    CScroll.prototype.getScrollerX = function() {
+        return this.getRailPosX() +  this.getRailWidth() / 2 - this.getScrollerWidth() / 2;
+    };
+    CScroll.prototype.getScrollerY = function() {
+        return this.getRailPosY() + (this.getRailHeight() - this.getScrollerHeight()) * (this.parent.scrollTop / (this.parent.getRowsCount() - this.parent.getRowsInFrame()));
+    };
     CScroll.prototype.getScrollerWidth = function() {
-        return SCROLL_WIDTH;
+        return this.getRailWidth();
     };
     CScroll.prototype.getScrollerHeight = function() {
         var dRailH = this.getRailHeight();
         var dMinRailH = dRailH / 4;
         return Math.max(dMinRailH, dRailH * (dRailH / this.parent.getTotalHeight()));
     };
-    CScroll.prototype.getPosX = function () {
-        return this.parent.x + this.parent.extX - this.getRailWidth();
-    };
-    CScroll.prototype.getPosY = function () {
-        return this.parent.y;
-    };
-    CScroll.prototype.getRailPosX = function () {
-        return this.getPosX();
-    };
-    CScroll.prototype.getRailPosY = function () {
-        return this.getPosY();
-    };
-    CScroll.prototype.getScrollerX = function() {
-        return this.getRailPosX() +  this.getRailWidth() / 2 - this.getRailWidth() / 2;
-    };
-    CScroll.prototype.getScrollerY = function() {
-        return this.getRailPosY() + (this.getRailHeight() - this.getScrollerHeight()) * (this.parent.scrollTop / (this.parent.getRowsCount() - this.parent.getRowsInFrame()));
-    };
     CScroll.prototype.hit = function(x, y) {
         var oInv = this.parent.getInvFullTransformMatrix();
         var tx = oInv.TransformPointX(x, y);
         var ty = oInv.TransformPointY(x, y);
-        var l = this.getRailPosX();
-        var t = this.getRailPosY();
-        var r = l + this.getRailWidth();
-        var b = t + this.getRailHeight();
+        var l = this.getPosX();
+        var t = this.getPosY();
+        var r = l + this.getWidth();
+        var b = t + this.getHeight();
         return tx >= l && tx <= r && ty >= t && ty <= b;
     };
     CScroll.prototype.draw = function(graphics) {
         if(!this.bVisible) {
             return;
         }
-        var dScrollerHeight = this.getScrollerHeight();
-        var dXPos = this.getScrollerX();
-        var dYPos = this.getScrollerY();
-        var dScrollerWidth = this.getScrollerWidth();
+        var x, y, extX, extY, oButton;
+        oButton = this.buttons[0];
+        x = this.getButtonPosX(0);
+        y = this.getButtonPosY(0);
+        extX = this.getButtonSize();
+        extY = this.getButtonSize();
+        oButton.setTransformParams(x, y, extX, extY, 0, false, false);
+        oButton.recalculate();
+        oButton.draw(graphics);
+        oButton = this.buttons[1];
+        x = this.getButtonPosX(1);
+        y = this.getButtonPosY(1);
+        oButton.setTransformParams(x, y, extX, extY, 0, false, false);
+        oButton.recalculate();
+        oButton.draw(graphics);
+
+        x = this.getScrollerX();
+        y = this.getScrollerY();
+        extX = this.getScrollerWidth();
+        extY = this.getScrollerHeight();
+        var nColor = SCROLL_COLORS[this.state];
+
         graphics.SaveGrState();
         graphics.transform3(this.parent.getFullTransformMatrix());
-        var nColor = SCROLL_COLORS[this.state];
         graphics.p_color(0xCE, 0xCE, 0xCE, 0xFF);
         graphics.b_color1((nColor >> 16) & 0xFF, (nColor >> 8) & 0xFF, nColor & 0xFF, 0xFF);
-        graphics.AddSmartRect(dXPos, dYPos, dScrollerWidth, dScrollerHeight, 0);
+        graphics.AddSmartRect(x, y, extX, extY, 0);
         graphics.df();
-        //graphics.ds();
-        // graphics.drawVerLine(1, dXPos, dYPos, dYPos + dScrollerHeight, 0);
-        // graphics.drawHorLine(1, dYPos, dXPos, dXPos + SCROLL_WIDTH, 0);
-        // graphics.drawVerLine(1, dXPos + SCROLL_WIDTH, dYPos, dYPos + dScrollerHeight, 0);
-        // graphics.drawHorLine(1, dYPos + dScrollerHeight, dXPos, dXPos + SCROLL_WIDTH, 0);
+        //graphics.drawHorLine(1, y, x, x + extX, 0);
+        //graphics.drawHorLine(1, y + extY, x, x + extX, 0);
+        //graphics.drawVerLine(1, x, y, y + extY, 0);
+        //graphics.drawVerLine(1, x + extX, y, y + extY, 0);
         graphics.RestoreGrState();
     };
     CScroll.prototype.onMouseMove = function (e, x, y) {
