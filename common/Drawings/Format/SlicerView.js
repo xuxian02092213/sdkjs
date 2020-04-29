@@ -48,7 +48,7 @@
     var HEADER_BOTTOM_PADDING = HEADER_TOP_PADDING;
     var HEADER_LEFT_PADDING = LEFT_PADDING;
     var HEADER_RIGHT_PADDING = 2*RIGHT_PADDING + 2*HEADER_BUTTON_WIDTH;
-    var SCROLL_WIDTH = 15 * 25.4 / 96;
+    var SCROLL_WIDTH = 17 * 25.4 / 96;
     var SCROLLER_WIDTH = 13 * 25.4 / 96;
     var STYLE_TYPE = {};
     STYLE_TYPE.WHOLE = 0;
@@ -385,6 +385,9 @@
         this.recalcInfo.recalculateButtons = true;
         AscFormat.CShape.prototype.handleUpdateExtents.call(this);
     };
+    CSlicer.prototype.isEventListener = function (child) {
+        return this.eventListener === child;
+    };
     CSlicer.prototype.onUpdate = function () {
         if(this.drawingBase) {
             this.drawingBase.onUpdate();
@@ -462,8 +465,8 @@
         this.worksheet = slicer.worksheet;
         this.txBody = null;
         this.buttons = [];
-        this.buttons.push(new CButton(this, null));
-        this.buttons.push(new CButton(this, null));
+        this.buttons.push(new CInterfaceButton(this));
+        this.buttons.push(new CInterfaceButton(this));
         this.setBDeleted(false);
         this.setTransformParams(0, 0, 0, 0, 0, false, false);
         this.createTextBody();
@@ -615,6 +618,9 @@
         oMT.MultiplyAppend(oTransform, this.slicer.transform);
         return oTransform;
     };
+    CHeader.prototype.isEventListener = function (child) {
+        return this.eventListener === child;
+    };
     CHeader.prototype.onMouseMove = function (e, x, y) {
         if(this.eventListener) {
             return this.eventListener.onMouseMove(e, x, y);
@@ -641,6 +647,17 @@
         bRet = bRet || this.buttons[0].onMouseUp(e, x, y);
         bRet = bRet || this.buttons[1].onMouseUp(e, x, y);
         return bRet;
+    };
+    CHeader.prototype.getButtons = function (e, x, y) {
+        return this.buttons;
+    };
+    CHeader.prototype.getButtonIndex = function (oButton) {
+        for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
+            if(this.buttons[nButton] === oButton) {
+                return nButton;
+            }
+        }
+        return -1;
     };
 
 
@@ -814,26 +831,46 @@
     };
     CButton.prototype.onMouseMove = function (e, x, y) {
         var bRet = false;
-        var bHit = this.hitInInnerArea(x, y);
-        if(e.IsLocked) {
-            if(bHit) {
+        if(this.parent.isEventListener(this)) {
+            if(!e.IsLocked) {
+                return this.onMouseUp(e, x, y);
+            }
+            else {
+                var nIdx = this.parent.findButtonIndex(x, y);
 
             }
         }
         else {
-            if(bHit && !HOVERED_STATES[this.state] || !bHit && HOVERED_STATES[this.state]) {
-                this.state = INVERT_HOVER_STATE[this.state];
-                bRet = true;
+            var bHit = this.hitInInnerArea(x, y);
+            if(e.IsLocked) {
+                if(bHit) {
+
+                }
+            }
+            else {
+                if(bHit && !HOVERED_STATES[this.state] || !bHit && HOVERED_STATES[this.state]) {
+                    this.state = INVERT_HOVER_STATE[this.state];
+                    bRet = true;
+                }
             }
         }
         return bRet;
     };
     CButton.prototype.onMouseDown = function (e, x, y) {
+        if(this.hitInInnerArea(x, y)) {
+            this.parent.eventListener = this;
+            return true;
+        }
         return false;
     };
     CButton.prototype.onMouseUp = function (e, x, y) {
         return false;
     };
+
+    function CInterfaceButton(parent) {
+        CButton.call(this, parent, null);
+    }
+    CInterfaceButton.prototype = Object.create(CButton.prototype);
 
     function CButtonsContainer(slicer) {
         this.slicer = slicer;
@@ -856,6 +893,52 @@
     CButtonsContainer.prototype.addButton = function (oButton) {
         this.buttons.push(oButton);
     };
+    CButtonsContainer.prototype.getButtonIndex = function (oButton) {
+        for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
+            if(this.buttons[nButton] === oButton) {
+                return nButton;
+            }
+        }
+        return -1;
+    };
+    CButtonsContainer.prototype.findButtonIndex = function (x, y) {
+        var oInv = this.getInvFullTransformMatrix();
+        var tx = oInv.TransformPointX(x, y);
+        var ty = oInv.TransformPointY(x, y);
+        var nRow, nRowsCount = this.getRowsCount();
+        for(nRow = 0;nRow < nRowsCount; ++nRow) {
+            if(ty < this.getRowStart(nRow)) {
+                break;
+            }
+        }
+        --nRow;
+        if(nRow === -1) {
+            return -1
+        }
+        var nCol, nColsCount = this.getColumnsCount();
+        for(nCol = 0; nCol < nColsCount; ++nCol) {
+            if(tx < this.getColumnStart()) {
+                break;
+            }
+        }
+        --nCol;
+        if(nCol === -1) {
+            --nRow;
+            if(nRow === -1) {
+                return - 1;
+            }
+            nCol = nColsCount - 1
+        }
+        var nIndex = nRow * nColsCount;
+        if(nRow < nRowsCount - 1) {
+            nIndex += nCol;
+        }
+        else {
+            nIndex += Math.min(nCol, this.buttons.length - (nRowsCount - 1)*nColsCount);
+        }
+        return nIndex;
+
+    };
     CButtonsContainer.prototype.getTxStyles = function (nType) {
         return this.slicer.getTxStyles(nType);
     };
@@ -868,6 +951,21 @@
     CButtonsContainer.prototype.getButtonHeight = function () {
         return this.slicer.getButtonHeight();
     };
+
+    CButtonsContainer.prototype.getButtonWidth = function () {
+        var nColumnCount = this.getColumnsCount();
+        var nSpaceCount = nColumnCount - 1;
+        var dTotalHeight = this.getTotalHeight();
+        var dButtonWidth;
+        if(dTotalHeight <= this.extY) {
+            dButtonWidth = Math.max(0, this.extX - nSpaceCount * SPACE_BETWEEN) / nColumnCount;
+        }
+        else {
+            dButtonWidth = Math.max(0, this.extX - this.scroll.getWidth() - SPACE_BETWEEN - nSpaceCount * SPACE_BETWEEN) / nColumnCount;
+        }
+        return dButtonWidth;
+    };
+
     CButtonsContainer.prototype.getColumnsCount = function () {
         return this.slicer.getColumnsCount();
     };
@@ -881,30 +979,28 @@
         var nRowsCount = this.getRowsCount();
         return  this.getButtonHeight() * nRowsCount + SPACE_BETWEEN * (nRowsCount - 1);
     };
+    CButtonsContainer.prototype.getColumnStart = function (nColumn) {
+        return this.x + (this.getButtonWidth() + SPACE_BETWEEN) * nColumn;
+    };
+    CButtonsContainer.prototype.getRowStart = function (nRow) {
+        return this.y + (this.getButtonHeight() + SPACE_BETWEEN) * nRow;
+    };
     CButtonsContainer.prototype.recalculate = function() {
         var nColumnCount = this.getColumnsCount();
-        var nSpaceCount = nColumnCount - 1;
-        var bScroll = false, dButtonWidth, dButtonHeight, dTotalHeight;
+        var dButtonWidth, dButtonHeight;
         dButtonHeight = this.getButtonHeight();
-        dTotalHeight = this.getTotalHeight();
-        if(dTotalHeight <= this.extY) {
-            dButtonWidth = Math.max(0, this.extX - nSpaceCount * SPACE_BETWEEN) / nColumnCount;
-        }
-        else {
-            bScroll = true;
-            dButtonWidth = Math.max(0, this.extX - SCROLL_WIDTH - SPACE_BETWEEN - nSpaceCount * SPACE_BETWEEN) / nColumnCount;
-        }
+        dButtonWidth = this.getButtonWidth();
         var nColumn, nRow, nButtonIndex, oButton, x ,y;
         for(nButtonIndex = 0; nButtonIndex < this.buttons.length; ++nButtonIndex) {
             nColumn = nButtonIndex % nColumnCount;
             nRow = nButtonIndex / nColumnCount >> 0;
             oButton = this.buttons[nButtonIndex];
-            x = this.x + (dButtonWidth + SPACE_BETWEEN) * nColumn;
-            y = this.y + (dButtonHeight + SPACE_BETWEEN) * nRow;
+            x = this.getColumnStart(nColumn);
+            y = this.getRowStart(nRow);
             oButton.setTransformParams(x, y, dButtonWidth, dButtonHeight, 0, false, false);
             oButton.recalculate();
         }
-        this.scroll.bVisible = bScroll;
+        this.scroll.bVisible = this.getTotalHeight() > this.extY;
     };
     CButtonsContainer.prototype.draw = function (graphics) {
         if(this.buttons.length > 0) {
@@ -937,6 +1033,9 @@
         var ty = this.slicer.invertTransform.TransformPointY(x, y);
         return tx >= this.x && ty >= this.y &&
             tx <= this.x + this.extX && ty <= this.y + this.extY;
+    };
+    CButtonsContainer.prototype.isEventListener = function (child) {
+        return this.eventListener === child;
     };
     CButtonsContainer.prototype.onMouseMove = function (e, x, y) {
 
@@ -996,14 +1095,17 @@
         return bRet;
     };
 
+    CButtonsContainer.prototype.getButtons = function (e, x, y) {
+        return this.buttons;
+    };
     function CScroll(parent) {
         this.parent = parent;
         this.extX = 0;
         this.extY = 0;
         this.bVisible = false;
         this.buttons = [];
-        this.buttons[0] = new CButton(this, null);
-        this.buttons[1] = new CButton(this, null);
+        this.buttons[0] = new CInterfaceButton(this);
+        this.buttons[1] = new CInterfaceButton(this);
         this.state = STYLE_TYPE.UNSELECTED_DATA;
     }
     CScroll.prototype.getTxStyles = function () {
@@ -1165,6 +1267,17 @@
     };
     CScroll.prototype.onMouseUp = function (e, x, y) {
         return false;
+    };
+    CScroll.prototype.getButtons = function (e, x, y) {
+        return this.buttons;
+    };
+    CHeader.prototype.getButtonIndex = function (oButton) {
+        for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
+            if(this.buttons[nButton] === oButton) {
+                return nButton;
+            }
+        }
+        return -1;
     };
     window['AscFormat'] = window['AscFormat'] || {};
     window['AscFormat'].CSlicer = CSlicer;

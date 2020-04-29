@@ -296,8 +296,13 @@ function handleFloatObjects(drawingObjectsController, drawingArr, e, x, y, group
         drawing = drawingArr[i];
         switch(drawing.getObjectType())
         {
-            case AscDFH.historyitem_type_Shape:
+
             case AscDFH.historyitem_type_SlicerView:
+            {
+                ret = handleSlicer(drawing, drawingObjectsController, e, x, y, group, pageIndex, bWord);
+                break;
+            }
+            case AscDFH.historyitem_type_Shape:
             case AscDFH.historyitem_type_ImageShape:
             case AscDFH.historyitem_type_OleObject:
             case AscDFH.historyitem_type_Cnx:
@@ -345,6 +350,22 @@ function handleFloatObjects(drawingObjectsController, drawingArr, e, x, y, group
     }
     return ret;
 }
+    
+    function handleSlicer(drawing, drawingObjectsController, e, x, y, group, pageIndex, bWord)
+    {
+        if(drawingObjectsController.handleEventMode === HANDLE_EVENT_MODE_HANDLE)
+        {
+            var bRet = drawing.onMouseDown(e, x, y);
+            if(!bRet) {
+                return handleShapeImage(drawing, drawingObjectsController, e, x, y, group, pageIndex, bWord);
+            }
+            return bRet;
+        }
+        else
+        {
+            return handleShapeImage(drawing, drawingObjectsController, e, x, y, group, pageIndex, bWord);
+        }
+    }
 
 function handleShapeImage(drawing, drawingObjectsController, e, x, y, group, pageIndex, bWord)
 {
