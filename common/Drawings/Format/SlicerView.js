@@ -305,7 +305,8 @@
         this.txStyles.Default.ParaPr.SetSpacing(1, undefined, 0, 0, undefined, undefined);
         return {styles: this.txStyles, lastId: undefined};
     };
-    CSlicer.prototype.draw = function (graphics, transform, transformText, pageIndex) {
+
+    CSlicer.prototype.internalDraw = function(graphics, transform, transformText, pageIndex) {
         var r = graphics.updatedRect;
         if(r) {
             if(!this.bounds.isIntersect(r.x, r.y, r.x + r.w, r.y + r.h)) {
@@ -374,6 +375,10 @@
         if(this.buttonsContainer) {
             this.buttonsContainer.draw(graphics, transform, transformText, pageIndex);
         }
+    };
+    CSlicer.prototype.draw = function (graphics, transform, transformText, pageIndex) {
+        AscFormat.ExecuteNoHistory(this.internalDraw, this, [graphics, transform, transformText, pageIndex]);
+
     };
     CSlicer.prototype.handleUpdateExtents = function () {
         this.recalcInfo.recalculateHeader = true;
