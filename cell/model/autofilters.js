@@ -114,8 +114,7 @@
 				}
 			},
 			
-			clone : function()
-			{
+			clone : function() {
 				var res = new AutoFiltersOptionsElements();
 				
 				res.val = this.val;
@@ -125,7 +124,7 @@
 				res.Properties = this.Properties;
 				res.year = this.visible;
 				res.month = this.isDateFormat;
-				res.day = this.Properties;
+				res.day = this.day;
 				
 				return res;
 			},

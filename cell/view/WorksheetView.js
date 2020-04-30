@@ -20310,8 +20310,8 @@
 
 			for (var i = 0; i < arr.length; i++) {
 				t.model.insertSlicer(arr[i], _obj, type);
-				//создаём view
 			}
+			t.objectRender.addSlicers(arr);
 		};
 
 		//чтобы лишний раз не проверять - может быть взять информацию из cellinfo?
@@ -20325,7 +20325,6 @@
 		//TODO lock
 		//+ lock def names
 		callback(obj);
-		t.objectRender.addSlicers(arr);
 	};
 
 	WorksheetView.prototype.deleteSlicer = function (name) {
