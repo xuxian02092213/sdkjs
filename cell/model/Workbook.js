@@ -7724,7 +7724,7 @@
 		this.aSlicers.push(slicer);
 
 		History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_Add, this.getId(), null,
-		 			new AscCommonExcel.UndoRedoData_Slicer(null, null));
+		 			new AscCommonExcel.UndoRedoData_Slicer(type, obj.DisplayName, name));
 
 		if (slicer && slicer.cache) {
 			var _name = slicer.cache.name;

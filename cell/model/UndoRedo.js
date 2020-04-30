@@ -425,6 +425,8 @@ function (window, undefined) {
 		this.SortState = 115;
 		this.SortStateData = 116;
 
+		this.Slicer = 116;
+
 		this.Create = function (nType) {
 			switch (nType) {
 				case this.ValueMultiTextElem:
@@ -1939,52 +1941,45 @@ function (window, undefined) {
 		}
 	};
 
-	function UndoRedoData_Slicer(from, to, bFilter, tableName) {
-		this.from = from;
-		this.to = to;
-		this.bFilter = bFilter;
-		this.tableName = tableName;
+	function UndoRedoData_Slicer(type, objName, colName) {
+		this.type = type;
+		this.objName = objName;
+		this.colName = colName;
 	}
 
 	UndoRedoData_Slicer.prototype.Properties = {
-		from: 0, to: 1, bFilter: 2, tableName: 3
+		type: 0, objName: 1, colName: 2
 	};
 	UndoRedoData_Slicer.prototype.getType = function () {
-		return UndoRedoDataTypes.SortStateData;
+		return UndoRedoDataTypes.Slicer;
 	};
 	UndoRedoData_Slicer.prototype.getProperties = function () {
 		return this.Properties;
 	};
 	UndoRedoData_Slicer.prototype.getProperty = function (nType) {
 		switch (nType) {
-			case this.Properties.from:
-				return this.from;
+			case this.Properties.type:
+				return this.type;
 				break;
-			case this.Properties.to:
-				return this.to;
+			case this.Properties.objName:
+				return this.objName;
 				break;
-			case this.Properties.bFilter:
-				return this.bFilter;
-				break;
-			case this.Properties.tableName:
-				return this.tableName;
+			case this.Properties.colName:
+				return this.colName;
 				break;
 		}
 		return null;
 	};
 	UndoRedoData_Slicer.prototype.setProperty = function (nType, value) {
 		switch (nType) {
-			case this.Properties.from:
-				this.from = value;
+			case this.Properties.type:
+				this.type = value;
 				break;
-			case this.Properties.to:
-				this.to = value;
+			case this.Properties.objName:
+				this.objName = value;
 				break;
-			case this.Properties.bFilter:
-				this.bFilter = value;
-				break;
-			case this.Properties.tableName:
-				this.tableName = value;
+			case this.Properties.colName:
+				this.colName = value;
 				break;
 		}
 	};
