@@ -7723,8 +7723,8 @@
 		slicer.init(name, obj, type);
 		this.aSlicers.push(slicer);
 
-		//History.Add(AscCommonExcel.g_oUndoRedoSortState, AscCH.historyitem_SortState_Add, this.getId(), null,
-		// 			new AscCommonExcel.UndoRedoData_SortState(oldSortState, null));
+		History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_Add, this.getId(), null,
+		 			new AscCommonExcel.UndoRedoData_Slicer(null, null));
 
 		if (slicer && slicer.cache) {
 			var _name = slicer.cache.name;

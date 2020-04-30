@@ -1939,6 +1939,57 @@ function (window, undefined) {
 		}
 	};
 
+	function UndoRedoData_Slicer(from, to, bFilter, tableName) {
+		this.from = from;
+		this.to = to;
+		this.bFilter = bFilter;
+		this.tableName = tableName;
+	}
+
+	UndoRedoData_Slicer.prototype.Properties = {
+		from: 0, to: 1, bFilter: 2, tableName: 3
+	};
+	UndoRedoData_Slicer.prototype.getType = function () {
+		return UndoRedoDataTypes.SortStateData;
+	};
+	UndoRedoData_Slicer.prototype.getProperties = function () {
+		return this.Properties;
+	};
+	UndoRedoData_Slicer.prototype.getProperty = function (nType) {
+		switch (nType) {
+			case this.Properties.from:
+				return this.from;
+				break;
+			case this.Properties.to:
+				return this.to;
+				break;
+			case this.Properties.bFilter:
+				return this.bFilter;
+				break;
+			case this.Properties.tableName:
+				return this.tableName;
+				break;
+		}
+		return null;
+	};
+	UndoRedoData_Slicer.prototype.setProperty = function (nType, value) {
+		switch (nType) {
+			case this.Properties.from:
+				this.from = value;
+				break;
+			case this.Properties.to:
+				this.to = value;
+				break;
+			case this.Properties.bFilter:
+				this.bFilter = value;
+				break;
+			case this.Properties.tableName:
+				this.tableName = value;
+				break;
+		}
+	};
+
+
 	//для применения изменений
 	var UndoRedoClassTypes = new function () {
 		this.aTypes = [];
@@ -3160,7 +3211,7 @@ function (window, undefined) {
 				}
 				break;
 		}
-	};	//----------------------------------------------------------export----------------------------------------------------
+	};
 	function UndoRedoHeaderFooter(wb) {
 		this.wb = wb;
 		this.nType = UndoRedoClassTypes.Add(function () {
@@ -3219,6 +3270,44 @@ function (window, undefined) {
 		}
 	};
 
+	function UndoRedoSlicer(wb) {
+		this.wb = wb;
+		this.nType = UndoRedoClassTypes.Add(function () {
+			return AscCommonExcel.g_oUndoRedoSlicer;
+		});
+	}
+
+	UndoRedoSlicer.prototype.getClassType = function () {
+		return this.nType;
+	};
+	UndoRedoSlicer.prototype.Undo = function (Type, Data, nSheetId) {
+		this.UndoRedo(Type, Data, nSheetId, true);
+	};
+	UndoRedoSlicer.prototype.Redo = function (Type, Data, nSheetId) {
+		this.UndoRedo(Type, Data, nSheetId, false);
+	};
+	UndoRedoSlicer.prototype.UndoRedo = function (Type, Data, nSheetId, bUndo) {
+		var oModel = (null == nSheetId) ? this.wb : this.wb.getWorksheetById(nSheetId);
+		var api = window["Asc"]["editor"];
+		if (!api.wb || !oModel) {
+			return;
+		}
+
+		var ws = (null == nSheetId) ? api.wb : api.wb.getWorksheetById(nSheetId);
+		Data.worksheet = ws;
+
+		if(Data.bFilter) {
+			if(Data.tableName) {
+				var table = ws.model.autoFilters._getFilterByDisplayName(Data.tableName);
+				table.SortState = bUndo ? Data.from : Data.to;
+			} else {
+				ws.model.AutoFilter.SortState = bUndo ? Data.from : Data.to;
+			}
+		} else {
+			ws.model.sortState = bUndo ? Data.from : Data.to;
+		}
+	};
+
 	//----------------------------------------------------------export----------------------------------------------------
 	window['AscCommonExcel'] = window['AscCommonExcel'] || {};
 	window['AscCommonExcel'].UndoRedoItemSerializable = UndoRedoItemSerializable;
@@ -3247,6 +3336,7 @@ function (window, undefined) {
 	window['AscCommonExcel'].UndoRedoData_SingleProperty = UndoRedoData_SingleProperty;
 	window['AscCommonExcel'].UndoRedoData_ArrayFormula = UndoRedoData_ArrayFormula;
 	window['AscCommonExcel'].UndoRedoData_SortState = UndoRedoData_SortState;
+	window['AscCommonExcel'].UndoRedoData_Slicer = UndoRedoData_Slicer;
 	window['AscCommonExcel'].UndoRedoWorkbook = UndoRedoWorkbook;
 	window['AscCommonExcel'].UndoRedoCell = UndoRedoCell;
 	window['AscCommonExcel'].UndoRedoWoorksheet = UndoRedoWoorksheet;
@@ -3260,6 +3350,7 @@ function (window, undefined) {
 	window['AscCommonExcel'].UndoRedoHeaderFooter = UndoRedoHeaderFooter;
 	window['AscCommonExcel'].UndoRedoSortState = UndoRedoSortState;
 	window['AscCommonExcel'].UndoRedoData_BinaryWrapper = UndoRedoData_BinaryWrapper;
+	window['AscCommonExcel'].UndoRedoSlicer = UndoRedoSlicer;
 
 	window['AscCommonExcel'].g_oUndoRedoWorkbook = null;
 	window['AscCommonExcel'].g_oUndoRedoCell = null;
