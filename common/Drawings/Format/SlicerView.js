@@ -1142,7 +1142,8 @@
                                 }
                             }
                             else {
-                                for(nButton = this.startButton + 1; nButton <= nFindButton; ++nButton) {
+                                var nLast = Math.min(nFindButton, this.buttons.length - 1);
+                                for(nButton = this.startButton + 1; nButton <= nLast; ++nButton) {
                                     this.buttons[nButton].setSelectTmpState();
                                 }
                             }
