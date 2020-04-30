@@ -2459,6 +2459,7 @@ function TrackTextState(drawingObjects, majorObject, x, y) {
     window['AscFormat'].SNAP_DISTANCE = SNAP_DISTANCE;
     window['AscFormat'].StartAddNewShape = StartAddNewShape;
     window['AscFormat'].NullState = NullState;
+    window['AscFormat'].SlicerState = SlicerState;
     window['AscFormat'].PreChangeAdjState = PreChangeAdjState;
     window['AscFormat'].PreRotateState = PreRotateState;
     window['AscFormat'].PreResizeState = PreResizeState;

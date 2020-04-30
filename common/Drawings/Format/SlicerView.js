@@ -42,7 +42,6 @@
     var BOTTOM_PADDING = 3;
     var TOP_PADDING = 2;
     var SPACE_BETWEEN = 1.5;
-
     var HEADER_BUTTON_WIDTH = RIGHT_PADDING * 175 / 73;
     var HEADER_TOP_PADDING = RIGHT_PADDING;
     var HEADER_BOTTOM_PADDING = HEADER_TOP_PADDING;
@@ -50,6 +49,7 @@
     var HEADER_RIGHT_PADDING = 2*RIGHT_PADDING + 2*HEADER_BUTTON_WIDTH;
     var SCROLL_WIDTH = 17 * 25.4 / 96;
     var SCROLLER_WIDTH = 13 * 25.4 / 96;
+
     var STYLE_TYPE = {};
     STYLE_TYPE.WHOLE = 0;
     STYLE_TYPE.HEADER = 1;
@@ -61,7 +61,6 @@
     STYLE_TYPE.HOVERED_SELECTED_NO_DATA = 7;
     STYLE_TYPE.HOVERED_UNSELECTED_DATA = 8;
     STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA = 9;
-
 
     var INVERT_HOVER_STATE = {};
     INVERT_HOVER_STATE[STYLE_TYPE.SELECTED_DATA] = STYLE_TYPE.HOVERED_SELECTED_DATA;
@@ -85,6 +84,42 @@
     SELECTED_STATES[STYLE_TYPE.HOVERED_SELECTED_DATA] = true;
     SELECTED_STATES[STYLE_TYPE.HOVERED_SELECTED_NO_DATA] = true;
 
+    var RESET_SELECTED_STATES = {};
+    RESET_SELECTED_STATES[STYLE_TYPE.SELECTED_DATA] = STYLE_TYPE.UNSELECTED_DATA;
+    RESET_SELECTED_STATES[STYLE_TYPE.SELECTED_NO_DATA] = STYLE_TYPE.UNSELECTED_NO_DATA;
+    RESET_SELECTED_STATES[STYLE_TYPE.HOVERED_SELECTED_DATA] = STYLE_TYPE.HOVERED_UNSELECTED_DATA;
+    RESET_SELECTED_STATES[STYLE_TYPE.HOVERED_SELECTED_NO_DATA] = STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA;
+    RESET_SELECTED_STATES[STYLE_TYPE.UNSELECTED_DATA] = STYLE_TYPE.UNSELECTED_DATA;
+    RESET_SELECTED_STATES[STYLE_TYPE.UNSELECTED_NO_DATA] = STYLE_TYPE.UNSELECTED_NO_DATA;
+    RESET_SELECTED_STATES[STYLE_TYPE.HOVERED_UNSELECTED_DATA] = STYLE_TYPE.HOVERED_UNSELECTED_DATA;
+    RESET_SELECTED_STATES[STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA] = STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA;
+    RESET_SELECTED_STATES[STYLE_TYPE.HEADER] = STYLE_TYPE.HEADER;
+    RESET_SELECTED_STATES[STYLE_TYPE.WHOLE] = STYLE_TYPE.WHOLE;
+
+    var SET_SELECTED_STATES = {};
+    SET_SELECTED_STATES[STYLE_TYPE.SELECTED_DATA] = STYLE_TYPE.SELECTED_DATA;
+    SET_SELECTED_STATES[STYLE_TYPE.SELECTED_NO_DATA] = STYLE_TYPE.SELECTED_NO_DATA;
+    SET_SELECTED_STATES[STYLE_TYPE.HOVERED_SELECTED_DATA] = STYLE_TYPE.HOVERED_SELECTED_DATA;
+    SET_SELECTED_STATES[STYLE_TYPE.HOVERED_SELECTED_NO_DATA] = STYLE_TYPE.HOVERED_SELECTED_NO_DATA;
+    SET_SELECTED_STATES[STYLE_TYPE.UNSELECTED_DATA] = STYLE_TYPE.SELECTED_DATA;
+    SET_SELECTED_STATES[STYLE_TYPE.UNSELECTED_NO_DATA] = STYLE_TYPE.SELECTED_NO_DATA;
+    SET_SELECTED_STATES[STYLE_TYPE.HOVERED_UNSELECTED_DATA] = STYLE_TYPE.HOVERED_SELECTED_DATA;
+    SET_SELECTED_STATES[STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA] = STYLE_TYPE.HOVERED_SELECTED_NO_DATA;
+    SET_SELECTED_STATES[STYLE_TYPE.HEADER] = STYLE_TYPE.HEADER;
+    SET_SELECTED_STATES[STYLE_TYPE.WHOLE] = STYLE_TYPE.WHOLE;
+
+    var SET_HOVER_STATES = {};
+    SET_HOVER_STATES[STYLE_TYPE.SELECTED_DATA] = STYLE_TYPE.HOVERED_SELECTED_DATA;
+    SET_HOVER_STATES[STYLE_TYPE.SELECTED_NO_DATA] = STYLE_TYPE.HOVERED_SELECTED_NO_DATA;
+    SET_HOVER_STATES[STYLE_TYPE.HOVERED_SELECTED_DATA] = STYLE_TYPE.HOVERED_SELECTED_DATA;
+    SET_HOVER_STATES[STYLE_TYPE.HOVERED_SELECTED_NO_DATA] = STYLE_TYPE.HOVERED_SELECTED_NO_DATA;
+    SET_HOVER_STATES[STYLE_TYPE.UNSELECTED_DATA] = STYLE_TYPE.HOVERED_UNSELECTED_DATA;
+    SET_HOVER_STATES[STYLE_TYPE.UNSELECTED_NO_DATA] = STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA;
+    SET_HOVER_STATES[STYLE_TYPE.HOVERED_UNSELECTED_DATA] = STYLE_TYPE.HOVERED_SELECTED_DATA;
+    SET_HOVER_STATES[STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA] = STYLE_TYPE.HOVERED_SELECTED_NO_DATA;
+    SET_HOVER_STATES[STYLE_TYPE.HEADER] = STYLE_TYPE.HEADER;
+    SET_HOVER_STATES[STYLE_TYPE.WHOLE] = STYLE_TYPE.WHOLE;
+
     var SCROLL_COLORS = {};
     SCROLL_COLORS[STYLE_TYPE.WHOLE] = 0xF1F1F1;
     SCROLL_COLORS[STYLE_TYPE.HEADER] = 0xF1F1F1;
@@ -96,7 +131,6 @@
     SCROLL_COLORS[STYLE_TYPE.HOVERED_SELECTED_NO_DATA] = 0xCFCFCF;
     SCROLL_COLORS[STYLE_TYPE.HOVERED_UNSELECTED_DATA] = 0xCFCFCF;
     SCROLL_COLORS[STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA] = 0xCFCFCF;
-
 
     function CTextBox(txBody, transformText) {
         this.txBody = txBody;
@@ -141,7 +175,12 @@
         oFill = new AscCommonExcel.Fill();//TODO: Take background from styles when in will be implemented
         var nColor = 0xFFFFFF;
         if(!HOVERED_STATES[nType]) {
-            oFill.fromColor(new AscCommonExcel.RgbColor(nColor));
+            if(SELECTED_STATES[nType]) {
+                oFill.fromColor(new AscCommonExcel.RgbColor(0xBDD7EE));
+            }
+            else {
+                oFill.fromColor(new AscCommonExcel.RgbColor(nColor));
+            }
         }
         else {
             var oGF = new AscCommonExcel.GradientFill();
@@ -408,13 +447,18 @@
         }
     };
     CSlicer.prototype.onMouseMove = function (e, x, y) {
+        var bRet = false;
         if(this.eventListener) {
             if(!e.IsLocked) {
                 return this.onMouseUp(e, x, y);
             }
-            return this.eventListener.onMouseMove(e, x, y);
+            bRet =  this.eventListener.onMouseMove(e, x, y);
+
+            if(bRet) {
+                this.onUpdate();
+            }
+            return true;
         }
-        var bRet = false;
         if(this.header) {
             bRet = bRet || this.header.onMouseMove(e, x, y);
         }
@@ -453,6 +497,7 @@
         if(this.eventListener) {
             bRet = this.eventListener.onMouseUp(e, x, y);
             this.setEventListener(null);
+            this.onUpdate();
             return bRet;
         }
         if(bRet) {
@@ -665,7 +710,6 @@
         }
         return -1;
     };
-
     CHeader.prototype.setEventListener = function (child) {
         this.eventListener = child;
         if(child) {
@@ -677,6 +721,7 @@
             }
         }
     };
+
     function CButton(parent, options) {
         AscFormat.CShape.call(this);
         this.parent = parent;
@@ -753,6 +798,15 @@
             return this.tmpState;
         }
         return this.state;
+    };
+    CButton.prototype.setUnselectTmpState = function() {
+        this.tmpState = RESET_SELECTED_STATES[this.state];
+    };
+    CButton.prototype.setSelectTmpState = function() {
+        this.tmpState = SET_SELECTED_STATES[this.state];
+    };
+    CButton.prototype.setHoverTmpState = function() {
+        this.tmpState = SET_HOVER_STATES[this.state];
     };
     CButton.prototype.removeTmpState = function() {
         this.tmpState = null;
@@ -924,6 +978,12 @@
         }
         return -1;
     };
+    CButtonsContainer.prototype.getButton = function (nIndex) {
+        if(nIndex > -1 && nIndex < this.buttons.length) {
+            return this.buttons[nIndex];
+        }
+        return null;
+    };
     CButtonsContainer.prototype.findButtonIndex = function (x, y) {
         var oInv = this.getInvFullTransformMatrix();
         var tx = oInv.TransformPointX(x, y);
@@ -1068,8 +1128,26 @@
             if(this.slicer.isEventListener(this)) {
                 bRet = true;
                 if(this.startButton > -1) {
-                    var nButton = this.findButtonIndex(x, y);
-
+                    var oButton = this.getButton(this.startButton), nButton;
+                    if(oButton) {
+                        if(!this.slicer.isMultiSelect()) {
+                            for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
+                                this.buttons[nButton].setUnselectTmpState();
+                            }
+                            oButton.setHoverTmpState();
+                            var nFindButton = this.findButtonIndex(x, y);
+                            if(nFindButton < this.startButton) {
+                                for(nButton = Math.max(0, nFindButton); nButton < this.startButton; ++nButton) {
+                                    this.buttons[nButton].setSelectTmpState();
+                                }
+                            }
+                            else {
+                                for(nButton = this.startButton + 1; nButton <= nFindButton; ++nButton) {
+                                    this.buttons[nButton].setSelectTmpState();
+                                }
+                            }
+                        }
+                    }
                 }
             }
             else {
@@ -1141,6 +1219,9 @@
         else {
             if(this.slicer.isEventListener(this)) {
                 this.slicer.setEventListener(null);
+                for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
+                    this.buttons[nButton].removeTmpState();
+                }
             }
         }
     };
