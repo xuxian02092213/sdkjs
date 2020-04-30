@@ -1000,7 +1000,7 @@
         }
         var nCol, nColsCount = this.getColumnsCount();
         for(nCol = 0; nCol < nColsCount; ++nCol) {
-            if(tx < this.getColumnStart()) {
+            if(tx < this.getColumnStart(nCol)) {
                 break;
             }
         }
