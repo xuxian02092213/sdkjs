@@ -194,10 +194,10 @@
         for(var nValue = 0; nValue < nCount; ++nValue) {
             var oValue = this.getValue(nValue);
             if(oValue && oValue.visible === false) {
-                return true;
+                return false;
             }
         }
-        return false;
+        return true;
     };
     CSlicerData.prototype.getString = function (nIndex) {
         var oValue = this.getValue(nIndex);
@@ -208,6 +208,9 @@
     };
     CSlicerData.prototype.onViewUpdate = function () {
         return null;
+    };
+    CSlicerData.prototype.clearFilter = function () {
+        //todo
     };
 
     function CSlicer() {
@@ -502,6 +505,9 @@
     CSlicer.prototype.setEventListener = function (child) {
         this.eventListener = child;
     };
+    CSlicer.prototype.handleClearButtonClick = function () {
+        this.data.clearFilter();
+    };
     CSlicer.prototype.onUpdate = function () {
         if(this.drawingBase) {
             this.drawingBase.onUpdate();
@@ -568,7 +574,6 @@
     };
 
     CSlicer.prototype.onDataUpdate = function() {
-
     };
     CSlicer.prototype.getValues = function () {
         return this.data.getValues();
@@ -585,8 +590,8 @@
     CSlicer.prototype.getString = function (nIndex) {
         return this.data.getString(nIndex);
     };
-    CSlicer.prototype.isAllValuesSelected = function (nIndex) {
-        return this.data.isAllValuesSelected(nIndex);
+    CSlicer.prototype.isAllValuesSelected = function () {
+        return this.data.isAllValuesSelected();
     };
 
     function CHeader(slicer) {
@@ -772,10 +777,12 @@
         return bRet;
     };
     CHeader.prototype.onMouseUp = function (e, x, y) {
-        if(this.eventListener) {
-            return this.eventListener.onMouseUp(e, x, y);
-        }
         var bRet = false;
+        if(this.eventListener) {
+            bRet = this.eventListener.onMouseUp(e, x, y);
+            this.eventListener = null;
+            return bRet;
+        }
         bRet = bRet || this.buttons[0].onMouseUp(e, x, y);
         bRet = bRet || this.buttons[1].onMouseUp(e, x, y);
         this.setEventListener(null);
@@ -804,7 +811,17 @@
         }
     };
     CHeader.prototype.handleMouseUp = function (nIndex) {
-
+        var oButton = this.buttons[nIndex];
+        if(!oButton) {
+            return;
+        }
+        if(nIndex === 0) {
+            oButton.setInvertSelectTmpState();
+            this.slicer.onUpdate();
+        }
+        else {
+            this.slicer.handleClearButtonClick();
+        }
     };
     CHeader.prototype.isButtonDisabled = function (nIndex) {
         if(nIndex === 1) {
@@ -815,7 +832,7 @@
         }
     };
     CHeader.prototype.getButtonState = function (nIndex) {
-
+        return this.buttons[nIndex].getState();
     };
 
     function CButton(parent) {
@@ -1058,8 +1075,12 @@
 
     function CInterfaceButton(parent) {
         CButton.call(this, parent);
+        this.tmpState = STYLE_TYPE.UNSELECTED_DATA;
     }
     CInterfaceButton.prototype = Object.create(CButton.prototype);
+    CInterfaceButton.prototype.removeTmpState = function () {
+
+    };
     CInterfaceButton.prototype.isDisabled = function () {
         return this.parent.isButtonDisabled(this.parent.getButtonIndex(this));
     };
@@ -1069,12 +1090,25 @@
         }
         return CButton.prototype.hit.call(this, x, y);
     };
+    CInterfaceButton.prototype.onMouseDown = function (e, x, y) {
+        if(this.isDisabled()) {
+            return false;
+        }
+        return CButton.prototype.onMouseDown.call(this, e, x, y);
+    };
+    CInterfaceButton.prototype.onMouseMove = function (e, x, y) {
+        if(this.isDisabled()) {
+            return false;
+        }
+        return CButton.prototype.onMouseMove.call(this, e, x, y);
+    };
     CInterfaceButton.prototype.onMouseUp = function (e, x, y) {
         var bEventListener = this.parent.isEventListener(this);
-        CButton.prototype.onMouseUp.call(this, e, x, y);
+        var bRet = CButton.prototype.onMouseUp.call(this, e, x, y);
         if(bEventListener) {
             this.parent.handleMouseUp(this.parent.getButtonIndex(this));
         }
+        return bRet;
     };
 
     function CButtonsContainer(slicer) {
