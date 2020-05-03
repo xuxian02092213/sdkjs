@@ -86,6 +86,22 @@
         this.transformText = transformText;
     }
 
+    
+    function CreateButtonHoverGradient() {
+        var oFill = new AscCommonExcel.Fill(), oGF, oGS;
+        oGF = new AscCommonExcel.GradientFill();
+        oGS = new AscCommonExcel.GradientStop();
+        oGS.position = 0;
+        oGS.color = AscCommonExcel.createRgbColor(248, 225, 98);
+        oGF.stop.push(oGS);
+        oGS = new AscCommonExcel.GradientStop();
+        oGS.color = AscCommonExcel.createRgbColor(252, 247, 224);
+        oGS.position = 1;
+        oGF.stop.push(oGS);
+        oGF.degree = 90;
+        oFill.gradientFill = oGF;
+        return oFill;
+    }
 
     function CSlicerData(slicer) {
         this.slicer = slicer;
@@ -281,23 +297,13 @@
         return oFont;
     };
     CSlicer.prototype.getFill = function(nType) {
-        var oFill;
-        oFill = new AscCommonExcel.Fill();//TODO: Take background from styles when it will be implemented
+        var oFill;//TODO: Take background from styles when it will be implemented
         var nColor = 0xFFFFFF;
         if(nType & STATE_FLAG_HOVERED) {
-            var oGF = new AscCommonExcel.GradientFill();
-            var oGS = new AscCommonExcel.GradientStop();
-            oGS.position = 0;
-            oGS.color = AscCommonExcel.createRgbColor(248, 225, 98);
-            oGF.stop.push(oGS);
-            oGS = new AscCommonExcel.GradientStop();
-            oGS.color = AscCommonExcel.createRgbColor(252, 247, 224);
-            oGS.position = 1;
-            oGF.stop.push(oGS);
-            oGF.degree = 90;
-            oFill.gradientFill = oGF;
+            oFill = CreateButtonHoverGradient();
         }
         else {
+            oFill = new AscCommonExcel.Fill();//TODO: Take background from styles when it will be implemented
             if(nType & STATE_FLAG_SELECTED) {
                 oFill.fromColor(new AscCommonExcel.RgbColor(0xBDD7EE));
             }
@@ -625,11 +631,17 @@
     CHeader.prototype.Get_Styles = function() {
         return this.slicer.getTxStyles(STYLE_TYPE.HEADER);
     };
+    CHeader.prototype.getParentObjects = function() {
+        return this.slicer.getParentObjects();
+    };
     CHeader.prototype.isMultiSelect = function() {
         return this.buttons[0].isSelected();
     };
     CHeader.prototype.recalculateBrush = function () {
-        //Empty procedure. Set of brushes for all states will be recalculated in CSlicer
+        var oFill = this.slicer.getFill(STYLE_TYPE.HEADER);
+        var oParents = this.slicer.getParentObjects();
+        this.brush = AscCommonExcel.convertFillToUnifill(oFill);
+        this.brush.calculate(oParents.theme, oParents.slide, oParents.layout, oParents.master, {R:0, G:0, B:0, A: 255});
     };
     CHeader.prototype.recalculatePen = function () {
         this.pen = null;
@@ -747,16 +759,58 @@
         return this.slicer.getTxStyles(nType);
     };
     CHeader.prototype.getBorder = function (nType) {
-        return this.slicer.getBorder(nType);
+        var oBorder = null;
+        if(nType & STATE_FLAG_SELECTED || nType & STATE_FLAG_HOVERED) {
+            var r = 204, g = 204, b = 204;
+            var oBorder = new AscCommonExcel.Border(null);
+            oBorder.l = new AscCommonExcel.BorderProp();
+            oBorder.l.setStyle(AscCommon.c_oAscBorderStyles.Thin);
+            oBorder.l.c = AscCommonExcel.createRgbColor(r, g, b);
+            oBorder.t = new AscCommonExcel.BorderProp();
+            oBorder.t.setStyle(AscCommon.c_oAscBorderStyles.Thin);
+            oBorder.t.c = AscCommonExcel.createRgbColor(r, g, b);
+            oBorder.r = new AscCommonExcel.BorderProp();
+            oBorder.r.setStyle(AscCommon.c_oAscBorderStyles.Thin);
+            oBorder.r.c = AscCommonExcel.createRgbColor(r, g, b);
+            oBorder.b = new AscCommonExcel.BorderProp();
+            oBorder.b.setStyle(AscCommon.c_oAscBorderStyles.Thin);
+            oBorder.b.c = AscCommonExcel.createRgbColor(r, g, b);
+        }
+        return oBorder;
     };
     CHeader.prototype.getFill = function (nType) {
-        return this.slicer.getFill(nType);
+
+        if(nType === STYLE_TYPE.WHOLE || nType === STYLE_TYPE.HEADER) {
+            return null;
+        }
+        var oFill;
+        if(nType & STATE_FLAG_HOVERED) {
+            if(nType & STATE_FLAG_SELECTED) {
+                oFill = new AscCommonExcel.Fill();
+                oFill.fromColor(AscCommonExcel.createRgbColor(248, 225, 98));
+            }
+            else {
+                oFill = CreateButtonHoverGradient();
+            }
+        }
+        else {
+            if(nType & STATE_FLAG_SELECTED) {
+                oFill = CreateButtonHoverGradient();
+            }
+            else {
+                oFill = null;
+            }
+        }
+        return oFill;
     };
     CHeader.prototype.getFullTransformMatrix = function () {
         var oMT = AscCommon.global_MatrixTransformer;
         var oTransform = oMT.CreateDublicateM(this.transform);
         oMT.MultiplyAppend(oTransform, this.slicer.transform);
         return oTransform;
+    };
+    CHeader.prototype.getInvFullTransformMatrix = function () {
+        return this.slicer.invertTransform;
     };
     CHeader.prototype.isEventListener = function (child) {
         return this.eventListener === child;
@@ -833,6 +887,10 @@
     };
     CHeader.prototype.getButtonState = function (nIndex) {
         return this.buttons[nIndex].getState();
+    };
+
+    CHeader.prototype.getParentObjects = function () {
+        return this.slicer.getParentObjects();
     };
 
     function CButton(parent) {
@@ -986,7 +1044,9 @@
         this.invertTransformText = oMT.Invert(this.transformText);
     };
     CButton.prototype.draw = function (graphics) {
+        var parents = this.getParentObjects();
         this.brush = AscCommonExcel.convertFillToUnifill(this.parent.getFill(this.getState()));
+        this.brush.calculate(parents.theme, parents.slide, parents.layout, parents.master, {R: 0, G: 0, B: 0, A: 255});
         AscFormat.CShape.prototype.draw.call(this, graphics);
         if(graphics.IsSlideBoundsCheckerType) {
             return;
@@ -1045,7 +1105,10 @@
         }
     };
     CButton.prototype.hit = function(x, y) {
-        return this.hitInInnerArea(x, y);
+        var oInv = this.getInvFullTransformMatrix();
+        var tx = oInv.TransformPointX(x, y);
+        var ty = oInv.TransformPointY(x, y);
+        return tx >= this.x && tx <= this.x + this.extX && ty >= this.y && ty <= this.y + this.extY;
     };
     CButton.prototype.onMouseMove = function (e, x, y) {
         if(e.IsLocked) {
@@ -1130,6 +1193,9 @@
         this.startY = 0;
         this.startButton = -1;
     }
+    CButtonsContainer.prototype.getParentObjects = function() {
+        return this.slicer.getParentObjects();
+    };
     CButtonsContainer.prototype.clear = function() {
         this.buttons.length = 0;
     };
@@ -1627,6 +1693,9 @@
                 this.parent.setEventListener(null);
             }
         }
+    };
+    CScroll.prototype.getParentObjects = function () {
+        return this.parent.getParentObjects();
     };
 
     window['AscFormat'] = window['AscFormat'] || {};
