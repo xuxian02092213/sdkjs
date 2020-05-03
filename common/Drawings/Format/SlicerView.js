@@ -368,13 +368,16 @@
         }, this, []);
     };
     CSlicer.prototype.recalculateHeader = function() {
-        this.header = null;
         var bShowHeader = this.getShowCaption();
         var sCaption = this.getCaption();
         if(!bShowHeader || sCaption.length < 1) {
+            this.header = null;
             return;
         }
-        this.header = new CHeader(this, sCaption);
+        if(!this.header) {
+            this.header = new CHeader(this);
+        }
+        this.header.setRecalculateInfo();
         this.header.recalculate();
     };
     CSlicer.prototype.recalculateButtons = function() {
