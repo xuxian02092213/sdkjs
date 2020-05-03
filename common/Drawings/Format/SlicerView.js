@@ -158,6 +158,33 @@
     CSlicer.prototype.getObjectType = function () {
         return AscDFH.historyitem_type_SlicerView;
     };
+    CSlicer.prototype.toStream = function (s) {
+        s.WriteUChar(AscCommon.g_nodeAttributeStart);
+        s._WriteString2(0, this.name);
+        s.WriteUChar(AscCommon.g_nodeAttributeEnd);
+    };
+    CSlicer.prototype.fromStream = function (s) {
+        var _len = s.GetULong();
+        var _start_pos = s.cur;
+        var _end_pos = _len + _start_pos;
+        var _at;
+// attributes
+        s.GetUChar();
+        while (true)
+        {
+            _at = s.GetUChar();
+            if (_at === AscCommon.g_nodeAttributeEnd)
+                break;
+            switch (_at)
+            {
+                case 0: { this.name = s.GetString2(); break; }
+                default:
+                    s.Seek2(_end_pos);
+                    return;
+            }
+        }
+        s.Seek2(_end_pos);
+    };
     CSlicer.prototype.setName = function(val) {
         History.Add(new AscDFH.CChangesDrawingsString(this, AscDFH.historyitem_SlicerViewName, this.name, val));
         this.name = val;
@@ -282,12 +309,11 @@
         if(!oView) {
             return;
         }
-        var oCache = this.worksheet.getSlicerCacheBySourceName(this.name);
-        if(!oCache || !oCache.obj) {
+        var oCache = this.worksheet.workbook.getSlicerCacheBySourceName(this.name);
+        if(!oCache) {
             return;
         }
-        var oCacheDef = oCache.obj;
-        var oValues = oCacheDef.getFilterValues();
+        var oValues = oCache.getFilterValues();
         if(!oValues) {
             return;
         }

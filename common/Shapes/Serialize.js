@@ -7240,6 +7240,7 @@ function BinaryPPTYLoader()
         var _xfrm = null;
         var _table = null;
         var _chart = null;
+        var _slicer = null;
 
         while (s.cur < _end_rec)
         {
@@ -7283,6 +7284,20 @@ function BinaryPPTYLoader()
                     }
 
                     s.Seek2(_pos + _length);
+                    break;
+                }
+                case 5:
+                case 6:
+                {
+                    if (typeof AscFormat.CSlicer !== "undefined")
+                    {
+                        _slicer = new AscFormat.CSlicer();
+                        _slicer.fromStream(s);
+                    }
+                    else
+                    {
+                        s.SkipRecord();
+                    }
                     break;
                 }
                 default:

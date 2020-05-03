@@ -1967,6 +1967,7 @@
 
 		this.CellStyles = new AscCommonExcel.CCellStyles();
 		this.TableStyles = new Asc.CTableStyles();
+		this.SlicerStyles = new Asc.CSlicerStyles();
 		this.oStyleManager = new AscCommonExcel.StyleManager();
 		this.sharedStrings = new AscCommonExcel.CSharedStrings();
 		this.workbookFormulas = new AscCommonExcel.CWorkbookFormulas();
@@ -2004,7 +2005,7 @@
 		//временно добавляю новый вставляемый лист, чтобы не передавать параметры через большое количество функций
 		this.addingWorksheet = null;
 	}
-	Workbook.prototype.init=function(tableCustomFunc, bNoBuildDep, bSnapshot){
+	Workbook.prototype.init=function(tableCustomFunc, tableIds, bNoBuildDep, bSnapshot){
 		if(this.nActive < 0)
 			this.nActive = 0;
 		if(this.nActive >= this.aWorksheets.length)
@@ -2031,7 +2032,7 @@
 		}
 		//ws
 		this.forEach(function (ws) {
-			ws.initPostOpen(self.wsHandlers);
+			ws.initPostOpen(self.wsHandlers, tableIds);
 		});
 		//show active if it hidden
 		var wsActive = this.getActiveWs();
@@ -2131,7 +2132,7 @@
 		var oNewWorksheet = new Worksheet(this, this.aWorksheets.length, sId);
 		if (this.checkValidSheetName(sName))
 			oNewWorksheet.sName = sName;
-		oNewWorksheet.initPostOpen(this.wsHandlers);
+		oNewWorksheet.initPostOpen(this.wsHandlers, {});
 		if(null != indexBefore && indexBefore >= 0 && indexBefore < this.aWorksheets.length)
 			this.aWorksheets.splice(indexBefore, 0, oNewWorksheet);
 		else
@@ -2179,7 +2180,7 @@
 			if(!opt_sheet) {
 				newSheet.copyFromFormulas(renameParams);
 			}
-			newSheet.initPostOpen(this.wsHandlers);
+			newSheet.initPostOpen(this.wsHandlers, {});
 			History.TurnOn();
 
 			this.dependencyFormulas.copyDefNameByWorksheet(wsFrom, newSheet, renameParams, opt_sheet);
@@ -2585,7 +2586,7 @@
 			wb.aWorksheetsById[ws.getId()] = ws;
 		});
 		//init trigger
-		wb.init({}, true, false);
+		wb.init({}, {}, true, false);
 		return wb;
 	};
 	Workbook.prototype.getAllFormulas = function() {
@@ -3175,6 +3176,24 @@
 		}
 		return null;
 	};
+	Workbook.prototype.getSlicerCacheBySourceName = function(name) {
+		for (var i = 0, l = this.aWorksheets.length; i < l; ++i) {
+			var cache = this.aWorksheets[i].getSlicerCacheBySourceName(name);
+			if (cache) {
+				return cache;
+			}
+		}
+		return null;
+	};
+	Workbook.prototype.getSlicerCacheByName = function (name) {
+		for (var i = 0, l = this.aWorksheets.length; i < l; ++i) {
+			var cache = this.aWorksheets[i].getSlicerCacheByName(name);
+			if (cache) {
+				return cache;
+			}
+		}
+		return null;
+	};
 	Workbook.prototype.getDrawingDocument = function() {
 		return this.DrawingDocument;
 	}
@@ -3452,7 +3471,6 @@
 		this.handlers = null;
 
 		this.aSlicers = [];
-		this.aSlicerCaches = [];
 	}
 
 	Worksheet.prototype.getCompiledStyle = function (row, col, opt_cell, opt_styleComponents) {
@@ -3735,7 +3753,7 @@
 		this.initColumn(this.oAllCol);
 		this.aCols.forEach(this.initColumn, this);
 	};
-	Worksheet.prototype.initPostOpen = function (handlers) {
+	Worksheet.prototype.initPostOpen = function (handlers, tableIds) {
 		this.PagePrintOptions.init();
 		this.headerFooter.init();
 		if (this.dataValidations) {
@@ -3753,6 +3771,9 @@
 
 		this.handlers = handlers;
 		this._setHandlersTablePart();
+		this.aSlicers.forEach(function(elem){
+			elem.initPostOpen(tableIds);
+		})
 	};
 	Worksheet.prototype._getValuesForConditionalFormatting = function(ranges, numbers) {
 		var res = [];
@@ -7726,8 +7747,8 @@
 		History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_Add, this.getId(), null,
 		 			new AscCommonExcel.UndoRedoData_Slicer(type, obj.DisplayName, name));
 
-		if (slicer && slicer.cache) {
-			var _name = slicer.cache.name;
+		if (slicer && slicer.cacheDefinition) {
+			var _name = slicer.cacheDefinition.name;
 			var newDefName = new Asc.asc_CDefName(_name, null, null, false, null, null, true);
 			this.workbook.editDefinesNames(null, newDefName);
 		}
@@ -7740,15 +7761,8 @@
 		History.StartTransaction();
 
 		var slicer = this.getSlicerByName(name);
-		var cacheName = slicer.cache;
 		if (slicer) {
 			this.aSlicers.splice(slicer.index, 1);
-		}
-		//в некоторых случаях не нужно удалять cache потому что на него может ссылаться другой slicer
-		//TODO проверить
-		var slicerCache = this.getSlicerCacheByName(cacheName);
-		if (slicerCache) {
-			this.aSlicerCaches.splice(slicerCache.index, 1);
 		}
 
 		//History.Add(AscCommonExcel.g_oUndoRedoSortState, AscCH.historyitem_SortState_Add, this.getId(), null,
@@ -7756,8 +7770,8 @@
 
 		//TODO скорее всего придётся переносить удаление именованных диапазонов выше, чтобы делались все необходимые проверки
 		//и посылались все необходимые эвенты
-		/*if (slicer && slicer.cache) {
-			var _name = slicer.cache.name;
+		/*if (slicer && slicer.cacheDefinition) {
+			var _name = slicer.cacheDefinition.name;
 			var newDefName = new Asc.asc_CDefName(_name, null, null, false, null, null, true);
 			this.workbook.editDefinesNames(null, newDefName);
 		}*/
@@ -7766,9 +7780,10 @@
 	};
 
 	Worksheet.prototype.getSlicerCacheBySourceName = function (name) {
-		for (var i = 0; i < this.aSlicerCaches.length; i++) {
-			if (name === this.aSlicerCaches[i].sourceName) {
-				return {obj: this.aSlicerCaches[i], index: i};
+		for (var i = 0; i < this.aSlicers.length; i++) {
+			var cache = this.aSlicers[i].getSlicerCache();
+			if (cache && name === cache.sourceName) {
+				return cache;
 			}
 		}
 
@@ -7801,9 +7816,10 @@
 	};
 
 	Worksheet.prototype.getSlicerCacheByName = function (name) {
-		for (var i = 0; i < this.aSlicerCaches.length; i++) {
-			if (name === this.aSlicerCaches[i].name) {
-				return {obj: this.aSlicerCaches[i], index: i};
+		for (var i = 0; i < this.aSlicers.length; i++) {
+			var cache = this.aSlicers[i].getSlicerCache();
+			if (cache && name === cache.name) {
+				return cache;
 			}
 		}
 
@@ -7813,13 +7829,10 @@
 	Worksheet.prototype.getSlicersByTableName = function (val) {
 		var res = [];
 		for (var i = 0; i < this.aSlicers.length; i++) {
-			var cache = this.aSlicers[i].cache;
 			//пока сделал только для форматированных таблиц
-			if (cache) {
-				var table = cache.extLst[0];
-				if (table && table.tableId === val) {
-					res.push(this.aSlicers[i]);
-				}
+			var tableSlicerCache = this.aSlicers[i].getTableSlicerCache();
+			if (tableSlicerCache && tableSlicerCache.tableId === val) {
+				res.push(this.aSlicers[i]);
 			}
 		}
 		return res.length ? res : null;
@@ -7832,7 +7845,7 @@
 			for (var i = 0; i < slicers.length; i++) {
 				if (slicers[i].caption === oldVal) {
 					slicers[i].setCaption(newVal);
-					slicers[i].cache.setSourceName(newVal);
+					slicers[i].cacheDefinition.setSourceName(newVal);
 					//внутри tableSlicerCache ещё прописан id колонки
 					//в нашем редакторе id колонки генерируется на сохранение. нужно их будет связывать
 					//я пока ориентируюсь на имя родителя -> sourceName
@@ -7847,13 +7860,10 @@
 
 	Worksheet.prototype.setSlicerTableName = function (tableName, newTableName) {
 		//TODO history
-		var slicerCaches = this.aSlicerCaches;
-		if (slicerCaches) {
-			for (var i = 0; i < slicerCaches.length; i++) {
-				var tableSlicerCache = slicerCaches[i].getTableSlicerCache();
-				if (tableSlicerCache && tableSlicerCache.tableId === tableName) {
-					tableSlicerCache.setTableName(newTableName);
-				}
+		for (var i = 0; i < this.aSlicers.length; i++) {
+			var tableSlicerCache = this.aSlicers[i].getTableSlicerCache();
+			if (tableSlicerCache && tableSlicerCache.tableId === tableName) {
+				tableSlicerCache.setTableName(newTableName);
 			}
 		}
 	};
