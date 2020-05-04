@@ -1815,6 +1815,7 @@ function CBinaryFileWriter()
             }
             case AscDFH.historyitem_type_GraphicFrame:
             case AscDFH.historyitem_type_ChartSpace:
+            case AscDFH.historyitem_type_SlicerView:
             {
                 oThis.WriteGrFrame(oSp);
                 break;
@@ -3744,6 +3745,13 @@ function CBinaryFileWriter()
                 oThis.WriteRecord2(3, grObj, oThis.WriteChart2);
                 break;
             }
+            case AscDFH.historyitem_type_SlicerView:
+            {
+                oThis.WriteRecord2(5, grObj, function () {
+                    grObj.toStream(oThis)
+                });
+                break;
+            }
         }
         oThis.EndRecord();
     };
@@ -5582,6 +5590,7 @@ function CBinaryFileWriter()
                     break;
                 }
                 case AscDFH.historyitem_type_ChartSpace:
+                case AscDFH.historyitem_type_SlicerView:
                 {
                     this.BinaryFileWriter.WriteGrFrame(grObject);
                     break;

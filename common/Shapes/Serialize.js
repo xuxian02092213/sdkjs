@@ -7311,7 +7311,7 @@ function BinaryPPTYLoader()
         s.Seek2(_end_rec);
 
         this.TempGroupObject = null;
-        if (_table == null && _chart == null)
+        if (_table == null && _chart == null && _slicer == null)
             return null;
 
         if (_table != null)
@@ -7364,6 +7364,25 @@ function BinaryPPTYLoader()
             _chart.spPr.setXfrm(_xfrm);
             _xfrm.setParent(_chart.spPr);
             return _chart;
+        }
+        else if(_slicer != null)
+        {
+            _slicer.setBDeleted(false);
+            if(!_slicer.spPr)
+            {
+                _slicer.setSpPr(new AscFormat.CSpPr());
+                _slicer.spPr.setParent(_slicer);
+            }
+            if(!_xfrm){
+                _xfrm = new AscFormat.CXfrm();
+                _xfrm.setOffX(0);
+                _xfrm.setOffY(0);
+                _xfrm.setExtX(0);
+                _xfrm.setExtY(0);
+            }
+            _slicer.spPr.setXfrm(_xfrm);
+            _xfrm.setParent(_slicer.spPr);
+            return _slicer;
         }
 
         return _graphic_frame;
