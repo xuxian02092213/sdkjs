@@ -1686,7 +1686,7 @@ function (window, undefined) {
 				if (tablePart) {
 					var memory = new AscCommon.CMemory();
 					var aDxfs = [];
-					var oBinaryTableWriter = new AscCommonExcel.BinaryTableWriter(memory, aDxfs);
+					var oBinaryTableWriter = new AscCommonExcel.BinaryTableWriter(memory, aDxfs, false, {});
 					oBinaryTableWriter.WriteTable(tablePart);
 					tablePart = memory.GetBase64Memory();
 				}
