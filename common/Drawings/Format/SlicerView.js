@@ -56,6 +56,8 @@
     var STATE_FLAG_DATA = 8;
     var STATE_FLAG_HOVERED = 16;
 
+    var SCROLL_TIMER_INTERVAL = 200;
+
     var STYLE_TYPE = {};
     STYLE_TYPE.WHOLE = STATE_FLAG_WHOLE;
     STYLE_TYPE.HEADER = STATE_FLAG_HEADER;
@@ -76,8 +78,8 @@
     SCROLL_COLORS[STYLE_TYPE.SELECTED_NO_DATA] = 0xADADAD;
     SCROLL_COLORS[STYLE_TYPE.UNSELECTED_DATA] = 0xF1F1F1;
     SCROLL_COLORS[STYLE_TYPE.UNSELECTED_NO_DATA] = 0xF1F1F1;
-    SCROLL_COLORS[STYLE_TYPE.HOVERED_SELECTED_DATA] = 0xCFCFCF;
-    SCROLL_COLORS[STYLE_TYPE.HOVERED_SELECTED_NO_DATA] = 0xCFCFCF;
+    SCROLL_COLORS[STYLE_TYPE.HOVERED_SELECTED_DATA] = 0xADADAD;
+    SCROLL_COLORS[STYLE_TYPE.HOVERED_SELECTED_NO_DATA] = 0xADADAD;
     SCROLL_COLORS[STYLE_TYPE.HOVERED_UNSELECTED_DATA] = 0xCFCFCF;
     SCROLL_COLORS[STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA] = 0xCFCFCF;
 
@@ -602,6 +604,9 @@
     CSlicer.prototype.isAllValuesSelected = function () {
         return this.data.isAllValuesSelected();
     };
+    CSlicer.prototype.getInvFullTransformMatrix = function () {
+        return this.invertTransform;
+    };
 
     function CHeader(slicer) {
         AscFormat.CShape.call(this);
@@ -872,12 +877,18 @@
         if(!oButton) {
             return;
         }
+        if(nIndex === 1) {
+            this.slicer.handleClearButtonClick();
+        }
+    };
+    CHeader.prototype.handleMouseDown = function (nIndex) {
+        var oButton = this.buttons[nIndex];
+        if(!oButton) {
+            return;
+        }
         if(nIndex === 0) {
             oButton.setInvertSelectTmpState();
             this.slicer.onUpdate();
-        }
-        else {
-            this.slicer.handleClearButtonClick();
         }
     };
     CHeader.prototype.isButtonDisabled = function (nIndex) {
@@ -891,9 +902,15 @@
     CHeader.prototype.getButtonState = function (nIndex) {
         return this.buttons[nIndex].getState();
     };
-
     CHeader.prototype.getParentObjects = function () {
         return this.slicer.getParentObjects();
+    };
+    CHeader.prototype.getScrollOffsetX = function () {
+        return 0;
+    };
+
+    CHeader.prototype.getScrollOffsetY = function () {
+        return 0;
     };
 
     function CButton(parent) {
@@ -946,7 +963,12 @@
     };
     CButton.prototype.getFullTransform = function() {
         var oMT = AscCommon.global_MatrixTransformer;
-        var oTransform = oMT.CreateDublicateM(this.transform);
+        var oTransform = oMT.CreateDublicateM(this.localTransform);
+
+        var oScrollMatrix = new AscCommon.CMatrix();
+        oScrollMatrix.tx = this.parent.getScrollOffsetX();
+        oScrollMatrix.ty = this.parent.getScrollOffsetY();
+        oMT.MultiplyAppend(oTransform, oScrollMatrix);
         var oParentTransform = this.parent.getFullTransformMatrix();
         oParentTransform && oMT.MultiplyAppend(oTransform, oParentTransform);
         return oTransform;
@@ -954,12 +976,17 @@
     CButton.prototype.getFullTextTransform = function() {
         var oMT = AscCommon.global_MatrixTransformer;
         var oParentTransform = this.parent.getFullTransformMatrix();
-        var oTransformText = oMT.CreateDublicateM(this.transformText);
+        var oTransformText = oMT.CreateDublicateM(this.localTransformText);
+        var oScrollMatrix = new AscCommon.CMatrix();
+        oScrollMatrix.tx = this.parent.getScrollOffsetX();
+        oScrollMatrix.ty = this.parent.getScrollOffsetY();
+        oMT.MultiplyAppend(oTransformText, oScrollMatrix);
         oParentTransform && oMT.MultiplyAppend(oTransformText, oParentTransform);
         return oTransformText;
     };
     CButton.prototype.getInvFullTransformMatrix = function() {
-        return this.parent.getInvFullTransformMatrix();
+        var oMT = AscCommon.global_MatrixTransformer;
+        return oMT.Invert(this.getFullTransform());
     };
     CButton.prototype.getOwnState = function() {
         return this.parent.getButtonState(this.parent.getButtonIndex(this));
@@ -1035,21 +1062,24 @@
     CButton.prototype.recalculateTransform = function() {
         AscFormat.CShape.prototype.recalculateTransform.call(this);
         var oMT = AscCommon.global_MatrixTransformer;
-        var oParentTransform = this.parent.getFullTransformMatrix();
-        oParentTransform && oMT.MultiplyAppend(this.transform, oParentTransform);
+        this.transform = this.getFullTransform();
         this.invertTransform = oMT.Invert(this.transform);
     };
     CButton.prototype.recalculateTransformText = function() {
         AscFormat.CShape.prototype.recalculateTransformText.call(this);
         var oMT = AscCommon.global_MatrixTransformer;
-        var oParentTransform = this.parent.getFullTransformMatrix();
-        oParentTransform && oMT.MultiplyAppend(this.transformText, oParentTransform);
+        this.transformText = this.getFullTextTransform();
         this.invertTransformText = oMT.Invert(this.transformText);
     };
     CButton.prototype.draw = function (graphics) {
         var parents = this.getParentObjects();
         this.brush = AscCommonExcel.convertFillToUnifill(this.parent.getFill(this.getState()));
         this.brush.calculate(parents.theme, parents.slide, parents.layout, parents.master, {R: 0, G: 0, B: 0, A: 255});
+        this.recalculateTransform();
+        this.recalculateTransformText();
+        if(!graphics.IsSlideBoundsCheckerType) {
+            this.recalculateBounds();
+        }
         AscFormat.CShape.prototype.draw.call(this, graphics);
         if(graphics.IsSlideBoundsCheckerType) {
             return;
@@ -1108,10 +1138,10 @@
         }
     };
     CButton.prototype.hit = function(x, y) {
-        var oInv = this.getInvFullTransformMatrix();
+        var oInv = this.invertTransform;
         var tx = oInv.TransformPointX(x, y);
         var ty = oInv.TransformPointY(x, y);
-        return tx >= this.x && tx <= this.x + this.extX && ty >= this.y && ty <= this.y + this.extY;
+        return tx >= 0 && tx <= this.extX && ty >= 0 && ty <= this.extY;
     };
     CButton.prototype.onMouseMove = function (e, x, y) {
         if(e.IsLocked) {
@@ -1160,7 +1190,11 @@
         if(this.isDisabled()) {
             return false;
         }
-        return CButton.prototype.onMouseDown.call(this, e, x, y);
+        var bRet = CButton.prototype.onMouseDown.call(this, e, x, y);
+        if(bRet) {
+            this.parent.handleMouseDown(this.parent.getButtonIndex(this));
+        }
+        return bRet;
     };
     CInterfaceButton.prototype.onMouseMove = function (e, x, y) {
         if(this.isDisabled()) {
@@ -1223,6 +1257,7 @@
         var oInv = this.getInvFullTransformMatrix();
         var tx = oInv.TransformPointX(x, y);
         var ty = oInv.TransformPointY(x, y);
+        ty -= this.getScrollOffsetY();
         var nRow, nRowsCount = this.getRowsCount();
         for(nRow = 0;nRow < nRowsCount; ++nRow) {
             if(ty < this.getRowStart(nRow)) {
@@ -1289,7 +1324,10 @@
         return ((this.buttons.length - 1) / this.getColumnsCount() >> 0) + 1;
     };
     CButtonsContainer.prototype.getRowsInFrame = function () {
-        return (this.extY + SPACE_BETWEEN) / (this.getButtonHeight() + SPACE_BETWEEN)  >> 0
+        return (this.extY + SPACE_BETWEEN) / (this.getButtonHeight() + SPACE_BETWEEN)  >> 0;
+    };
+    CButtonsContainer.prototype.getScrolledRows = function () {
+        return this.getRowsCount() - this.getRowsInFrame();
     };
     CButtonsContainer.prototype.getTotalHeight = function () {
         var nRowsCount = this.getRowsCount();
@@ -1306,6 +1344,7 @@
         var dButtonWidth, dButtonHeight;
         dButtonHeight = this.getButtonHeight();
         dButtonWidth = this.getButtonWidth();
+        this.scrollTop = Math.max(0, Math.min(this.scrollTop, this.getScrolledRows()));
         var nColumn, nRow, nButtonIndex, oButton, x ,y;
         for(nButtonIndex = 0; nButtonIndex < this.buttons.length; ++nButtonIndex) {
             nColumn = nButtonIndex % nColumnCount;
@@ -1322,23 +1361,18 @@
         if(this.buttons.length > 0) {
             graphics.SaveGrState();
             graphics.transform3(this.slicer.transform);
-            graphics.AddClipRect(0, this.y - SPACE_BETWEEN, this.slicer.extX, this.extY + SPACE_BETWEEN);
+            graphics.AddClipRect(0, this.y - SPACE_BETWEEN / 2, this.slicer.extX, this.extY + SPACE_BETWEEN / 2);
             var oButton;
-            var oMT = AscCommon.global_MatrixTransformer;
-            var oBaseTr = new AscCommon.CMatrix();
-            oMT.TranslateAppend(oBaseTr, -this.scrollLeft, -this.scrollTop);
-            oMT.MultiplyAppend(oBaseTr, this.slicer.transform);
             for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
                 oButton = this.buttons[nButton];
-                oButton.draw(graphics, oBaseTr);
+                oButton.draw(graphics);
             }
             graphics.RestoreGrState();
             this.scroll.draw(graphics);
         }
     };
     CButtonsContainer.prototype.getFullTransformMatrix = function () {
-        var oMT = AscCommon.global_MatrixTransformer;
-        return oMT.CreateDublicateM(this.slicer.transform);
+        return AscCommon.global_MatrixTransformer.CreateDublicateM(this.slicer.transform);
     };
     CButtonsContainer.prototype.getInvFullTransformMatrix = function () {
         var oM = this.getFullTransformMatrix();
@@ -1353,6 +1387,14 @@
     };
     CButtonsContainer.prototype.isEventListener = function (child) {
         return this.eventListener === child;
+    };
+    CButtonsContainer.prototype.onScroll = function () {
+        var dNewScrollPos = Math.max(0, Math.min(this.scroll.getScrollTop(), this.getScrolledRows()));
+        if(this.scrollTop !== dNewScrollPos) {
+            this.scrollTop = dNewScrollPos;
+            this.slicer.onUpdate();
+        }
+
     };
     CButtonsContainer.prototype.onMouseMove = function (e, x, y) {
         if(this.eventListener) {
@@ -1485,6 +1527,13 @@
     CButtonsContainer.prototype.getString = function(nIndex) {
         return this.slicer.getString(nIndex);
     };
+    CButtonsContainer.prototype.getScrollOffsetX = function () {
+        return 0;
+    };
+
+    CButtonsContainer.prototype.getScrollOffsetY = function () {
+        return -(this.getRowStart(this.scrollTop) - this.y);
+    };
 
     function CScroll(parent) {
         this.parent = parent;
@@ -1495,6 +1544,11 @@
         this.buttons[0] = new CInterfaceButton(this);
         this.buttons[1] = new CInterfaceButton(this);
         this.state = STYLE_TYPE.UNSELECTED_DATA;
+        this.timerId = null;
+
+        this.tmpScrollerPos = null;
+        this.startScrollerPos = null;
+        this.startScrollTop = null;
     }
     CScroll.prototype.getTxStyles = function () {
         return this.parent.getTxStyles();
@@ -1582,11 +1636,26 @@
     CScroll.prototype.getScrollerX = function() {
         return this.getRailPosX() +  this.getRailWidth() / 2 - this.getScrollerWidth() / 2;
     };
+    CScroll.prototype.internalGetRelScrollerY = function(nPos) {
+        return (this.getRailHeight() - this.getScrollerHeight()) * (nPos/ (this.parent.getScrolledRows()));
+    };
+    CScroll.prototype.getRelScrollerY = function() {
+        if(this.tmpScrollerPos !== null) {
+            return this.tmpScrollerPos;
+        }
+        return this.internalGetRelScrollerY(this.parent.scrollTop);
+    };
+    CScroll.prototype.getMaxRelScrollerY = function() {
+        return this.internalGetRelScrollerY(this.parent.getScrolledRows());
+    };
     CScroll.prototype.getScrollerY = function() {
-        return this.getRailPosY() + (this.getRailHeight() - this.getScrollerHeight()) * (this.parent.scrollTop / (this.parent.getRowsCount() - this.parent.getRowsInFrame()));
+        return this.getRailPosY() + this.getRelScrollerY();
     };
     CScroll.prototype.getScrollerWidth = function() {
         return this.getRailWidth();
+    };
+    CScroll.prototype.getScrollTop = function() {
+        return this.parent.getScrolledRows() * (this.getScrollerY() - this.getRailPosY()) / (this.getRailHeight() - this.getScrollerHeight()) + 0.5 >> 0;
     };
     CScroll.prototype.getScrollerHeight = function() {
         var dRailH = this.getRailHeight();
@@ -1610,6 +1679,16 @@
         var t = this.getPosY();
         var r = l + this.getWidth();
         var b = t + this.getHeight();
+        return tx >= l && tx <= r && ty >= t && ty <= b;
+    };
+    CScroll.prototype.hitInScroller = function(x, y) {
+        var oInv = this.parent.getInvFullTransformMatrix();
+        var tx = oInv.TransformPointX(x, y);
+        var ty = oInv.TransformPointY(x, y);
+        var l = this.getScrollerX();
+        var t = this.getScrollerY();
+        var r = l + this.getScrollerWidth();
+        var b = t + this.getScrollerHeight();
         return tx >= l && tx <= r && ty >= t && ty <= b;
     };
     CScroll.prototype.draw = function(graphics) {
@@ -1652,31 +1731,90 @@
     };
     CScroll.prototype.onMouseMove = function (e, x, y) {
         var bRet = false;
-        var bHit = this.hit(x, y);
+        if(this.parent.isEventListener(this)){
+            if(this.startScrollerPos === null) {
+                this.startScrollerPos = y;
+            }
+            if(this.startScrollTop === null) {
+                this.startScrollTop = this.parent.scrollTop;
+            }
+            var dy = y - this.startScrollerPos;
+            this.setTmpScroll(dy + this.internalGetRelScrollerY(this.startScrollTop));
+            return true;
+        }
+        bRet = bRet || this.buttons[0].onMouseMove(e, x, y);
+        bRet = bRet || this.buttons[1].onMouseMove(e, x, y);
+
+        //TODO: Use object for scroller
+        var bHit = this.hitInScroller(x, y);
         var nState = this.getState();
-        if(this.state & STATE_FLAG_HOVERED) {
+        if(nState & STATE_FLAG_HOVERED) {
             if(!bHit) {
-                this.state = this.state & (~STATE_FLAG_HOVERED);
+                this.state = nState & (~STATE_FLAG_HOVERED);
                 bRet = true;
             }
         }
         else {
             if(bHit) {
-                this.state = this.state | (STATE_FLAG_HOVERED);
+                this.state = nState | STATE_FLAG_HOVERED;
                 bRet = true;
+            }
+        }
+        //-----------------------------
+        return bRet;
+    };
+    CScroll.prototype.onMouseDown = function (e, x, y) {
+        var bRet = false;
+        if(this.hit(x, y)) {
+            bRet = bRet || this.buttons[0].onMouseDown(e, x, y);
+            bRet = bRet || this.buttons[1].onMouseDown(e, x, y);
+            if(!bRet) {
+                if(this.hitInScroller(x, y)) {
+                    //TODO: Use object for scroller
+                    this.startScrollerPos = y;
+                    this.startScrollTop = this.parent.scrollTop;
+                    this.state = this.state | STATE_FLAG_SELECTED;
+                    this.parent.setEventListener(this);
+                    this.parent.onScroll();
+                    //-----------------------------
+                }
+                else {
+                    this.parent.setEventListener(this);
+                    var oInv = this.parent.getInvFullTransformMatrix();
+                    var ty = oInv.TransformPointY(x, y);
+                    if(ty < this.getScrollerY()) {
+                        this.startScroll(-this.internalGetRelScrollerY(3));
+                    }
+                    else {
+                        this.startScroll(this.internalGetRelScrollerY(3));
+                    }
+                }
+                return true;
             }
         }
         return bRet;
     };
-    CScroll.prototype.onMouseDown = function (e, x, y) {
-        return false;
-    };
     CScroll.prototype.onMouseUp = function (e, x, y) {
+        this.endScroll();
+        var bRet = false;
+        if(this.eventListener) {
+            bRet = this.eventListener.onMouseUp(e, x, y);
+            this.eventListener = null;
+            return bRet;
+        }
+        bRet = bRet || this.buttons[0].onMouseUp(e, x, y);
+        bRet = bRet || this.buttons[1].onMouseUp(e, x, y);
         this.setEventListener(null);
-        return false;
+        return bRet;
     };
     CScroll.prototype.getButtons = function (e, x, y) {
         return this.buttons;
+    };
+    CScroll.prototype.isButtonDisabled = function (nIndex) {
+        return !this.bVisible;
+    };
+    CScroll.prototype.isEventListener = function (child) {
+        return this.eventListener === child;
     };
     CScroll.prototype.getButtonIndex = function (oButton) {
         for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
@@ -1699,6 +1837,65 @@
     };
     CScroll.prototype.getParentObjects = function () {
         return this.parent.getParentObjects();
+    };
+    CScroll.prototype.handleMouseUp = function (nIndex) {
+        var oButton  = this.buttons[nIndex];
+        if(!oButton) {
+            return;
+        }
+        oButton.setUnselectTmpState();
+    };
+    CScroll.prototype.handleMouseDown = function (nIndex) {
+        var oButton  = this.buttons[nIndex];
+        if(!oButton) {
+            return;
+        }
+        oButton.setSelectTmpState();
+        if(nIndex === 0) {
+            this.startScroll(-this.internalGetRelScrollerY(1));
+        }
+        else {
+            this.startScroll(this.internalGetRelScrollerY(1));
+        }
+    };
+    CScroll.prototype.startScroll = function (step) {
+        this.endScroll();
+        var oScroll = this;
+        oScroll.addScroll(step);
+        this.timerId = setInterval(function () {
+            oScroll.addScroll(step);
+        }, SCROLL_TIMER_INTERVAL);
+    };
+    CScroll.prototype.addScroll = function (step) {
+        this.setTmpScroll(this.getRelScrollerY() + step);
+        this.parent.onScroll();
+    };
+    CScroll.prototype.setTmpScroll = function (val) {
+        this.tmpScrollerPos = Math.max(0, Math.min(this.getMaxRelScrollerY(), val));
+        this.parent.onScroll();
+    };
+    CScroll.prototype.clearTmpScroll = function () {
+        if(this.tmpScrollerPos !== null) {
+            this.tmpScrollerPos = null;
+            this.parent.onScroll();
+        }
+    };
+    CScroll.prototype.endScroll = function () {
+        if(this.timerId !== null) {
+            clearInterval(this.timerId);
+            this.timerId = null;
+        }
+        this.clearTmpScroll();
+        this.state = this.state & (~STATE_FLAG_SELECTED);
+        this.startScrollerPos = null;
+        this.startScrollTop = null;
+    };
+    CScroll.prototype.getScrollOffsetX = function () {
+        return 0;
+    };
+
+    CScroll.prototype.getScrollOffsetY = function () {
+        return 0;
     };
 
     window['AscFormat'] = window['AscFormat'] || {};
