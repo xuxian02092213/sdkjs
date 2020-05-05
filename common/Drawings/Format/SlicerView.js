@@ -913,55 +913,31 @@
         return 0;
     };
 
-    function CButton(parent) {
+
+    function CButtonBase(parent) {
         AscFormat.CShape.call(this);
         this.parent = parent;
         this.tmpState = null;
         this.worksheet = parent.worksheet;
         this.setBDeleted(false);
         AscFormat.CheckSpPrXfrm3(this);
-        this.textBoxes = {};
-            for(var key in STYLE_TYPE) {
-                if(STYLE_TYPE.hasOwnProperty(key)) {
-                    this.createTextBody();
-                    this.textBoxes[STYLE_TYPE[key]] = new CTextBox(this.txBody, new AscCommon.CMatrix());
-                }
-            }
-            this.bodyPr = new AscFormat.CBodyPr();
-            this.bodyPr.setDefault();
-            this.bodyPr.anchor = 1;//vertical align ctr
-            this.bodyPr.lIns = LEFT_PADDING;
-            this.bodyPr.rIns = RIGHT_PADDING;
-            this.bodyPr.tIns = 0;
-            this.bodyPr.bIns = 0;
-            this.bodyPr.bIns = 0;
-            this.bodyPr.horzOverflow = AscFormat.nOTClip;
-            this.bodyPr.vertOverflow = AscFormat.nOTClip;
-        this.isHovered = false;
-        }
-    CButton.prototype = Object.create(AscFormat.CShape.prototype);
-    CButton.prototype.getTxBodyType = function () {
+    }
+
+    CButtonBase.prototype = Object.create(AscFormat.CShape.prototype);
+    CButtonBase.prototype.getTxBodyType = function () {
         var nRet = null;
-        for(var key in this.textBoxes) {
-            if(this.textBoxes.hasOwnProperty(key)) {
-                if(this.textBoxes[key].txBody === this.txBody) {
-                    nRet = key;
-                    break;
-                }
-            }
-        }
         return nRet;
     };
-    CButton.prototype.getString = function() {
-        return this.parent.getString(this.parent.getButtonIndex(this));
+    CButtonBase.prototype.getString = function() {
+        return "";
     };
-    CButton.prototype.Get_Styles = function() {
+    CButtonBase.prototype.Get_Styles = function() {
         return this.parent.getTxStyles(this.getTxBodyType());
     };
-    CButton.prototype.getBodyPr = function () {
+    CButtonBase.prototype.getBodyPr = function () {
         return this.bodyPr;
     };
-    CButton.prototype.getFullTransform = function() {
+    CButtonBase.prototype.getFullTransform = function() {
         var oMT = AscCommon.global_MatrixTransformer;
         var oTransform = oMT.CreateDublicateM(this.localTransform);
 
@@ -973,7 +949,7 @@
         oParentTransform && oMT.MultiplyAppend(oTransform, oParentTransform);
         return oTransform;
     };
-    CButton.prototype.getFullTextTransform = function() {
+    CButtonBase.prototype.getFullTextTransform = function() {
         var oMT = AscCommon.global_MatrixTransformer;
         var oParentTransform = this.parent.getFullTransformMatrix();
         var oTransformText = oMT.CreateDublicateM(this.localTransformText);
@@ -984,14 +960,14 @@
         oParentTransform && oMT.MultiplyAppend(oTransformText, oParentTransform);
         return oTransformText;
     };
-    CButton.prototype.getInvFullTransformMatrix = function() {
+    CButtonBase.prototype.getInvFullTransformMatrix = function() {
         var oMT = AscCommon.global_MatrixTransformer;
         return oMT.Invert(this.getFullTransform());
     };
-    CButton.prototype.getOwnState = function() {
+    CButtonBase.prototype.getOwnState = function() {
         return this.parent.getButtonState(this.parent.getButtonIndex(this));
     };
-    CButton.prototype.getState = function() {
+    CButtonBase.prototype.getState = function() {
         var nState = 0;
         if(this.tmpState !== null) {
             nState = this.tmpState;
@@ -1007,19 +983,19 @@
         }
         return nState;
     };
-    CButton.prototype.setUnselectTmpState = function() {
+    CButtonBase.prototype.setUnselectTmpState = function() {
         this.tmpState =  this.getOwnState() & (~STATE_FLAG_SELECTED);
     };
-    CButton.prototype.setSelectTmpState = function() {
+    CButtonBase.prototype.setSelectTmpState = function() {
         this.tmpState =  this.getOwnState() | (STATE_FLAG_SELECTED);
     };
-    CButton.prototype.setHoverState = function() {
+    CButtonBase.prototype.setHoverState = function() {
         this.isHovered = true;
     };
-    CButton.prototype.setNotHoverState = function() {
+    CButtonBase.prototype.setNotHoverState = function() {
         this.isHovered = false;
     };
-    CButton.prototype.setInvertSelectTmpState = function() {
+    CButtonBase.prototype.setInvertSelectTmpState = function() {
         var nOwnState = this.getOwnState();
         if(nOwnState & STATE_FLAG_SELECTED) {
             this.setTmpState(nOwnState & (~STATE_FLAG_SELECTED));
@@ -1028,50 +1004,43 @@
             this.setTmpState(nOwnState | STATE_FLAG_SELECTED);
         }
     };
-    CButton.prototype.setTmpState = function(state) {
+    CButtonBase.prototype.setTmpState = function(state) {
         this.tmpState = state;
     };
-    CButton.prototype.removeTmpState = function() {
+    CButtonBase.prototype.removeTmpState = function() {
         this.tmpState = null;
     };
-    CButton.prototype.isSelected = function() {
+    CButtonBase.prototype.isSelected = function() {
         return (this.getState() & STATE_FLAG_SELECTED) !== 0;
     };
-    CButton.prototype.recalculate = function() {
+    CButtonBase.prototype.recalculate = function() {
         AscFormat.CShape.prototype.recalculate.call(this);
     };
-    CButton.prototype.recalculateBrush = function () {
+    CButtonBase.prototype.recalculateBrush = function () {
         //Empty procedure. Set of brushes for all states will be recalculated in CSlicer
     };
-    CButton.prototype.recalculatePen = function () {
+    CButtonBase.prototype.recalculatePen = function () {
         this.pen = null;
     };
-    CButton.prototype.recalculateContent = function () {
-        var sText = this.getString();
-        for(var key in this.textBoxes) {
-            if(this.textBoxes.hasOwnProperty(key)) {
-                this.txBody = this.textBoxes[key].txBody;
-                this.txBody.recalculateOneString(sText);
-            }
-        }
+    CButtonBase.prototype.recalculateContent = function () {
     };
-    CButton.prototype.recalculateGeometry = function() {
+    CButtonBase.prototype.recalculateGeometry = function() {
         this.calcGeometry = AscFormat.CreateGeometry("rect");
         this.calcGeometry.Recalculate(this.extX, this.extY);
     };
-    CButton.prototype.recalculateTransform = function() {
+    CButtonBase.prototype.recalculateTransform = function() {
         AscFormat.CShape.prototype.recalculateTransform.call(this);
         var oMT = AscCommon.global_MatrixTransformer;
         this.transform = this.getFullTransform();
         this.invertTransform = oMT.Invert(this.transform);
     };
-    CButton.prototype.recalculateTransformText = function() {
+    CButtonBase.prototype.recalculateTransformText = function() {
         AscFormat.CShape.prototype.recalculateTransformText.call(this);
         var oMT = AscCommon.global_MatrixTransformer;
         this.transformText = this.getFullTextTransform();
         this.invertTransformText = oMT.Invert(this.transformText);
     };
-    CButton.prototype.draw = function (graphics) {
+    CButtonBase.prototype.draw = function (graphics) {
         var parents = this.getParentObjects();
         this.brush = AscCommonExcel.convertFillToUnifill(this.parent.getFill(this.getState()));
         this.brush.calculate(parents.theme, parents.slide, parents.layout, parents.master, {R: 0, G: 0, B: 0, A: 255});
@@ -1137,13 +1106,13 @@
             graphics.RestoreGrState();
         }
     };
-    CButton.prototype.hit = function(x, y) {
+    CButtonBase.prototype.hit = function(x, y) {
         var oInv = this.invertTransform;
         var tx = oInv.TransformPointX(x, y);
         var ty = oInv.TransformPointY(x, y);
         return tx >= 0 && tx <= this.extX && ty >= 0 && ty <= this.extY;
     };
-    CButton.prototype.onMouseMove = function (e, x, y) {
+    CButtonBase.prototype.onMouseMove = function (e, x, y) {
         if(e.IsLocked) {
             return false;
         }
@@ -1157,23 +1126,71 @@
         }
         return bRet;
     };
-    CButton.prototype.onMouseDown = function (e, x, y) {
+    CButtonBase.prototype.onMouseDown = function (e, x, y) {
         if(this.hit(x, y)) {
             this.parent.setEventListener(this);
             return true;
         }
         return false;
     };
-    CButton.prototype.onMouseUp = function (e, x, y) {
+    CButtonBase.prototype.onMouseUp = function (e, x, y) {
         this.parent.setEventListener(null);
         return false;
     };
 
+
+    function CButton(parent) {
+        CButtonBase.call(this, parent);
+        this.textBoxes = {};
+            for(var key in STYLE_TYPE) {
+                if(STYLE_TYPE.hasOwnProperty(key)) {
+                    this.createTextBody();
+                    this.textBoxes[STYLE_TYPE[key]] = new CTextBox(this.txBody, new AscCommon.CMatrix());
+                }
+            }
+            this.bodyPr = new AscFormat.CBodyPr();
+            this.bodyPr.setDefault();
+            this.bodyPr.anchor = 1;//vertical align ctr
+            this.bodyPr.lIns = LEFT_PADDING;
+            this.bodyPr.rIns = RIGHT_PADDING;
+            this.bodyPr.tIns = 0;
+            this.bodyPr.bIns = 0;
+            this.bodyPr.bIns = 0;
+            this.bodyPr.horzOverflow = AscFormat.nOTClip;
+            this.bodyPr.vertOverflow = AscFormat.nOTClip;
+        this.isHovered = false;
+        }
+    CButton.prototype = Object.create(CButtonBase.prototype);
+    CButton.prototype.getTxBodyType = function () {
+        var nRet = null;
+        for(var key in this.textBoxes) {
+            if(this.textBoxes.hasOwnProperty(key)) {
+                if(this.textBoxes[key].txBody === this.txBody) {
+                    nRet = key;
+                    break;
+                }
+            }
+        }
+        return nRet;
+    };
+    CButton.prototype.getString = function() {
+        return this.parent.getString(this.parent.getButtonIndex(this));
+    };
+    CButton.prototype.recalculateContent = function () {
+        var sText = this.getString();
+        for(var key in this.textBoxes) {
+            if(this.textBoxes.hasOwnProperty(key)) {
+                this.txBody = this.textBoxes[key].txBody;
+                this.txBody.recalculateOneString(sText);
+            }
+        }
+    };
+
     function CInterfaceButton(parent) {
-        CButton.call(this, parent);
+        CButtonBase.call(this, parent);
         this.tmpState = STYLE_TYPE.UNSELECTED_DATA;
     }
-    CInterfaceButton.prototype = Object.create(CButton.prototype);
+    CInterfaceButton.prototype = Object.create(CButtonBase.prototype);
     CInterfaceButton.prototype.removeTmpState = function () {
 
     };
@@ -1184,13 +1201,13 @@
         if(this.isDisabled()) {
             return false;
         }
-        return CButton.prototype.hit.call(this, x, y);
+        return CButtonBase.prototype.hit.call(this, x, y);
     };
     CInterfaceButton.prototype.onMouseDown = function (e, x, y) {
         if(this.isDisabled()) {
             return false;
         }
-        var bRet = CButton.prototype.onMouseDown.call(this, e, x, y);
+        var bRet = CButtonBase.prototype.onMouseDown.call(this, e, x, y);
         if(bRet) {
             this.parent.handleMouseDown(this.parent.getButtonIndex(this));
         }
@@ -1200,11 +1217,11 @@
         if(this.isDisabled()) {
             return false;
         }
-        return CButton.prototype.onMouseMove.call(this, e, x, y);
+        return CButtonBase.prototype.onMouseMove.call(this, e, x, y);
     };
     CInterfaceButton.prototype.onMouseUp = function (e, x, y) {
         var bEventListener = this.parent.isEventListener(this);
-        var bRet = CButton.prototype.onMouseUp.call(this, e, x, y);
+        var bRet = CButtonBase.prototype.onMouseUp.call(this, e, x, y);
         if(bEventListener) {
             this.parent.handleMouseUp(this.parent.getButtonIndex(this));
         }
@@ -1339,12 +1356,15 @@
     CButtonsContainer.prototype.getRowStart = function (nRow) {
         return this.y + (this.getButtonHeight() + SPACE_BETWEEN) * nRow;
     };
+    CButtonsContainer.prototype.checkScrollTop = function() {
+        this.scrollTop = Math.max(0, Math.min(this.scrollTop, this.getScrolledRows()));
+    };
     CButtonsContainer.prototype.recalculate = function() {
         var nColumnCount = this.getColumnsCount();
         var dButtonWidth, dButtonHeight;
         dButtonHeight = this.getButtonHeight();
         dButtonWidth = this.getButtonWidth();
-        this.scrollTop = Math.max(0, Math.min(this.scrollTop, this.getScrolledRows()));
+        this.checkScrollTop();
         var nColumn, nRow, nButtonIndex, oButton, x ,y;
         for(nButtonIndex = 0; nButtonIndex < this.buttons.length; ++nButtonIndex) {
             nColumn = nButtonIndex % nColumnCount;
@@ -1362,10 +1382,12 @@
             graphics.SaveGrState();
             graphics.transform3(this.slicer.transform);
             graphics.AddClipRect(0, this.y - SPACE_BETWEEN / 2, this.slicer.extX, this.extY + SPACE_BETWEEN / 2);
-            var oButton;
-            for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
-                oButton = this.buttons[nButton];
-                oButton.draw(graphics);
+            this.checkScrollTop();
+            var nColumns = this.getColumnsCount();
+            var nStart = this.scrollTop * nColumns;
+            var nEnd = Math.min(this.buttons.length - 1, nStart + (this.getRowsInFrame() + 1) * nColumns);
+            for(var nButton = nStart; nButton <= nEnd; ++nButton) {
+                this.buttons[nButton].draw(graphics);
             }
             graphics.RestoreGrState();
             this.scroll.draw(graphics);
@@ -1389,9 +1411,10 @@
         return this.eventListener === child;
     };
     CButtonsContainer.prototype.onScroll = function () {
-        var dNewScrollPos = Math.max(0, Math.min(this.scroll.getScrollTop(), this.getScrolledRows()));
-        if(this.scrollTop !== dNewScrollPos) {
-            this.scrollTop = dNewScrollPos;
+        var nOldScroll = this.scrollTop;
+        this.scrollTop = Math.max(0, Math.min(this.scroll.getScrollTop(), this.getScrolledRows()));
+        this.checkScrollTop();
+        if(this.scrollTop !== nOldScroll) {
             this.slicer.onUpdate();
         }
 
