@@ -20303,13 +20303,13 @@
 
 	WorksheetView.prototype.insertSlicers = function (arr) {
 		var t = this;
-		var type;
+		var type, name;
 
 		var callback = function (_obj) {
 			//добавляем в структуру
 
 			for (var i = 0; i < arr.length; i++) {
-				t.model.insertSlicer(arr[i], _obj, type);
+				t.model.insertSlicer(arr[i], name, type);
 			}
 			t.objectRender.addSlicers(arr);
 		};
@@ -20318,6 +20318,7 @@
 		var obj = this.model.autoFilters.getTableByActiveCell();
 		if (obj) {
 			type = window['AscCommonExcel'].insertSlicerType.table;
+			name = obj.DisplayName;
 		} else if (false/*obj = getPivotByactiveCell*/) {
 			type = window['AscCommonExcel'].insertSlicerType.pivotTable;
 		}
@@ -20346,7 +20347,7 @@
 		//предполагается, что лок будет проверен на этапе взаимодествия с шейпом
 		//залочена таблица - залочена работа с контентом шейпа
 		var ws = this.model;
-		var slicerCache = this.model.getSlicerCacheBySourceName(name);
+		var slicerCache = this.model.getSlicerCachesBySourceName(name);
 		var obj = slicerCache.getFilterObj();
 
 		var createSimpleFilterOptions = function () {
@@ -20392,7 +20393,7 @@
 		//в связанном шейпе хранится имя cSlicer
 		//чтобы получить скрытые/открытые значения используем slicerCache
 		//внутри получаем имя форматированной(сводной) таблицы и имя колонки
-		var slicerCache = this.model.getSlicerCacheBySourceName(name);
+		var slicerCache = this.model.getSlicerCachesBySourceName(name);
 		return slicerCache ? slicerCache.getFilterValues() : null;
 	};
 

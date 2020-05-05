@@ -3176,15 +3176,6 @@
 		}
 		return null;
 	};
-	Workbook.prototype.getSlicerCacheBySourceName = function(name) {
-		for (var i = 0, l = this.aWorksheets.length; i < l; ++i) {
-			var cache = this.aWorksheets[i].getSlicerCacheBySourceName(name);
-			if (cache) {
-				return cache;
-			}
-		}
-		return null;
-	};
 	Workbook.prototype.getSlicerCacheByName = function (name) {
 		for (var i = 0, l = this.aWorksheets.length; i < l; ++i) {
 			var cache = this.aWorksheets[i].getSlicerCacheByName(name);
@@ -7735,17 +7726,17 @@
 		return null;
 	};
 
-	Worksheet.prototype.insertSlicer = function (name, obj, type) {
+	Worksheet.prototype.insertSlicer = function (name, obj_name, type) {
 		History.Create_NewPoint();
 		History.StartTransaction();
 
 		//TODO недостаточно ли вместо всей данной длинной структуры использовать только tableId(name) и columnName?
 		var slicer = new window['Asc'].CT_slicer(this);
-		slicer.init(name, obj, type);
+		slicer.init(name, obj_name, type);
 		this.aSlicers.push(slicer);
 
 		History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_Add, this.getId(), null,
-		 			new AscCommonExcel.UndoRedoData_Slicer(type, obj.DisplayName, name));
+		 			new AscCommonExcel.UndoRedoData_Slicer(type, obj_name, name));
 
 		if (slicer && slicer.cacheDefinition) {
 			var _name = slicer.cacheDefinition.name;
@@ -7779,15 +7770,19 @@
 		History.EndTransaction();
 	};
 
-	Worksheet.prototype.getSlicerCacheBySourceName = function (name) {
+	Worksheet.prototype.getSlicerCachesBySourceName = function (name) {
+		var res = null
 		for (var i = 0; i < this.aSlicers.length; i++) {
 			var cache = this.aSlicers[i].getSlicerCache();
 			if (cache && name === cache.sourceName) {
-				return cache;
+				if (!res) {
+					res = [];
+				}
+				res.push(cache);
 			}
 		}
 
-		return null;
+		return res;
 	};
 
 	Worksheet.prototype.getSlicersByCaption = function (name) {

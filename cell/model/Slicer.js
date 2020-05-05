@@ -320,22 +320,31 @@
 		this.lockedPosition = false;
 		this.rowHeight = null;
 
-		this._obj = null; //?
-
 		this.ws = ws;
 
 		return this;
 	}
-	CT_slicer.prototype.init = function (name, obj, type) {
+	CT_slicer.prototype.init = function (name, obj_name, type) {
 		this.name = name;
 		this.caption = name;
 		this.rowHeight = 241300;
-		this._obj = obj;
-		var cache = this.ws.workbook.getSlicerCacheBySourceName(name);
+
+		//необходимо проверить, возможно данный кэш уже существует
+		var cache;
+		var caches = this.ws.getSlicerCachesBySourceName(name);
+		if (caches) {
+			for (var i = 0; i < caches.length; i++) {
+				if (caches[i].checkObjApply(name, obj_name, type)) {
+					cache = caches[i];
+					break;
+				}
+			}
+		}
 		if (!cache) {
 			cache = new CT_slicerCacheDefinition(this.ws);
 			cache.init(name, obj, type);
 		}
+
 		this.cacheDefinition = cache;
 	};
 	CT_slicer.prototype.initPostOpen = function (tableIds) {
@@ -415,6 +424,10 @@
 	CT_slicer.prototype.getTableSlicerCache = function () {
 		return this.cacheDefinition && this.cacheDefinition.getTableSlicerCache();
 	};
+	CT_slicer.prototype.getCacheDefinition = function () {
+		return this.cacheDefinition;
+	};
+
 
 	function CT_slicerCacheDefinition(ws) {
 		this.pivotTables = [];//SlicerCachePivotTable
@@ -432,20 +445,20 @@
 
 		return this;
 	}
-	CT_slicerCacheDefinition.prototype.init = function (name, obj, type) {
+	CT_slicerCacheDefinition.prototype.init = function (name, obj_name, type) {
 		switch (type) {
 			case insertSlicerType.table: {
 				this.sourceName = name;
 				//TODO для генерации имени нужна отдельная функция
 				this.name = "Slicer_" + name;
 				this.tableSlicerCache = new CT_tableSlicerCache();
-				this.tableSlicerCache.tableId = obj.DisplayName;
+				this.tableSlicerCache.tableId = obj_name;
 				this.tableSlicerCache.column = name;
 				break;
 			}
 			case insertSlicerType.pivotTable: {
 				var pivot = new CT_slicerCachePivotTable();
-				pivot.name = obj.name;
+				pivot.name = obj_name;
 				//pivot.tabId = obj.name;
 				this.pivotTables.push(pivot);
 
@@ -615,6 +628,21 @@
 
 	CT_slicerCacheDefinition.prototype.getTableSlicerCache = function () {
 		return this.tableSlicerCache;
+	};
+
+	CT_slicerCacheDefinition.prototype.checkObjApply = function (name, obj_name, type){
+		var res = false;
+		var _obj;
+		switch (type) {
+			case window['AscCommonExcel'].insertSlicerType.table : {
+				_obj = this.getTableSlicerCache();
+				if (_obj && _obj.tableId === obj_name && _obj.column === name) {
+					res = true;
+				}
+				break;
+			}
+		}
+		return res;
 	};
 
 
@@ -1234,9 +1262,9 @@
 
 	function CT_tableSlicerCache() {
 		this.tableId = null;
-		this.tableIdOpen = null;
+		this.tableIdOpen = null;//?
 		this.column = null;
-		this.columnOpen = null;
+		this.columnOpen = null;//?
 		this.sortOrder = ST_tabularSlicerCacheSortOrder.Ascending;
 		this.customListSort = true;
 		this.crossFilter = ST_slicerCacheCrossFilter.ShowItemsWithDataAtTop;

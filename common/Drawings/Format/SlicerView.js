@@ -133,7 +133,7 @@
         if(!oView || !oView.obj) {
             return;
         }
-        var oCache = oWorkbook.getSlicerCacheBySourceName(sName);
+        var oCache = oView.obj.getCacheDefinition();
         if(!oCache) {
             return;
         }
