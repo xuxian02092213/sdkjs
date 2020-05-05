@@ -1731,6 +1731,10 @@
     };
     CScroll.prototype.onMouseMove = function (e, x, y) {
         var bRet = false;
+        if(this.eventListener) {
+            this.eventListener.onMouseMove(e, x, y);
+            return true;
+        }
         if(this.parent.isEventListener(this)){
             if(this.startScrollerPos === null) {
                 this.startScrollerPos = y;
