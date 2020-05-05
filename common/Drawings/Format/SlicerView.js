@@ -1376,6 +1376,7 @@
             oButton.recalculate();
         }
         this.scroll.bVisible = this.getTotalHeight() > this.extY;
+        this.scroll.recalculate();
     };
     CButtonsContainer.prototype.draw = function (graphics) {
         if(this.buttons.length > 0) {
@@ -1404,8 +1405,9 @@
         var oInv = this.getInvFullTransformMatrix();
         var tx = oInv.TransformPointX(x, y);
         var ty = oInv.TransformPointY(x, y);
+        var bottom = Math.min(this.y + this.extY, this.getRowStart(this.getRowsCount() - 1) + this.getButtonHeight());
         return tx >= this.x && ty >= this.y &&
-            tx <= this.x + this.extX && ty <= this.y + this.extY;
+            tx <= this.x + this.extX && ty <= bottom;
     };
     CButtonsContainer.prototype.isEventListener = function (child) {
         return this.eventListener === child;
@@ -1923,6 +1925,10 @@
 
     CScroll.prototype.getScrollOffsetY = function () {
         return 0;
+    };
+    CScroll.prototype.recalculate = function () {
+        this.buttons[0].recalculate();
+        this.buttons[1].recalculate();
     };
 
     window['AscFormat'] = window['AscFormat'] || {};
