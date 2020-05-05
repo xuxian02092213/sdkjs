@@ -7749,7 +7749,7 @@
 
 		if (slicer && slicer.cacheDefinition) {
 			var _name = slicer.cacheDefinition.name;
-			var newDefName = new Asc.asc_CDefName(_name, null, null, false, null, null, true);
+			var newDefName = new Asc.asc_CDefName(_name, "#N/A", null, false, null, null, true);
 			this.workbook.editDefinesNames(null, newDefName);
 		}
 

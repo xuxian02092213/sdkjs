@@ -5808,7 +5808,7 @@
         {
             var oThis = this;
             var oStyleObject = {aBorders: [], aFills: [], aFonts: [], oNumFmts: {}, aCellStyleXfs: [],
-                aCellXfs: [], aDxfs: [], aExtDxfs: [], aCellStyles: [], oCustomTableStyles: {}, oCustomSlicerStyles: new Asc.CT_slicerStyles()};
+                aCellXfs: [], aDxfs: [], aExtDxfs: [], aCellStyles: [], oCustomTableStyles: {}, oCustomSlicerStyles: null};
             var res = this.bcr.ReadTable(function (t, l) {
                 return oThis.ReadStylesContent(t, l, oStyleObject);
             });
@@ -6208,9 +6208,10 @@
                 res = this.bcr.Read1(length, function (t, l) {
                     return oThis.ReadDxfs(t, l, oStyleObject.aExtDxfs);
                 });
-            } else if (c_oSerStylesTypes.SlicerStyles === type) {
+            } else if (c_oSerStylesTypes.SlicerStyles === type && typeof Asc.CT_slicerStyles != "undefined") {
                 var fileStream = this.stream.ToFileStream();
                 fileStream.GetUChar();
+                oStyleObject.oCustomSlicerStyles = new Asc.CT_slicerStyles();
                 oStyleObject.oCustomSlicerStyles.fromStream(fileStream);
                 this.stream.FromFileStream(fileStream);
             } else
@@ -6829,7 +6830,7 @@
 					return oThis.ReadPivotCaches(t,l);
 				});
 			}
-            else if (c_oSerWorkbookTypes.SlicerCaches == type || c_oSerWorkbookTypes.SlicerCachesExt == type)
+            else if ((c_oSerWorkbookTypes.SlicerCaches == type || c_oSerWorkbookTypes.SlicerCachesExt == type) && typeof Asc.CT_slicerCacheDefinition != "undefined")
             {
                 res = this.bcr.Read1(length, function(t,l){
                     return oThis.ReadSlicerCaches(t,l);
@@ -7424,7 +7425,7 @@
 					data.table.cacheDefinition = cacheDefinition;
 					oWorksheet.insertPivotTable(data.table);
 				}
-            } else if ((c_oSerWorksheetsTypes.Slicers === type || c_oSerWorksheetsTypes.SlicersExt === type) && typeof Asc.CT_pivotTableDefinition != "undefined") {
+            } else if ((c_oSerWorksheetsTypes.Slicers === type || c_oSerWorksheetsTypes.SlicersExt === type) && typeof Asc.CT_slicers != "undefined") {
                 res = this.bcr.Read1(length, function(t, l) {
                     return oThis.ReadSlicers(t, l, oWorksheet);
                 });
@@ -9767,6 +9768,9 @@
         },
         addCustomStylesAtOpening : function(styles, Dxfs)
         {
+            if (!styles) {
+                return;
+            }
             this.DefaultStyle = styles.defaultSlicerStyle || this.DefaultStyle;
             for(var i = 0; i < styles.slicerStyle.length; ++i){
                 this.addStyleAtOpening(this.CustomStyles, Dxfs, styles.slicerStyle[i]);
@@ -10236,9 +10240,11 @@
             }
         }
         oStyleObject.oCustomTableStyles = tableStylesRenamed;
-        var slicerStyles = oStyleObject.oCustomSlicerStyles.slicerStyle;
-        for(i = 0; i < slicerStyles.length; ++i){
-            slicerStyles[i].name = slicerStyles[i].name.slice(0, -2);
+        if (oStyleObject.oCustomSlicerStyles) {
+            var slicerStyles = oStyleObject.oCustomSlicerStyles.slicerStyle;
+            for (i = 0; i < slicerStyles.length; ++i) {
+                slicerStyles[i].name = slicerStyles[i].name.slice(0, -2);
+            }
         }
     }
     function ReadDefSlicerStyles(wb, oOutput)
