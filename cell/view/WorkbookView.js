@@ -432,6 +432,8 @@
 				  return self._onGraphicObjectWindowKeyDown.apply(self, arguments);
 			  }, "graphicObjectWindowKeyPress": function () {
 				  return self._onGraphicObjectWindowKeyPress.apply(self, arguments);
+			  }, "graphicObjectMouseWheel": function () {
+				  return self._onGraphicObjecMouseWheel.apply(self, arguments);
 			  }, "getGraphicsInfo": function () {
 				  return self._onGetGraphicsInfo.apply(self, arguments);
 			  }, "updateSelectionShape": function () {
@@ -1452,6 +1454,13 @@
   WorkbookView.prototype._onGraphicObjectWindowKeyPress = function(e) {
     var objectRender = this.getWorksheet().objectRender;
     return (0 < objectRender.getSelectedGraphicObjects().length) ? objectRender.graphicObjectKeyPress(e) : false;
+  };
+  WorkbookView.prototype._onGraphicObjecMouseWheel = function(deltaX, deltaY) {
+    var objectRender = this.getWorksheet().objectRender;
+      if(objectRender && objectRender.controller) {
+          return objectRender.controller.onMouseWheel(deltaX, deltaY);
+      }
+    return false;
   };
 
   WorkbookView.prototype._onGetGraphicsInfo = function(x, y) {

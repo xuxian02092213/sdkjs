@@ -7387,6 +7387,15 @@ DrawingObjectsController.prototype =
         return false;
     },
 
+    onMouseWheel: function (deltaX, deltaY) {
+        var aSelection = this.selection.groupSelection ? this.selection.groupSelection.selectedObjects : this.selectedObjects;
+        if(aSelection.length === 1
+            && aSelection[0].getObjectType() === AscDFH.historyitem_type_SlicerView) {
+            return aSelection[0].onWheel(deltaX, deltaY);
+        }
+        return false;
+    },
+
     /*onKeyPress: function(e)
      {
      this.curState.onKeyPress(e);

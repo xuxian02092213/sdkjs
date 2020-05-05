@@ -607,6 +607,9 @@
     CSlicer.prototype.getInvFullTransformMatrix = function () {
         return this.invertTransform;
     };
+    CSlicer.prototype.onWheel = function (deltaX, deltaY) {
+        return this.buttonsContainer.onWheel(deltaX, deltaY);
+    };
 
     function CHeader(slicer) {
         AscFormat.CShape.call(this);
@@ -1560,6 +1563,10 @@
         return -(this.getRowStart(this.scrollTop) - this.y);
     };
 
+    CButtonsContainer.prototype.onWheel = function (deltaX, deltaY) {
+        return this.scroll.onWheel(deltaX, deltaY);
+    };
+
     function CScroll(parent) {
         this.parent = parent;
         this.extX = 0;
@@ -1929,6 +1936,23 @@
     CScroll.prototype.recalculate = function () {
         this.buttons[0].recalculate();
         this.buttons[1].recalculate();
+    };
+    CScroll.prototype.onWheel = function (deltaX, deltaY) {
+        if(!this.bVisible) {
+            return true;
+        }
+        var delta = deltaY;
+        if(Math.abs(deltaX) > Math.abs(deltaY)) {
+            delta = deltaX;
+        }
+        if(delta > 0) {
+            this.addScroll(this.internalGetRelScrollerY(3));
+        }
+        else if(delta < 0) {
+            this.addScroll(-this.internalGetRelScrollerY(3));
+        }
+        this.endScroll();
+        return true;
     };
 
     window['AscFormat'] = window['AscFormat'] || {};
