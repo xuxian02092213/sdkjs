@@ -342,7 +342,7 @@
 		}
 		if (!cache) {
 			cache = new CT_slicerCacheDefinition(this.ws);
-			cache.init(name, obj, type);
+			cache.init(name, obj_name, type);
 		}
 
 		this.cacheDefinition = cache;

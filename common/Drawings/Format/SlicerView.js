@@ -1043,6 +1043,16 @@
         this.transformText = this.getFullTextTransform();
         this.invertTransformText = oMT.Invert(this.transformText);
     };
+    CButtonBase.prototype.recalculateBounds = function() {
+        this.bounds.x = this.transform.tx;
+        this.bounds.y = this.transform.ty;
+        this.bounds.l = this.bounds.x;
+        this.bounds.t = this.bounds.y;
+        this.bounds.r = this.bounds.x + this.extX;
+        this.bounds.b = this.bounds.y + this.extY;
+        this.bounds.w = this.bounds.r - this.bounds.l;
+        this.bounds.h = this.bounds.b - this.bounds.t;
+    };
     CButtonBase.prototype.draw = function (graphics) {
         var parents = this.getParentObjects();
         this.brush = AscCommonExcel.convertFillToUnifill(this.parent.getFill(this.getState()));
