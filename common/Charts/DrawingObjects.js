@@ -1237,9 +1237,8 @@ function CChangeTableData(changedRange, added, hided, removed, arrChanged)
     this.arrChanged = arrChanged;
 }
 
-function GraphicOption(ws, type, range, offset) {
-    this.ws = ws;
-	this.type = type;
+function GraphicOption(clearCanvas, range, offset) {
+    this.clearCanvas = clearCanvas;
 	this.range = range;
 	this.offset = offset;
 }
@@ -1340,7 +1339,7 @@ GraphicOption.prototype.getOffset = function () {
         var taskLen = aDrawTasks.length;
         if ( taskLen ) {
             var lastTask = aDrawTasks[taskLen - 1];
-            _this.showDrawingObjectsEx(lastTask.clearCanvas, lastTask.graphicOption);
+            _this.showDrawingObjectsEx(lastTask);
             aDrawTasks.splice(0, (taskLen - 1 > 0) ? taskLen - 1 : 1);
         }
         _this.animId = null;
@@ -1746,8 +1745,8 @@ GraphicOption.prototype.getOffset = function () {
         var oOffset = {
             offsetX: 0, offsetY: 0
         };
-        var oOptions = new AscFormat.GraphicOption(this.worksheet, null, oRange, oOffset);
-        oDO.showDrawingObjects(false, oOptions);
+        var oOptions = new AscFormat.GraphicOption(false, oRange, oOffset);
+        oDO.showDrawingObjects(oOptions);
     };
     //}
 
@@ -1938,7 +1937,7 @@ GraphicOption.prototype.getOffset = function () {
         _this.drawingDocument.TargetHtmlElement = document.getElementById('id_target_cursor');
         _this.drawingDocument.InitGuiCanvasShape(api.shapeElementId);
         _this.controller = new AscFormat.DrawingObjectsController(_this);
-        _this.lasteForzenPlaseNum = 0;
+        _this.lastForzenPlaceNum = 0;
 
         _this.canEdit = function() { return worksheet.handlers.trigger('canEdit'); };
 
@@ -2128,37 +2127,32 @@ GraphicOption.prototype.getOffset = function () {
     // Drawing objects
     //-----------------------------------------------------------------------------------
 
-    _this.showDrawingObjects = function(clearCanvas, graphicOption) {
-
-        if(clearCanvas || !graphicOption) {
-            aDrawTasks.length = 0;
-            aDrawTasks.push({ clearCanvas: true, graphicOption: graphicOption})
-            }
-        else {
-            if(aDrawTasks.length > 0) {
-                if(!aDrawTasks[0].clearCanvas) {
-                    if(graphicOption) {
-                        for(var nTask = 0; nTask < aDrawTasks.length; ++nTask) {
-                            var oTask = aDrawTasks[nTask];
-                            var oRange1 = oTask.graphicOption.range;
-                            var oRange2 = graphicOption.range;
-                            if(!oRange1 || !oRange2) {
-                                aDrawTasks.length = 0;
-                                aDrawTasks.push({ clearCanvas: true, graphicOption: graphicOption});
-                                break;
+    _this.showDrawingObjects = function(graphicOption) {
+        if(!worksheet || !worksheet.model ||
+            !api || !api.wb || !api.wb.model) {
+            return
         }
-                            if(oRange1.isEqual(oRange2)) {
-                                break;
-                            }
-                        }
-                        if(nTask === aDrawTasks.length) {
-                            aDrawTasks.push({ clearCanvas: false, graphicOption: graphicOption});
-                        }
-                    }
+        if ( (worksheet.model.index !== api.wb.model.getActive()))
+            return;
+
+        if(!graphicOption || graphicOption.clearCanvas || !graphicOption.range) {
+            aDrawTasks.length = 0;
+            aDrawTasks.push(new AscFormat.GraphicOption(true, null, null));
+        }
+        else {
+            var oLastTask;
+            if(aDrawTasks.length > 0) {
+                oLastTask = aDrawTasks[aDrawTasks.length - 1];
+                if(!oLastTask.clearCanvas && oLastTask.range) {
+                    oLastTask.range.union(graphicOption.range);
+                }
+                else {
+                    aDrawTasks.length = 0;
+                    aDrawTasks.push(new AscFormat.GraphicOption(true, null, null));
                 }
             }
             else {
-                aDrawTasks.push({ clearCanvas: clearCanvas, graphicOption: graphicOption});
+                aDrawTasks.push(graphicOption);
             }
         }
         if(_this.animId === null) {
@@ -2166,19 +2160,15 @@ GraphicOption.prototype.getOffset = function () {
         }
     };
 
-    _this.showDrawingObjectsEx = function(clearCanvas, graphicOption) {
+    _this.showDrawingObjectsEx = function(graphicOption) {
 
-        /*********** Print Options ***************
-         printOptions : {
-			ctx,
-			printPagesData
-		}
-         *****************************************/
-
-        // Undo/Redo
         if ( (worksheet.model.index !== api.wb.model.getActive()))
             return;
 
+        var clearCanvas = true;
+        if(graphicOption) {
+            clearCanvas = graphicOption.clearCanvas;
+        }
         if(drawingCtx) {
             if ( clearCanvas ) {
                 _this.drawingArea.clear();
@@ -2186,10 +2176,15 @@ GraphicOption.prototype.getOffset = function () {
 
             if(aObjects.length > 0) {
                 var shapeCtx = api.wb.shapeCtx;
-                if (graphicOption) {
+                var updatedRange = null;
+                var offsetScroll = null;
+                if(graphicOption) {
+                    updatedRange = graphicOption.getUpdatedRange();
+                    offsetScroll = graphicOption.getOffset();
+                }
+                if (updatedRange && offsetScroll) {
                     // Выставляем нужный диапазон для отрисовки
                     var updatedRect = { x: 0, y: 0, w: 0, h: 0 };
-                    var updatedRange = graphicOption.getUpdatedRange();
 
 					var x1 = worksheet._getColLeft(updatedRange.c1);
                     var y1 = worksheet._getRowTop(updatedRange.r1);
@@ -2204,7 +2199,6 @@ GraphicOption.prototype.getOffset = function () {
                     updatedRect.w = pxToMm(w);
                     updatedRect.h = pxToMm(h);
 
-					var offsetScroll = graphicOption.getOffset();
                     shapeCtx.m_oContext.save();
                     shapeCtx.m_oContext.beginPath();
                     shapeCtx.m_oContext.rect(x1 - offsetScroll.offsetX, y1 - offsetScroll.offsetY, w, h);
@@ -2233,12 +2227,12 @@ GraphicOption.prototype.getOffset = function () {
             }
             worksheet.model.Drawings = aObjects;
         }
-            var bChangedFrozen = _this.lasteForzenPlaseNum !== _this.drawingArea.frozenPlaces.length;
+        var bChangedFrozen = _this.lastForzenPlaceNum !== _this.drawingArea.frozenPlaces.length;
             if ( _this.controller.selectedObjects.length || _this.drawingArea.frozenPlaces.length > 1 || bChangedFrozen || window['Asc']['editor'].watermarkDraw) {
                 _this.OnUpdateOverlay();
                 _this.controller.updateSelectionState(true);
             }
-        _this.lasteForzenPlaseNum = _this.drawingArea.frozenPlaces.length;
+        _this.lastForzenPlaceNum = _this.drawingArea.frozenPlaces.length;
     };
 
     _this.print = function(oOptions) {
@@ -2688,7 +2682,7 @@ GraphicOption.prototype.getOffset = function () {
                         _this.setGraphicObjectProps(imgProps);
                     }
 
-                    _this.showDrawingObjects(true);
+                    _this.showDrawingObjects();
                 }
             };
 
@@ -3002,7 +2996,7 @@ GraphicOption.prototype.getOffset = function () {
                     oNewChartSpace.checkDrawingBaseCoords();
                     oNewChartSpace.recalculate();
                     worksheet._scrollToRange(_this.getSelectedDrawingsRange());
-                    _this.showDrawingObjects(true);
+                    _this.showDrawingObjects();
                     _this.controller.resetSelection();
                     _this.controller.selectObject(oNewChartSpace, 0);
                     _this.controller.updateSelectionState();
@@ -3027,7 +3021,7 @@ GraphicOption.prototype.getOffset = function () {
 				_this.controller.selectObject(aObjects[0].graphicObject, 0);
             }
             _this.controller.editChartDrawingObjects(chart);
-            //_this.showDrawingObjects(false);
+            //_this.showDrawingObjects();
         }
     };
 
@@ -3580,7 +3574,7 @@ GraphicOption.prototype.getOffset = function () {
                     bNeedRedraw = true;
                 }
             }
-        bNeedRedraw && _this.showDrawingObjects(true);
+        bNeedRedraw && _this.showDrawingObjects();
     };
 
     _this.updateDrawingsTransform = function(target) {
@@ -3678,12 +3672,12 @@ GraphicOption.prototype.getOffset = function () {
                     oGraphicObject.handleUpdateExtents();
                     oGraphicObject.recalculate();
                 }
-                _this.showDrawingObjects(true);
+                _this.showDrawingObjects();
             });
         }
         else {
             if(bDraw) {
-                _this.showDrawingObjects(true);
+                _this.showDrawingObjects();
             }
         }
     };
@@ -3824,7 +3818,7 @@ GraphicOption.prototype.getOffset = function () {
                     {
                         History.Create_NewPoint(AscDFH.historydescription_ChartDrawingObjects);
                         editChart(chart);
-                        _this.showDrawingObjects(true);
+                        _this.showDrawingObjects();
                     }
                     else
                     {
@@ -3981,7 +3975,7 @@ GraphicOption.prototype.getOffset = function () {
         /*if ( bRedraw ) {
          worksheet._endSelectionShape();
          _this.sendGraphicObjectProps();
-         _this.showDrawingObjects(true);
+         _this.showDrawingObjects();
          }*/
 
         return position;
@@ -4072,7 +4066,7 @@ GraphicOption.prototype.getOffset = function () {
                 worksheet.model.workbook.handlers.trigger("asc_onError", c_oAscError.ID.UplImageUrl, c_oAscError.Level.NoCritical);
             }
             else
-                _this.showDrawingObjects(true);
+                _this.showDrawingObjects();
         }
     };
 
@@ -4773,7 +4767,7 @@ GraphicOption.prototype.getOffset = function () {
         
         _this.controller.recalculateCurPos(true, true);
         _this.sendGraphicObjectProps();
-        _this.showDrawingObjects(true);
+        _this.showDrawingObjects();
     };
     _this.Get_MaxCursorPosInCompositeText = function()
     {

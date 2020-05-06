@@ -1066,7 +1066,7 @@
         ws.objectRender.controller.setSelectionState(state);
         ws.setSelectionShape(true);
         ws._scrollToRange(ws.objectRender.getSelectedDrawingsRange());
-        ws.objectRender.showDrawingObjectsEx(true);
+        ws.objectRender.showDrawingObjectsEx();
         ws.objectRender.controller.updateOverlay();
         ws.objectRender.controller.updateSelectionState();
       }
@@ -1108,7 +1108,7 @@
       return;
     }
     var ws = this.getWorksheet();
-    ws.changeSelectionDone();
+   var isStateFormatPainter = ws.changeSelectionDone();
     this._onSelectionNameChanged(ws.getSelectionName(/*bRangeText*/false));
     // Проверим, нужно ли отсылать информацию о ячейке
     var ar = ws.model.selectionRange.getLast();
@@ -1123,7 +1123,7 @@
 
     var ct = ws.getCursorTypeFromXY(x, y);
 
-    if (c_oTargetType.Hyperlink === ct.target && !this.controller.isFormulaEditMode) {
+    if (c_oTargetType.Hyperlink === ct.target && !this.controller.isFormulaEditMode && !isStateFormatPainter) {
       // Проверим замерженность
       var isHyperlinkClick = false;
      if(isSelectOnShape) {
@@ -2682,9 +2682,9 @@
   WorkbookView.prototype.drawWS = function() {
     this.getWorksheet().draw();
   };
-  WorkbookView.prototype.onShowDrawingObjects = function(clearCanvas) {
+  WorkbookView.prototype.onShowDrawingObjects = function() {
     var ws = this.getWorksheet();
-    ws.objectRender.showDrawingObjects(clearCanvas);
+    ws.objectRender.showDrawingObjects();
   };
 
   WorkbookView.prototype.insertHyperlink = function(options) {

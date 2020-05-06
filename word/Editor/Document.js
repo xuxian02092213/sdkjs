@@ -5928,6 +5928,8 @@ CDocument.prototype.MoveCursorToStartOfDocument = function()
 		this.EndDrawingEditing();
 	else if (nDocPosType === docpostype_Footnotes)
 		this.EndFootnotesEditing();
+	else if (nDocPosType === docpostype_Endnotes)
+		this.EndEndnotesEditing();
 	else if (nDocPosType === docpostype_HdrFtr)
 		this.EndHdrFtrEditing();
 
@@ -8676,6 +8678,8 @@ CDocument.prototype.UpdateCursorType = function(X, Y, PageAbs, MouseEvent)
 	{
 		if (true === this.Footnotes.CheckHitInFootnote(X, Y, PageAbs))
 			this.Footnotes.UpdateCursorType(X, Y, PageAbs, MouseEvent);
+		else if (this.Endnotes.CheckHitInEndnote(X, Y, PageAbs))
+			this.Endnotes.UpdateCursorType(X, Y, PageAbs, MouseEvent);
 		else
 			this.LogicDocumentController.UpdateCursorType(X, Y, PageAbs, MouseEvent);
 	}
@@ -8707,6 +8711,10 @@ CDocument.prototype.IsTableBorder = function(X, Y, PageIndex)
 		else if (true === this.Footnotes.CheckHitInFootnote(X, Y, PageIndex))
 		{
 			return this.Footnotes.IsTableBorder(X, Y, PageIndex);
+		}
+		else if (this.Endnotes.CheckHitInEndnote(X, Y, PageIndex))
+		{
+			return this.Endnotes.IsTableBorder(X, Y, PageIndex);
 		}
 		else
 		{
@@ -8748,6 +8756,10 @@ CDocument.prototype.IsInText = function(X, Y, PageIndex)
 		{
 			return this.Footnotes.IsInText(X, Y, PageIndex);
 		}
+		else if (this.Endnotes.CheckHitInEndnote(X, Y, PageIndex))
+		{
+			return this.Endnotes.IsInText(X, Y, PageIndex);
+		}
 		else
 		{
 			var ContentPos       = this.Internal_GetContentPosByXY(X, Y, PageIndex);
@@ -8783,6 +8795,10 @@ CDocument.prototype.IsInDrawing = function(X, Y, PageIndex)
 		else if (true === this.Footnotes.CheckHitInFootnote(X, Y, PageIndex))
 		{
 			return this.Footnotes.IsInDrawing(X, Y, PageIndex);
+		}
+		else if (this.Endnotes.CheckHitInEndnote(X, Y, PageIndex))
+		{
+			return this.Endnotes.IsInDrawing(X, Y, PageIndex);
 		}
 		else
 		{
@@ -9396,6 +9412,14 @@ CDocument.prototype.OnKeyDown = function(e)
             bRetValue = keydownresult_PreventAll;
         }
     }
+    else if (e.KeyCode == 68 && true === e.CtrlKey) // Ctrl + D + ...
+	{
+		if (true === e.AltKey) // Ctrl + Alt + D - вставка концевой сноски
+		{
+			this.AddEndnote();
+			bRetValue = keydownresult_PreventAll;
+		}
+	}
     else if (e.KeyCode == 69 && true === e.CtrlKey) // Ctrl + E + ...
     {
         if (true !== e.AltKey) // Ctrl + E - переключение прилегания параграфа между center и left
@@ -10360,11 +10384,15 @@ CDocument.prototype.Get_NearestPos = function(PageNum, X, Y, bAnchor, Drawing)
 	{
 		// Проверяем попадание в графические объекты
 		var NearestPos = this.DrawingObjects.getNearestPos(X, Y, PageNum, Drawing);
-		if (( nInDrawing === DRAWING_ARRAY_TYPE_BEFORE || nInDrawing === DRAWING_ARRAY_TYPE_INLINE || ( false === bInText && nInDrawing >= 0 ) ) && null != NearestPos)
+		if ((nInDrawing === DRAWING_ARRAY_TYPE_BEFORE || nInDrawing === DRAWING_ARRAY_TYPE_INLINE || (false === bInText && nInDrawing >= 0)) && null != NearestPos)
 			return NearestPos;
 
 		NearestPos = true === this.Footnotes.CheckHitInFootnote(X, Y, PageNum) ? this.Footnotes.GetNearestPos(X, Y, PageNum, false, Drawing) : null;
 		if (null !== NearestPos)
+			return NearestPos;
+
+		NearestPos = this.Endnotes.CheckHitInEndnote(X, Y, PageNum) ? this.Endnotes.GetNearestPos(X, Y, PageNum, false, Drawing) : null;
+		if (NearestPos)
 			return NearestPos;
 	}
 
@@ -11528,6 +11556,28 @@ CDocument.prototype.Can_CopyCut = function()
 			return true;
 		}
 	}
+	else if (docpostype_Endnotes === nDocPosType)
+	{
+		if (0 === this.Endnotes.Selection.Direction)
+		{
+			var oEndnote = this.Endnotes.GetCurEndnote();
+			if (oEndnote)
+			{
+				if (docpostype_DrawingObjects === oEndnote.GetDocPosType())
+				{
+					DrawingObjects = this.DrawingObjects;
+				}
+				else
+				{
+					LogicDocument = oEndnote;
+				}
+			}
+		}
+		else
+		{
+			return true;
+		}
+	}
 	else //if (docpostype_Content === nDocPosType)
 	{
 		LogicDocument = this;
@@ -12285,7 +12335,16 @@ CDocument.prototype.Set_SelectionState2 = function(State)
 	else if (docpostype_Endnotes === State.Type)
 	{
 		this.SetDocPosType(docpostype_Endnotes);
-		// TODO: Реализовать
+		var oEndnote = g_oTableId.Get_ById(State.Id);
+		if (oEndnote && true === this.Endnotes.Is_UseInDocument(State.Id))
+		{
+			this.Endnotes.private_SetCurrentEndnoteNoSelection(oEndnote);
+			oEndnote.MoveCursorToStartPos(false);
+		}
+		else
+		{
+			this.EndEndnotesEditing();
+		}
 	}
 	else // if ( docpostype_Content === State.Type )
 	{
@@ -13740,6 +13799,7 @@ CDocument.prototype.GetAllParagraphs = function(Props, ParaArray)
 		}
 
 		this.Footnotes.GetAllParagraphs(Props, ParaArray);
+		this.Endnotes.GetAllParagraphs(Props, ParaArray);
 	}
 
 	if (Props && true === Props.OnlyMainDocument && true === Props.All)
@@ -14098,6 +14158,12 @@ CDocument.prototype.Get_CursorLogicPosition = function()
 		var oFootnote = this.Footnotes.GetCurFootnote();
 		if (oFootnote)
 			return this.private_GetLogicDocumentPosition(oFootnote);
+	}
+	else if (docpostype_Endnotes === nDocPosType)
+	{
+		var oEndnote = this.Endnotes.GetCurEndnote();
+		if (oEndnote)
+			return this.private_GetLogicDocumentPosition(oEndnote);
 	}
 	else
 	{
@@ -15400,12 +15466,12 @@ CDocument.prototype.private_GetRevisionsChangeElement = function(nDirection, oCu
 				this.private_GetRevisionsChangeElementInDocument(oSearchEngine, 0);
 
 			if (true !== oSearchEngine.IsFound())
-				this.private_GetRevisionsChangeElementInFooters(oSearchEngine, null);
+				this.private_GetRevisionsChangeElementInFootnotes(oSearchEngine, null);
 		}
 		else
 		{
 			if (true !== oSearchEngine.IsFound())
-				this.private_GetRevisionsChangeElementInFooters(oSearchEngine, null);
+				this.private_GetRevisionsChangeElementInFootnotes(oSearchEngine, null);
 
 			if (true !== oSearchEngine.IsFound())
 				this.private_GetRevisionsChangeElementInDocument(oSearchEngine, this.Content.length - 1);
@@ -15417,7 +15483,7 @@ CDocument.prototype.private_GetRevisionsChangeElement = function(nDirection, oCu
 	}
 	else if (oFootnote)
 	{
-		this.private_GetRevisionsChangeElementInFooters(oSearchEngine, oFootnote);
+		this.private_GetRevisionsChangeElementInFootnotes(oSearchEngine, oFootnote);
 
 		if (nDirection > 0)
 		{
@@ -15437,7 +15503,7 @@ CDocument.prototype.private_GetRevisionsChangeElement = function(nDirection, oCu
 		}
 
 		if (true !== oSearchEngine.IsFound())
-			this.private_GetRevisionsChangeElementInFooters(oSearchEngine, null);
+			this.private_GetRevisionsChangeElementInFootnotes(oSearchEngine, null);
 	}
 	else
 	{
@@ -15447,7 +15513,7 @@ CDocument.prototype.private_GetRevisionsChangeElement = function(nDirection, oCu
 		if (nDirection > 0)
 		{
 			if (true !== oSearchEngine.IsFound())
-				this.private_GetRevisionsChangeElementInFooters(oSearchEngine, null);
+				this.private_GetRevisionsChangeElementInFootnotes(oSearchEngine, null);
 
 			if (true !== oSearchEngine.IsFound())
 				this.private_GetRevisionsChangeElementInHdrFtr(oSearchEngine, null);
@@ -15458,7 +15524,7 @@ CDocument.prototype.private_GetRevisionsChangeElement = function(nDirection, oCu
 				this.private_GetRevisionsChangeElementInHdrFtr(oSearchEngine, null);
 
 			if (true !== oSearchEngine.IsFound())
-				this.private_GetRevisionsChangeElementInFooters(oSearchEngine, null);
+				this.private_GetRevisionsChangeElementInFootnotes(oSearchEngine, null);
 		}
 
 		if (true !== oSearchEngine.IsFound())
@@ -15520,9 +15586,8 @@ CDocument.prototype.private_GetRevisionsChangeElementInHdrFtr = function(SearchE
 		AllHdrFtrs[Pos].GetRevisionsChangeElement(SearchEngine);
 	}
 };
-CDocument.prototype.private_GetRevisionsChangeElementInFooters = function(SearchEngine, oFootnote)
+CDocument.prototype.private_GetRevisionsChangeElementInFootnotesList = function(SearchEngine, oFootnote, arrFootnotes)
 {
-	var arrFootnotes = this.GetFootnotesList(null, null);
 	var nCount = arrFootnotes.length;
 	if (nCount <= 0)
 		return;
@@ -15557,6 +15622,25 @@ CDocument.prototype.private_GetRevisionsChangeElementInFooters = function(Search
 			break;
 
 		arrFootnotes[nPos].GetRevisionsChangeElement(SearchEngine);
+	}
+};
+CDocument.prototype.private_GetRevisionsChangeElementInFootnotes = function(oSearchEngine, oFootnote)
+{
+	if (oSearchEngine.GetDirection() > 0)
+	{
+		if (true !== oSearchEngine.IsFound())
+			this.private_GetRevisionsChangeElementInFootnotesList(oSearchEngine, oFootnote, this.GetFootnotesList(null, null));
+
+		if (true !== oSearchEngine.IsFound())
+			this.private_GetRevisionsChangeElementInFootnotesList(oSearchEngine, oFootnote, this.GetEndnotesList(null, null));
+	}
+	else
+	{
+		if (true !== oSearchEngine.IsFound())
+			this.private_GetRevisionsChangeElementInFootnotesList(oSearchEngine, oFootnote, this.GetEndnotesList(null, null));
+
+		if (true !== oSearchEngine.IsFound())
+			this.private_GetRevisionsChangeElementInFootnotesList(oSearchEngine, oFootnote, this.GetFootnotesList(null, null));
 	}
 };
 CDocument.prototype.private_SelectRevisionChange = function(oChange, isSkipCompleteCheck)
@@ -15923,6 +16007,11 @@ CDocument.prototype.AcceptRevisionChanges = function(nType, bAll)
 	{
 		this.Footnotes.AcceptRevisionChanges(nType, bAll);
 	}
+	else if (docpostype_Endnotes === this.CurPos.Type)
+	{
+		this.Endnotes.AcceptRevisionChanges(nType, bAll);
+	}
+
 
 	if (true !== bAll)
 	{
@@ -15955,6 +16044,10 @@ CDocument.prototype.RejectRevisionChanges = function(nType, bAll)
 	else if (docpostype_Footnotes === this.CurPos.Type)
 	{
 		this.Footnotes.RejectRevisionChanges(nType, bAll);
+	}
+	else if (docpostype_Endnotes === this.CurPos.Type)
+	{
+		this.Endnotes.RejectRevisionChanges(nType, bAll);
 	}
 
 	if (true !== bAll)
@@ -16213,7 +16306,6 @@ CDocument.prototype.AddFootnote = function(sText)
 	{
 		this.StartAction(AscDFH.historydescription_Document_AddFootnote);
 
-		var nDocPosType = this.GetDocPosType();
 		if (docpostype_Content === nDocPosType)
 		{
 			var oFootnote = this.Footnotes.CreateFootnote();
@@ -16306,9 +16398,13 @@ CDocument.prototype.GotoFootnote = function(isNext)
 		return;
 	}
 
-	if (docpostype_HdrFtr == this.CurPos.Type)
+	if (docpostype_HdrFtr === nDocPosType)
 	{
 		this.EndHdrFtrEditing(true);
+	}
+	else if (docpostype_Endnotes === nDocPosType)
+	{
+		this.EndEndnotesEditing();
 	}
 	else if (docpostype_DrawingObjects === nDocPosType)
 	{
@@ -16435,11 +16531,10 @@ CDocument.prototype.AddEndnote = function(sText)
 	if (docpostype_Content !== nDocPosType && docpostype_Endnotes !== nDocPosType)
 		return;
 
-	if (false === this.Document_Is_SelectionLocked(changestype_Paragraph_Content))
+	if (!this.IsSelectionLocked(changestype_Paragraph_Content))
 	{
 		this.StartAction(AscDFH.historydescription_Document_AddEndnote);
 
-		var nDocPosType = this.GetDocPosType();
 		if (docpostype_Content === nDocPosType)
 		{
 			var oEndnote = this.Endnotes.CreateEndnote();
@@ -16456,14 +16551,12 @@ CDocument.prototype.AddEndnote = function(sText)
 			else
 				this.AddToParagraph(new ParaEndnoteReference(oEndnote));
 
-			// TODO: Реализовать
-			//this.SetDocPosType(docpostype_Footnotes);
-			//this.Footnotes.Set_CurrentElement(true, 0, oFootnote);
+			this.SetDocPosType(docpostype_Endnotes);
+			this.Endnotes.Set_CurrentElement(true, 0, oEndnote);
 		}
 		else if (docpostype_Endnotes === nDocPosType)
 		{
-			// TODO: Реализовать
-			//this.Footnotes.AddFootnoteRef();
+			this.Endnotes.AddEndnoteRef();
 		}
 
 		this.Recalculate();
@@ -18734,7 +18827,7 @@ CDocument.prototype.controller_IsMovingTableBorder = function()
 };
 CDocument.prototype.controller_CheckPosInSelection = function(X, Y, PageAbs, NearPos)
 {
-	if (true === this.Footnotes.CheckHitInFootnote(X, Y, PageAbs))
+	if (this.Footnotes.CheckHitInFootnote(X, Y, PageAbs) || this.Endnotes.CheckHitInEndnote(X, Y, PageAbs))
 		return false;
 
 	if (true === this.Selection.Use)
@@ -20666,6 +20759,7 @@ CDocument.prototype.OnCreateNewHistoryPoint = function()
 {
 	this.AllParagraphsList = null;
 	this.AllFootnotesList  = null;
+	this.AllEndnotesList   = null;
 };
 /**
  * Получаем массив положений, к которым можно привязать гиперссылку
@@ -24403,6 +24497,7 @@ window['AscCommonWord'].docpostype_Content        = docpostype_Content;
 window['AscCommonWord'].docpostype_HdrFtr         = docpostype_HdrFtr;
 window['AscCommonWord'].docpostype_DrawingObjects = docpostype_DrawingObjects;
 window['AscCommonWord'].docpostype_Footnotes      = docpostype_Footnotes;
+window['AscCommonWord'].docpostype_Endnotes       = docpostype_Endnotes;
 
 window['AscCommon'].Page_Width = Page_Width;
 window['AscCommon'].Page_Height = Page_Height;

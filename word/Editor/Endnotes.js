@@ -734,9 +734,111 @@ CEndnotesController.prototype.EndSelection = function(X, Y, nPageAbs, oMouseEven
 		this.Selection.Direction = 0;
 	}
 };
+CEndnotesController.prototype.Set_CurrentElement = function(bUpdateStates, PageAbs, oEndnote)
+{
+	if (oEndnote instanceof CFootEndnote)
+	{
+		if (oEndnote.IsSelectionUse())
+		{
+			this.CurEndnote              = oEndnote;
+			this.Selection.Use           = true;
+			this.Selection.Direction     = 0;
+			this.Selection.Start.Endnote = oEndnote;
+			this.Selection.End.Endnote   = oEndnote;
+			this.Selection.Endnotes      = {};
+
+			this.Selection.Endnotes[oEndnote.GetId()] = oEndnote;
+			this.LogicDocument.Selection.Use   = true;
+			this.LogicDocument.Selection.Start = false;
+		}
+		else
+		{
+			this.private_SetCurrentEndnoteNoSelection(oEndnote);
+			this.LogicDocument.Selection.Use   = false;
+			this.LogicDocument.Selection.Start = false;
+		}
+
+		var bNeedRedraw = this.LogicDocument.GetDocPosType() === docpostype_HdrFtr;
+		this.LogicDocument.SetDocPosType(docpostype_Endnotes);
+
+		if (false !== bUpdateStates)
+		{
+			this.LogicDocument.UpdateInterface();
+			this.LogicDocument.UpdateRulers();
+			this.LogicDocument.UpdateSelection();
+		}
+
+		if (bNeedRedraw)
+		{
+			this.LogicDocument.DrawingDocument.ClearCachePages();
+			this.LogicDocument.DrawingDocument.FirePaint();
+		}
+	}
+};
+CEndnotesController.prototype.AddEndnoteRef = function()
+{
+	if (true !== this.private_IsOneEndnoteSelected() || null === this.CurEndnote)
+		return;
+
+	var oEndnote   = this.CurEndnote;
+	var oParagraph = oEndnote.GetFirstParagraph();
+	if (!oParagraph)
+		return;
+
+	var oStyles = this.LogicDocument.GetStyles();
+
+	var oRun = new ParaRun(oParagraph, false);
+	oRun.AddToContent(0, new ParaEndnoteRef(oEndnote), false);
+	oRun.SetRStyle(oStyles.GetDefaultEndnoteReference());
+	oParagraph.Add_ToContent(0, oRun);
+};
 CEndnotesController.prototype.GetCurEndnote = function()
 {
 	return this.CurEndnote;
+};
+CEndnotesController.prototype.IsInDrawing = function(X, Y, nPageAbs)
+{
+	var oResult = this.private_GetEndnoteByXY(X, Y, nPageAbs);
+	if (oResult)
+	{
+		var oEndnote = oResult.Endnote;
+		return oEndnote.IsInDrawing(X, Y, oResult.EndnotePageIndex);
+	}
+
+	return false;
+};
+CEndnotesController.prototype.IsTableBorder = function(X, Y, nPageAbs)
+{
+	var oResult = this.private_GetEndnoteByXY(X, Y, nPageAbs);
+	if (oResult)
+	{
+		var oEndnote = oResult.Endnote;
+		return oEndnote.IsTableBorder(X, Y, oResult.EndnotePageIndex);
+	}
+
+	return null;
+};
+CEndnotesController.prototype.IsInText = function(X, Y, nPageAbs)
+{
+	var oResult = this.private_GetEndnoteByXY(X, Y, nPageAbs);
+	if (oResult)
+	{
+		var oEndnote = oResult.Endnote;
+		return oEndnote.IsInText(X, Y, oResult.EndnotePageIndex);
+	}
+
+	return null;
+};
+CEndnotesController.prototype.GetNearestPos = function(X, Y, nPageAbs, bAnchor, oDrawing)
+{
+	var oResult = this.private_GetEndnoteByXY(X, Y, nPageAbs);
+	if (oResult)
+	{
+		var oEndnote = oResult.Endnote;
+		return oEndnote.Get_NearestPos(oResult.EndnotePageIndex, X, Y, bAnchor, oDrawing);
+	}
+
+	return null;
 };
 /**
  * Проверяем попадание в сноски на заданной странице.
@@ -800,6 +902,14 @@ CEndnotesController.prototype.CheckHitInEndnote = function(X, Y, nPageAbs)
 	}
 
 	return false;
+};
+CEndnotesController.prototype.GetAllParagraphs = function(Props, ParaArray)
+{
+	for (var sId in this.Endnote)
+	{
+		var oEndnote = this.Endnote[sId];
+		oEndnote.GetAllParagraphs(Props, ParaArray);
+	}
 };
 /**
  * Перенеслись ли сноски с предыдущей страницы, на новую
@@ -1108,7 +1218,7 @@ CEndnotesController.prototype.private_GetDirection = function(oEndote1, oEndnote
 };
 CEndnotesController.prototype.private_GetEndnotesLogicRange = function(oEndote1, oEndnote2)
 {
-	return this.LogicDocument.GetFootnotesList(oEndote1, oEndnote2);
+	return this.LogicDocument.GetEndnotesList(oEndote1, oEndnote2);
 };
 CEndnotesController.prototype.private_GetSelectionArray = function()
 {
