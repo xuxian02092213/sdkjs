@@ -3187,7 +3187,7 @@
 	};
 	Workbook.prototype.getDrawingDocument = function() {
 		return this.DrawingDocument;
-	}
+	};
 //-------------------------------------------------------------------------------------------------
 	var tempHelp = new ArrayBuffer(8);
 	var tempHelpUnit = new Uint8Array(tempHelp);
