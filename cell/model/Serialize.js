@@ -3033,7 +3033,6 @@
                         slicerCaches[name].toStream(stream, tableIds);
                         stream.EndRecord();
 
-                        stream.WriteRecord4(0, slicerCaches[name]);
                         stream.ExportToMemory(oThis.memory);
                         stream.ImportFromMemory(old);
                     });
