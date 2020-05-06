@@ -66,6 +66,42 @@
 		hoveredSelectedItemWithNoData: 7
 	};
 
+	function BinaryWrapper (bHistory) {
+		this.s = null;
+		this.bHistory = bHistory;
+	}
+
+	BinaryWrapper.prototype.WriteUChar = function() {
+
+	};
+	BinaryWrapper.prototype._WriteUChar2 = function() {
+
+	};
+	BinaryWrapper.prototype._WriteUInt2 = function() {
+
+	};
+	BinaryWrapper.prototype._WriteString2 = function() {
+
+	};
+	BinaryWrapper.prototype._WriteBool2 = function() {
+
+	};
+	BinaryWrapper.prototype.Seek2 = function() {
+
+	};
+	BinaryWrapper.prototype.GetULong = function() {
+
+	};
+	BinaryWrapper.prototype.Seek2 = function() {
+
+	};
+
+	var _binaryWrapper = new BinaryWrapper();
+	function _resetBinaryWrapperStream(s) {
+		_binaryWrapper.s = s;
+		return _binaryWrapper;
+	}
+
 	function CT_slicerStyleElement() {
 		this.type = null;
 		this.dxfId = null;
@@ -360,6 +396,8 @@
 		}
 	};
 	CT_slicer.prototype.toStream = function (s) {
+		s = _resetBinaryWrapperStream(s);
+
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
 		s._WriteString2(0, this.name);
 		s._WriteString2(1, this.uid);
