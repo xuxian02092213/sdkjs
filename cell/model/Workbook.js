@@ -7738,8 +7738,9 @@
 		History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_Add, this.getId(), null,
 		 			new AscCommonExcel.UndoRedoData_Slicer(type, obj_name, name));
 
-		if (slicer && slicer.cacheDefinition) {
-			var _name = slicer.cacheDefinition.name;
+		var oCache = slicer.getCacheDefinition();
+		if (oCache) {
+			var _name = oCache.name;
 			var newDefName = new Asc.asc_CDefName(_name, "#N/A", null, false, null, null, true);
 			this.workbook.editDefinesNames(null, newDefName);
 		}

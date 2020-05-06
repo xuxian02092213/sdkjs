@@ -325,7 +325,7 @@
 		return this;
 	}
 	CT_slicer.prototype.init = function (name, obj_name, type) {
-		this.name = name;
+		this.name = this.generateName(name);
 		this.caption = name;
 		this.rowHeight = 241300;
 
@@ -426,6 +426,32 @@
 	};
 	CT_slicer.prototype.getCacheDefinition = function () {
 		return this.cacheDefinition;
+	};
+	CT_slicer.prototype.generateName = function (name) {
+		var wb = this.ws.workbook;
+		var mapNames = [];
+		var isContainName = false;
+		for (var i = 0; i < wb.aWorksheets.length; i++) {
+			if (!wb.aWorksheets[i].aSlicers) {
+				continue;
+			}
+			for (var j = 0; j < wb.aWorksheets[i].aSlicers.length; j++) {
+				if (name === wb.aWorksheets[i].aSlicers[j].name) {
+					isContainName = true;
+				}
+				mapNames[wb.aWorksheets[i].aSlicers[j].name] = 1;
+			}
+		}
+		if (isContainName) {
+			var baseName = name + " ";
+			var counter = 1;
+			while (mapNames[baseName + counter]) {
+				counter++;
+			}
+			name = baseName + counter;
+		}
+
+		return name;
 	};
 
 
