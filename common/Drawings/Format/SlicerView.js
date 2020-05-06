@@ -594,11 +594,6 @@
     CSlicer.prototype.onViewUpdate = function() {
         this.data.onViewUpdate();
     };
-    CSlicer.prototype.onUpdate = function () {
-        if(this.drawingBase) {
-            this.drawingBase.onUpdate();
-        }
-    };
     CSlicer.prototype.onMouseMove = function (e, x, y) {
         var bRet = false;
         if(this.eventListener) {
@@ -685,7 +680,7 @@
             this.onDataUpdate();
         }
     };
-     CSlicer.prototype.onSlicerDelete = function (sName) {
+    CSlicer.prototype.onSlicerDelete = function (sName) {
          var bRet = false;
         if(this.name === sName) {
             if(this.drawingBase) {
@@ -699,7 +694,14 @@
                 }
             }
         }
-         return bRet;
+        if(bRet) {
+            this.onUpdate();
+            var oController = this.getDrawingObjectsController();
+            if(oController) {
+                this.deselect(oController);
+            }
+        }
+        return bRet;
     };
 
     function CHeader(slicer) {

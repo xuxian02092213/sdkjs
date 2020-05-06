@@ -1915,7 +1915,16 @@
         return false;
     };
 
-
+    CGraphicObjectBase.prototype.onUpdate = function () {
+        if(this.drawingBase) {
+            this.drawingBase.onUpdate();
+        }
+        else {
+            if(this.group) {
+                this.group.onUpdate()
+            }
+        }
+    };
     function CRelSizeAnchor(){
         this.fromX = null;
         this.fromY = null;

@@ -3190,14 +3190,14 @@
 	};
 	Workbook.prototype.onSlicerUpdate = function(sName) {
 		var bRet = false;
-		for(var i = 0; this.aWorksheets.length; ++i) {
+		for(var i = 0; i < this.aWorksheets.length; ++i) {
 			bRet = bRet || this.aWorksheets[i].onSlicerUpdate(sName);
 		}
 		return bRet;
 	};
 	Workbook.prototype.onSlicerDelete = function(sName) {
 		var bRet = false;
-		for(var i = 0; this.aWorksheets.length; ++i) {
+		for(var i = 0; i < this.aWorksheets.length; ++i) {
 			bRet = bRet || this.aWorksheets[i].onSlicerDelete(sName);
 		}
 		return bRet;
