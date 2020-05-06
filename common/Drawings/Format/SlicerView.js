@@ -118,14 +118,13 @@
     CSlicerData.prototype.hasData = function() {
         return this.values !== null && this.view !== null;
     };
+    CSlicerData.prototype.getWorksheet = function() {
+        return this.slicer.worksheet;
+    };
     CSlicerData.prototype.retrieveData = function() {
         this.clear();
-        var oWorksheet = this.slicer && this.slicer.worksheet;
+        var oWorksheet = this.getWorksheet();
         if(!oWorksheet) {
-            return;
-        }
-        var oWorkbook = oWorksheet.workbook;
-        if(!oWorkbook) {
             return;
         }
         var sName = this.slicer.getName();
@@ -193,14 +192,26 @@
         }
         return null;
     };
+    CSlicerData.prototype.getVal = function(oValue) {
+        if(!oValue) {
+            return null;
+        }
+        return oValue.val;
+    };
+    CSlicerData.prototype.getVisible = function(oValue) {
+        if(!oValue) {
+            return null;
+        }
+        return oValue.visible !== false;
+    };
     CSlicerData.prototype.getButtonState = function (nIndex) {
         var oValue = this.getValue(nIndex);
         if(oValue) {
             var nState = 0;
-            if(oValue.val !== null) {
+            if(this.getVal(oValue) !== null) {
                 nState |= STATE_FLAG_DATA;
             }
-            if(oValue.visible !== false) {
+            if(this.getVisible(oValue) !== false) {
                 nState |=STATE_FLAG_SELECTED;
             }
             return nState;
@@ -225,10 +236,43 @@
         return "";
     };
     CSlicerData.prototype.onViewUpdate = function () {
-        return null;
-    };
-    CSlicerData.prototype.clearFilter = function () {
-        //todo
+        var oWSView;//Why we need wsView?!!
+        var oWorksheet = this.getWorksheet();
+        if(!oWorksheet) {
+            this.slicer.removeAllButtonsTmpState();
+            return;
+        }
+        oWSView = Asc.editor.wb.getWorksheetById(oWorksheet.Id, true);//
+        if(!oWSView) {
+            this.slicer.removeAllButtonsTmpState();
+            return;
+        }
+        var nValuesCount = this.getValuesCount(), nValue, oValue, oApplyValue, nButtonState;
+        var aValuesToApply = [];
+        var bNeedUpdate = false;
+        for(nValue = 0; nValue < nValuesCount; ++nValue) {
+            oValue = this.getValue(nValue);
+            if(!oValue) {
+                break;
+            }
+            nButtonState = this.slicer.getViewButtonState(nValue);
+            if(nButtonState === null) {
+                break;
+            }
+            oApplyValue = oValue.clone();
+            var bVisible = (nButtonState & STATE_FLAG_SELECTED) !== 0;
+            if(this.getVisible(oValue) !== bVisible) {
+                oApplyValue.asc_setVisible(bVisible);
+                bNeedUpdate = true;
+            }
+            aValuesToApply.push(oApplyValue);
+        }
+        if(bNeedUpdate) {
+            oWSView.setFilterValuesFromSlicer(this.slicer.getName(), aValuesToApply);
+        }
+        else {
+            this.slicer.removeAllButtonsTmpState();
+        }
     };
 
     function CSlicer() {
@@ -289,6 +333,18 @@
     };
     CSlicer.prototype.getName = function() {
         return this.name;
+    };
+    CSlicer.prototype.getViewButtonsCount = function () {
+        if(!this.buttonsContainer) {
+            return 0;
+        }
+        return this.buttonsContainer.getViewButtonsCount();
+    };
+    CSlicer.prototype.getViewButtonState = function(nIndex) {
+        if(!this.buttonsContainer) {
+            return null;
+        }
+        return this.buttonsContainer.getViewButtonState(nIndex);
     };
     CSlicer.prototype.getFont = function(nType) {
         var oFont = new AscCommonExcel.Font();//TODO: Take font from slicerStyle when it will be implemented.
@@ -517,7 +573,26 @@
         this.eventListener = child;
     };
     CSlicer.prototype.handleClearButtonClick = function () {
-        this.data.clearFilter();
+        if(!this.buttonsContainer) {
+            return;
+        }
+        this.buttonsContainer.selectAllButtons();
+        this.onViewUpdate();
+    };
+    CSlicer.prototype.onDataUpdate = function() {
+        this.data.clear();
+        this.removeAllButtonsTmpState();
+        this.handleUpdateExtents();
+        this.recalculate();
+        this.onUpdate();
+    };
+    CSlicer.prototype.removeAllButtonsTmpState = function() {
+        if(this.buttonsContainer) {
+            this.buttonsContainer.removeAllButtonsTmpState();
+        }
+    };
+    CSlicer.prototype.onViewUpdate = function() {
+        this.data.onViewUpdate();
     };
     CSlicer.prototype.onUpdate = function () {
         if(this.drawingBase) {
@@ -576,6 +651,7 @@
             bRet = this.eventListener.onMouseUp(e, x, y);
             this.setEventListener(null);
             this.onUpdate();
+            this.onViewUpdate();
             return bRet;
         }
         if(bRet) {
@@ -583,14 +659,8 @@
         }
         return bRet;
     };
-
-    CSlicer.prototype.onDataUpdate = function() {
-    };
     CSlicer.prototype.getValues = function () {
         return this.data.getValues();
-    };
-    CSlicer.prototype.setValues = function (aValues) {
-
     };
     CSlicer.prototype.getButtonState = function (nIndex) {
         return this.data.getButtonState(nIndex);
@@ -609,6 +679,27 @@
     };
     CSlicer.prototype.onWheel = function (deltaX, deltaY) {
         return this.buttonsContainer.onWheel(deltaX, deltaY);
+    };
+    CSlicer.prototype.onSlicerUpdate = function (sName) {
+        if(this.name === sName) {
+            this.onDataUpdate();
+        }
+    };
+     CSlicer.prototype.onSlicerDelete = function (sName) {
+         var bRet = false;
+        if(this.name === sName) {
+            if(this.drawingBase) {
+                this.deleteDrawingBase();
+                bRet = true;
+            }
+            else {
+                if(this.group) {
+                    this.group.removeFromSpTree(this.Id);
+                    bRet = true;
+                }
+            }
+        }
+         return bRet;
     };
 
     function CHeader(slicer) {
@@ -911,7 +1002,6 @@
     CHeader.prototype.getScrollOffsetX = function () {
         return 0;
     };
-
     CHeader.prototype.getScrollOffsetY = function () {
         return 0;
     };
@@ -924,8 +1014,8 @@
         this.worksheet = parent.worksheet;
         this.setBDeleted(false);
         AscFormat.CheckSpPrXfrm3(this);
+        this.isHovered = false;
     }
-
     CButtonBase.prototype = Object.create(AscFormat.CShape.prototype);
     CButtonBase.prototype.getTxBodyType = function () {
         var nRet = null;
@@ -1171,7 +1261,6 @@
             this.bodyPr.bIns = 0;
             this.bodyPr.horzOverflow = AscFormat.nOTClip;
             this.bodyPr.vertOverflow = AscFormat.nOTClip;
-        this.isHovered = false;
         }
     CButton.prototype = Object.create(CButtonBase.prototype);
     CButton.prototype.getTxBodyType = function () {
@@ -1276,6 +1365,16 @@
             }
         }
         return -1;
+    };
+    CButtonsContainer.prototype.getViewButtonsCount = function () {
+        return this.buttons.length;
+    };
+    CButtonsContainer.prototype.getViewButtonState = function(nIndex) {
+        var oButton = this.getButton(nIndex);
+        if(!oButton) {
+            return null;
+        }
+        return oButton.getState();
     };
     CButtonsContainer.prototype.getButton = function (nIndex) {
         if(nIndex > -1 && nIndex < this.buttons.length) {
@@ -1451,6 +1550,7 @@
                                 this.buttons[nButton].setUnselectTmpState();
                             }
                             oButton.setHoverState();
+                            oButton.setSelectTmpState();
                             if(nFindButton < this.startButton) {
                                 for(nButton = Math.max(0, nFindButton); nButton < this.startButton; ++nButton) {
                                     this.buttons[nButton].setSelectTmpState();
@@ -1464,10 +1564,9 @@
                             }
                         }
                         else {
-                            for(nButton = 0; nButton < this.buttons.length; ++nButton) {
-                                this.buttons[nButton].removeTmpState();
-                            }
+                            this.removeAllButtonsTmpState();
                             oButton.setHoverState();
+                            oButton.setSelectTmpState();
                             if(nFindButton < this.startButton) {
                                 for(nButton = Math.max(0, nFindButton); nButton < this.startButton; ++nButton) {
                                     this.buttons[nButton].setInvertSelectTmpState();
@@ -1535,11 +1634,13 @@
             this.setEventListener(null);
             return bRet;
         }
-        for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
-            bRet = bRet || this.buttons[nButton].onMouseUp(e, x, y);
+        if(!this.slicer.isEventListener(this)) {
+            for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
+                bRet = bRet || this.buttons[nButton].onMouseUp(e, x, y);
+            }
+            bRet = bRet || this.scroll.onMouseUp(e, x, y);
+            this.setEventListener(null);
         }
-        bRet = bRet || this.scroll.onMouseUp(e, x, y);
-        this.setEventListener(null);
         return bRet;
     };
     CButtonsContainer.prototype.getButtons = function () {
@@ -1553,9 +1654,7 @@
         else {
             if(this.slicer.isEventListener(this)) {
                 this.slicer.setEventListener(null);
-                for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
-                    this.buttons[nButton].removeTmpState();
-                }
+                this.removeAllButtonsTmpState();
             }
         }
     };
@@ -1575,6 +1674,16 @@
 
     CButtonsContainer.prototype.onWheel = function (deltaX, deltaY) {
         return this.scroll.onWheel(deltaX, deltaY);
+    };
+    CButtonsContainer.prototype.selectAllButtons = function () {
+        for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
+            this.buttons[nButton].setSelectTmpState();
+        }
+    };
+    CButtonsContainer.prototype.removeAllButtonsTmpState = function () {
+        for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
+            this.buttons[nButton].removeTmpState();
+        }
     };
 
     function CScroll(parent) {
@@ -1939,7 +2048,6 @@
     CScroll.prototype.getScrollOffsetX = function () {
         return 0;
     };
-
     CScroll.prototype.getScrollOffsetY = function () {
         return 0;
     };

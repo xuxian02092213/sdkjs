@@ -1907,6 +1907,14 @@
         return  AscCommon.CreateDrawingPlaceholder(this.Id, aButtons, nSlideNum, { x : 0, y : 0, w : this.extX, h : this.extY }, this.transform);
     };
 
+    CGraphicObjectBase.prototype.onSlicerUpdate = function(sName){
+        return false;
+    };
+
+    CGraphicObjectBase.prototype.onSlicerDelete = function(sName){
+        return false;
+    };
+
 
     function CRelSizeAnchor(){
         this.fromX = null;

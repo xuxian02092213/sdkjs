@@ -3188,6 +3188,20 @@
 	Workbook.prototype.getDrawingDocument = function() {
 		return this.DrawingDocument;
 	};
+	Workbook.prototype.onSlicerUpdate = function(sName) {
+		var bRet = false;
+		for(var i = 0; this.aWorksheets.length; ++i) {
+			bRet = bRet || this.aWorksheets[i].onSlicerUpdate(sName);
+		}
+		return bRet;
+	};
+	Workbook.prototype.onSlicerDelete = function(sName) {
+		var bRet = false;
+		for(var i = 0; this.aWorksheets.length; ++i) {
+			bRet = bRet || this.aWorksheets[i].onSlicerDelete(sName);
+		}
+		return bRet;
+	};
 //-------------------------------------------------------------------------------------------------
 	var tempHelp = new ArrayBuffer(8);
 	var tempHelpUnit = new Uint8Array(tempHelp);
@@ -7862,6 +7876,21 @@
 				tableSlicerCache.setTableName(newTableName);
 			}
 		}
+	};
+	Worksheet.prototype.onSlicerUpdate = function (sName) {
+		var bRet = false;
+		for(var i = 0; i < this.Drawings.length; ++i) {
+			bRet = bRet || this.Drawings[i].onSlicerUpdate(sName);
+		}
+		return bRet;
+	};
+
+	Worksheet.prototype.onSlicerDelete = function (sName) {
+		var bRet = false;
+		for(var i = 0; i < this.Drawings.length; ++i) {
+			bRet = bRet || this.Drawings[i].onSlicerDelete(sName);
+		}
+		return bRet;
 	};
 
 //-------------------------------------------------------------------------------------------------

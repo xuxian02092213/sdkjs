@@ -1748,6 +1748,18 @@ GraphicOption.prototype.getOffset = function () {
         var oOptions = new AscFormat.GraphicOption(false, oRange, oOffset);
         oDO.showDrawingObjects(oOptions);
     };
+    DrawingBase.prototype.onSlicerUpdate = function (sName) {
+        if(!this.graphicObject) {
+            return false;
+        }
+        return this.graphicObject.onSlicerUpdate(sName);
+    };
+    DrawingBase.prototype.onSlicerDelete = function (sName) {
+        if(!this.graphicObject) {
+            return false;
+        }
+        return this.graphicObject.onSlicerDelete(sName);
+    };
     //}
 
     //-----------------------------------------------------------------------------------

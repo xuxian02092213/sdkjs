@@ -1870,6 +1870,24 @@ function CGroupShape()
             this.spTree[i].GetAllSeqFieldsByType(sType, aFields)
         }
     };
+    CGroupShape.prototype.onSlicerUpdate = function(sName)
+    {
+        var bRet = false;
+        for(var i = 0; i < this.spTree.length; ++i)
+        {
+            bRet = bRet || this.spTree[i].onSlicerUpdate(sName);
+        }
+        return bRet;
+    };
+    CGroupShape.prototype.onSlicerDelete = function(sName)
+    {
+        var bRet = false;
+        for(var i = 0; i < this.spTree.length; ++i)
+        {
+            bRet = bRet || this.spTree[i].onSlicerDelete(sName);
+        }
+        return bRet;
+    };
     //--------------------------------------------------------export----------------------------------------------------
     window['AscFormat'] = window['AscFormat'] || {};
     window['AscFormat'].CGroupShape = CGroupShape;
