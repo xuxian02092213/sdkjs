@@ -1941,14 +1941,16 @@ function (window, undefined) {
 		}
 	};
 
-	function UndoRedoData_Slicer(type, objName, colName) {
+	function UndoRedoData_Slicer(name, type, objName, cacheName, colName) {
+		this.name = name;
 		this.type = type;
 		this.objName = objName;
+		this.cacheName = cacheName;
 		this.colName = colName;
 	}
 
 	UndoRedoData_Slicer.prototype.Properties = {
-		type: 0, objName: 1, colName: 2
+		name: 0, type: 1, objName: 2, cacheName: 3, colName: 4
 	};
 	UndoRedoData_Slicer.prototype.getType = function () {
 		return UndoRedoDataTypes.Slicer;
@@ -1958,11 +1960,17 @@ function (window, undefined) {
 	};
 	UndoRedoData_Slicer.prototype.getProperty = function (nType) {
 		switch (nType) {
+			case this.Properties.name:
+				return this.name;
+				break;
 			case this.Properties.type:
 				return this.type;
 				break;
 			case this.Properties.objName:
 				return this.objName;
+				break;
+			case this.Properties.cacheName:
+				return this.cacheName;
 				break;
 			case this.Properties.colName:
 				return this.colName;
@@ -1972,11 +1980,17 @@ function (window, undefined) {
 	};
 	UndoRedoData_Slicer.prototype.setProperty = function (nType, value) {
 		switch (nType) {
+			case this.Properties.name:
+				this.name = value;
+				break;
 			case this.Properties.type:
 				this.type = value;
 				break;
 			case this.Properties.objName:
 				this.objName = value;
+				break;
+			case this.Properties.cacheName:
+				this.cacheName = value;
 				break;
 			case this.Properties.colName:
 				this.colName = value;
@@ -3288,18 +3302,23 @@ function (window, undefined) {
 			return;
 		}
 
-		var ws = (null == nSheetId) ? api.wb : api.wb.getWorksheetById(nSheetId);
-		Data.worksheet = ws;
-
-		if(Data.bFilter) {
-			if(Data.tableName) {
-				var table = ws.model.autoFilters._getFilterByDisplayName(Data.tableName);
-				table.SortState = bUndo ? Data.from : Data.to;
-			} else {
-				ws.model.AutoFilter.SortState = bUndo ? Data.from : Data.to;
+		switch (Type) {
+			case AscCH.historyitem_Slicer_Add: {
+				if (bUndo) {
+					oModel.deleteSlicer(Data.name);
+				} else {
+					oModel.insertSlicer(Data.colName, Data.objName, Data.type);
+				}
+				break;
 			}
-		} else {
-			ws.model.sortState = bUndo ? Data.from : Data.to;
+			case AscCH.historyitem_Slicer_Delete: {
+				if (bUndo) {
+					oModel.insertSlicer(Data.colName, Data.objName, Data.type);
+				} else {
+					oModel.deleteSlicer(Data.objName);
+				}
+				break;
+			}
 		}
 	};
 

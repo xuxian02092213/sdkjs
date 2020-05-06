@@ -352,8 +352,8 @@
 			this.cacheDefinition.ws = this.ws;
 			var tableCache = this.cacheDefinition.tableSlicerCache;
 			if (tableCache) {
-				this._obj = tableCache.initPostOpen(tableIds);
-				if (this._obj) {
+				var _obj = tableCache.initPostOpen(tableIds);
+				if (_obj) {
 					this.cacheDefinition._type = insertSlicerType.table;
 				}
 			}

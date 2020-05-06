@@ -7734,11 +7734,11 @@
 		var slicer = new window['Asc'].CT_slicer(this);
 		slicer.init(name, obj_name, type);
 		this.aSlicers.push(slicer);
+		var oCache = slicer.getCacheDefinition();
 
 		History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_Add, this.getId(), null,
-		 			new AscCommonExcel.UndoRedoData_Slicer(type, obj_name, name));
+		 			new AscCommonExcel.UndoRedoData_Slicer(slicer.name, type, obj_name, oCache.name, name));
 
-		var oCache = slicer.getCacheDefinition();
 		if (oCache) {
 			var _name = oCache.name;
 			var newDefName = new Asc.asc_CDefName(_name, "#N/A", null, false, null, null, true);
