@@ -307,7 +307,7 @@
 		s.Seek2(_end_pos);
 	};
 
-	function BinaryWrapper (s) {
+	function BinaryWrapper(s) {
 		this.s = s;
 
 		this.m_arStack = [];
@@ -315,53 +315,51 @@
 		//this.m_arMainTables = [];
 	}
 
-	BinaryWrapper.prototype.WriteUChar = function(val) {
+	BinaryWrapper.prototype.WriteUChar = function (val) {
 		this.s.CheckSize(1);
 		this.s.data[this.pos++] = val;
 	};
-	BinaryWrapper.prototype._WriteUChar2 = function(type, val) {
+	BinaryWrapper.prototype._WriteUChar2 = function (type, val) {
 		if (val != null) {
 			this.WriteUChar(type);
 			this.WriteUChar(val);
 		}
 	};
-	BinaryWrapper.prototype._WriteUInt1 = function(type, val) {
+	BinaryWrapper.prototype._WriteUInt1 = function (type, val) {
 		this.WriteUChar(type);
 		this.s.WriteULong(val);
 	};
-	BinaryWrapper.prototype._WriteUInt2 = function(type, val) {
+	BinaryWrapper.prototype._WriteUInt2 = function (type, val) {
 		if (val != null) {
 			this._WriteUInt1(type, val);
 		}
 	};
-	BinaryWrapper.prototype._WriteString1 = function(type, val) {
+	BinaryWrapper.prototype._WriteString1 = function (type, val) {
 		this.WriteUChar(type);
 		this.s.WriteString2(val);
 	};
-	BinaryWrapper.prototype._WriteString2 = function(type, val) {
-		if (val != null)
+	BinaryWrapper.prototype._WriteString2 = function (type, val) {
+		if (val != null) {
 			this._WriteString1(type, val);
+		}
 	};
-	BinaryWrapper.prototype._WriteBool1 = function(type, val)
-	{
+	BinaryWrapper.prototype._WriteBool1 = function (type, val) {
 		this.WriteUChar(type);
 		this.s.WriteBool(val);
 	};
-	BinaryWrapper.prototype._WriteBool2 = function(type, val)
-	{
-		if (val != null)
+	BinaryWrapper.prototype._WriteBool2 = function (type, val) {
+		if (val != null) {
 			this._WriteBool1(type, val);
+		}
 	};
 
-	BinaryWrapper.prototype.StartRecord = function(lType)
-	{
+	BinaryWrapper.prototype.StartRecord = function (lType) {
 		this.m_arStack[this.m_lStackPosition] = this.s.pos + 5; // sizeof(BYTE) + sizeof(ULONG)
 		this.m_lStackPosition++;
 		this.WriteUChar(lType);
 		this.s.WriteULong(0);
 	};
-	BinaryWrapper.prototype.EndRecord = function()
-	{
+	BinaryWrapper.prototype.EndRecord = function () {
 		this.m_lStackPosition--;
 
 		var _seek = this.s.pos;
@@ -369,20 +367,20 @@
 		this.s.WriteULong(_seek - this.m_arStack[this.m_lStackPosition]);
 		this.s.pos = _seek;
 	};
-	BinaryWrapper.prototype.WriteRecordArray4 = function(type, subtype, val_array) {
+	BinaryWrapper.prototype.WriteRecordArray4 = function (type, subtype, val_array) {
 		this.StartRecord(type);
 
 		var len = val_array.length;
 		this.s.WriteULong(len);
 
-		for (var i = 0; i < len; i++)
+		for (var i = 0; i < len; i++) {
 			this.WriteRecord4(subtype, val_array[i]);
+		}
 
 		this.EndRecord();
 	};
-	BinaryWrapper.prototype.WriteRecord4 = function(type, val) {
-		if (null != val)
-		{
+	BinaryWrapper.prototype.WriteRecord4 = function (type, val) {
+		if (null != val) {
 			this.StartRecord(type);
 			val.toStream(this);
 			this.EndRecord();
