@@ -425,7 +425,7 @@ function (window, undefined) {
 		this.SortState = 115;
 		this.SortStateData = 116;
 
-		this.Slicer = 116;
+		this.Slicer = 117;
 
 		this.Create = function (nType) {
 			switch (nType) {

@@ -66,42 +66,6 @@
 		hoveredSelectedItemWithNoData: 7
 	};
 
-	function BinaryWrapper (bHistory) {
-		this.s = null;
-		this.bHistory = bHistory;
-	}
-
-	BinaryWrapper.prototype.WriteUChar = function() {
-
-	};
-	BinaryWrapper.prototype._WriteUChar2 = function() {
-
-	};
-	BinaryWrapper.prototype._WriteUInt2 = function() {
-
-	};
-	BinaryWrapper.prototype._WriteString2 = function() {
-
-	};
-	BinaryWrapper.prototype._WriteBool2 = function() {
-
-	};
-	BinaryWrapper.prototype.Seek2 = function() {
-
-	};
-	BinaryWrapper.prototype.GetULong = function() {
-
-	};
-	BinaryWrapper.prototype.Seek2 = function() {
-
-	};
-
-	var _binaryWrapper = new BinaryWrapper();
-	function _resetBinaryWrapperStream(s) {
-		_binaryWrapper.s = s;
-		return _binaryWrapper;
-	}
-
 	function CT_slicerStyleElement() {
 		this.type = null;
 		this.dxfId = null;
@@ -342,6 +306,90 @@
 		}
 		s.Seek2(_end_pos);
 	};
+
+	function BinaryWrapper (s) {
+		this.s = s;
+
+		this.m_arStack = [];
+		this.m_lStackPosition = 0;
+		//this.m_arMainTables = [];
+	}
+
+	BinaryWrapper.prototype.WriteUChar = function(val) {
+		this.s.CheckSize(1);
+		this.s.data[this.pos++] = val;
+	};
+	BinaryWrapper.prototype._WriteUChar2 = function(type, val) {
+		if (val != null) {
+			this.WriteUChar(type);
+			this.WriteUChar(val);
+		}
+	};
+	BinaryWrapper.prototype._WriteUInt1 = function(type, val) {
+		this.WriteUChar(type);
+		this.s.WriteULong(val);
+	};
+	BinaryWrapper.prototype._WriteUInt2 = function(type, val) {
+		if (val != null) {
+			this._WriteUInt1(type, val);
+		}
+	};
+	BinaryWrapper.prototype._WriteString1 = function(type, val) {
+		this.WriteUChar(type);
+		this.s.WriteString2(val);
+	};
+	BinaryWrapper.prototype._WriteString2 = function(type, val) {
+		if (val != null)
+			this._WriteString1(type, val);
+	};
+	BinaryWrapper.prototype._WriteBool1 = function(type, val)
+	{
+		this.WriteUChar(type);
+		this.s.WriteBool(val);
+	};
+	BinaryWrapper.prototype._WriteBool2 = function(type, val)
+	{
+		if (val != null)
+			this._WriteBool1(type, val);
+	};
+
+	BinaryWrapper.prototype.StartRecord = function(lType)
+	{
+		this.m_arStack[this.m_lStackPosition] = this.pos + 5; // sizeof(BYTE) + sizeof(ULONG)
+		this.m_lStackPosition++;
+		this.WriteUChar(lType);
+		this.s.WriteULong(0);
+	};
+	BinaryWrapper.prototype.EndRecord = function()
+	{
+		this.m_lStackPosition--;
+
+		var _seek = this.s.pos;
+		this.s.pos = this.m_arStack[this.m_lStackPosition] - 4;
+		this.WriteULong(_seek - this.m_arStack[this.m_lStackPosition]);
+		this.s.pos = _seek;
+	};
+	BinaryWrapper.prototype.WriteRecordArray4 = function(type, subtype, val_array) {
+		this.StartRecord(type);
+
+		var len = val_array.length;
+		this.s.WriteULong(len);
+
+		for (var i = 0; i < len; i++)
+			this.WriteRecord4(subtype, val_array[i]);
+
+		this.EndRecord();
+	};
+	BinaryWrapper.prototype.WriteRecord4 = function(type, val) {
+		if (null != val)
+		{
+			this.StartRecord(type);
+			val.toStream(this);
+			this.EndRecord();
+		}
+	};
+
+
 	function CT_slicer(ws) {
 		//from documentation
 		this.name = null;
@@ -360,6 +408,9 @@
 
 		return this;
 	}
+	CT_slicer.prototype.getType = function() {
+		return AscCommonExcel.UndoRedoDataTypes.Slicer;
+	};
 	CT_slicer.prototype.init = function (name, obj_name, type) {
 		this.name = this.generateName(name);
 		this.caption = name;
@@ -395,14 +446,24 @@
 			}
 		}
 	};
-	CT_slicer.prototype.toStream = function (s) {
-		s = _resetBinaryWrapperStream(s);
+	CT_slicer.prototype.Write_ToBinary2 = function(w) {
+		this.toStream(w, true);
+	};
+	CT_slicer.prototype.Read_FromBinary2 = function(r) {
+		this.fromStream(r, null, true);
+	};
+	CT_slicer.prototype.toStream = function (s, historySerialize) {
+		s = historySerialize ? new BinaryWrapper(s) : s;
 
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
 		s._WriteString2(0, this.name);
 		s._WriteString2(1, this.uid);
 		if (this.cacheDefinition) {
-			s._WriteString2(2, this.cacheDefinition.name);
+			if (historySerialize) {
+				this.cacheDefinition.toStream(s, null, historySerialize);
+			} else {
+				s._WriteString2(2, this.cacheDefinition.name);
+			}
 		}
 		s._WriteString2(3, this.caption);
 		s._WriteUInt2(4, this.startItem);
@@ -414,7 +475,7 @@
 		s._WriteUInt2(10, this.rowHeight);
 		s.WriteUChar(AscCommon.g_nodeAttributeEnd);
 	};
-	CT_slicer.prototype.fromStream = function (s, slicerCaches) {
+	CT_slicer.prototype.fromStream = function (s, slicerCaches, historySerialize) {
 		var _len = s.GetULong();
 		var _start_pos = s.cur;
 		var _end_pos = _len + _start_pos;
@@ -431,9 +492,15 @@
 				case 0: { this.name = s.GetString2(); break; }
 				case 1: { this.uid = s.GetString2(); break; }
 				case 2: {
-					var cache = s.GetString2();
-					this.cacheDefinition = slicerCaches[cache] || null;
-					break; }
+					if (historySerialize) {
+						this.cacheDefinition = new CT_slicerCacheDefinition(/*ws*/);//TODO ws
+						this.cacheDefinition.fromStream(s);
+					} else {
+						var cache = s.GetString2();
+						this.cacheDefinition = slicerCaches[cache] || null;
+					}
+					break;
+				}
 				case 3: { this.caption = s.GetString2(); break; }
 				case 4: { this.startItem = s.GetULong(); break; }
 				case 5: { this.columnCount = s.GetULong(); break; }
@@ -547,7 +614,7 @@
 		this._type = type;
 	};
 
-	CT_slicerCacheDefinition.prototype.toStream = function (s, tableIds) {
+	CT_slicerCacheDefinition.prototype.toStream = function (s, tableIds, historySerialize) {
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
 		s._WriteString2(0, this.name);
 		s._WriteString2(1, this.uid);
@@ -559,7 +626,7 @@
 		if (null != this.tableSlicerCache)
 		{
 			s.StartRecord(3);
-			this.tableSlicerCache.toStream(s, tableIds);
+			this.tableSlicerCache.toStream(s, tableIds, historySerialize);
 			s.EndRecord();
 		}
 		if(null != this.slicerCacheHideItemsWithNoData) {
@@ -1344,14 +1411,18 @@
 		}
 		return table;
 	};
-	CT_tableSlicerCache.prototype.toStream = function (s, tableIds) {
+	CT_tableSlicerCache.prototype.toStream = function (s, tableIds, historySerialize) {
 		var tableIdOpen = null;
 		var columnOpen = null;
 		var elem = tableIds && tableIds[this.tableId];
 		if (elem) {
 			tableIdOpen = elem.id;
 			columnOpen = (elem.table.getTableIndexColumnByName(this.column) + 1) || null;
+		} else if (historySerialize) {
+			tableIdOpen = this.tableId;
+			columnOpen = this.column;
 		}
+
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
 		s._WriteUInt2(0, tableIdOpen);
 		s._WriteUInt2(1, columnOpen);
