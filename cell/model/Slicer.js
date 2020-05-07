@@ -355,7 +355,7 @@
 
 	BinaryWrapper.prototype.StartRecord = function(lType)
 	{
-		this.m_arStack[this.m_lStackPosition] = this.pos + 5; // sizeof(BYTE) + sizeof(ULONG)
+		this.m_arStack[this.m_lStackPosition] = this.s.pos + 5; // sizeof(BYTE) + sizeof(ULONG)
 		this.m_lStackPosition++;
 		this.WriteUChar(lType);
 		this.s.WriteULong(0);
@@ -366,7 +366,7 @@
 
 		var _seek = this.s.pos;
 		this.s.pos = this.m_arStack[this.m_lStackPosition] - 4;
-		this.WriteULong(_seek - this.m_arStack[this.m_lStackPosition]);
+		this.s.WriteULong(_seek - this.m_arStack[this.m_lStackPosition]);
 		this.s.pos = _seek;
 	};
 	BinaryWrapper.prototype.WriteRecordArray4 = function(type, subtype, val_array) {

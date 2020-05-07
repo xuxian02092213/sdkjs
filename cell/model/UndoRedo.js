@@ -426,6 +426,7 @@ function (window, undefined) {
 		this.SortStateData = 116;
 
 		this.Slicer = 117;
+		this.SlicerData = 118;
 
 		this.Create = function (nType) {
 			switch (nType) {
@@ -585,10 +586,12 @@ function (window, undefined) {
 					return new UndoRedoData_ArrayFormula();
 				case this.SortState:
 					return new AscCommonExcel.SortState();
-					break;
 				case this.SortStateData:
 					return new AscCommonExcel.UndoRedoData_SortState();
-					break;
+				case this.SlicerData:
+					return new AscCommonExcel.UndoRedoData_Slicer();
+				case this.Slicer:
+					return new window['Asc'].CT_slicer();
 			}
 			return null;
 		};
@@ -1941,59 +1944,38 @@ function (window, undefined) {
 		}
 	};
 
-	function UndoRedoData_Slicer(name, type, objName, cacheName, colName) {
-		this.name = name;
-		this.type = type;
-		this.objName = objName;
-		this.cacheName = cacheName;
-		this.colName = colName;
+	function UndoRedoData_Slicer(from, to) {
+		this.from = from;
+		this.to = to;
 	}
 
 	UndoRedoData_Slicer.prototype.Properties = {
-		name: 0, type: 1, objName: 2, cacheName: 3, colName: 4
+		from: 0, to: 1
 	};
 	UndoRedoData_Slicer.prototype.getType = function () {
-		return UndoRedoDataTypes.Slicer;
+		return UndoRedoDataTypes.SlicerData;
 	};
 	UndoRedoData_Slicer.prototype.getProperties = function () {
 		return this.Properties;
 	};
 	UndoRedoData_Slicer.prototype.getProperty = function (nType) {
 		switch (nType) {
-			case this.Properties.name:
-				return this.name;
+			case this.Properties.from:
+				return this.from;
 				break;
-			case this.Properties.type:
-				return this.type;
-				break;
-			case this.Properties.objName:
-				return this.objName;
-				break;
-			case this.Properties.cacheName:
-				return this.cacheName;
-				break;
-			case this.Properties.colName:
-				return this.colName;
+			case this.Properties.to:
+				return this.to;
 				break;
 		}
 		return null;
 	};
 	UndoRedoData_Slicer.prototype.setProperty = function (nType, value) {
 		switch (nType) {
-			case this.Properties.name:
-				this.name = value;
+			case this.Properties.from:
+				this.from = value;
 				break;
-			case this.Properties.type:
-				this.type = value;
-				break;
-			case this.Properties.objName:
-				this.objName = value;
-				break;
-			case this.Properties.cacheName:
-				this.cacheName = value;
-				break;
-			case this.Properties.colName:
-				this.colName = value;
+			case this.Properties.to:
+				this.to = value;
 				break;
 		}
 	};
