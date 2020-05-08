@@ -534,7 +534,12 @@
         if(graphics.IsSlideBoundsCheckerType) {
             return;
         }
-
+        if(this.header) {
+            this.header.draw(graphics, transform, transformText, pageIndex);
+        }
+        if(this.buttonsContainer) {
+            this.buttonsContainer.draw(graphics, transform, transformText, pageIndex);
+        }
         var oBorder = this.getBorder(STYLE_TYPE.WHOLE);
         if(oBorder) {
             var oTransform = transform || this.transform;
@@ -585,12 +590,6 @@
                 graphics.drawHorLine(1, this.extY, 0, this.extX, 0);
             }
             graphics.RestoreGrState();
-        }
-        if(this.header) {
-            this.header.draw(graphics, transform, transformText, pageIndex);
-        }
-        if(this.buttonsContainer) {
-            this.buttonsContainer.draw(graphics, transform, transformText, pageIndex);
         }
     };
     CSlicer.prototype.draw = function (graphics, transform, transformText, pageIndex) {
