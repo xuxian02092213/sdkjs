@@ -123,34 +123,6 @@
         this.txBody = txBody;
         this.transformText = transformText;
     }
-
-    var ButtonImageDrawer = (function () {
-        
-        
-        function CButtonDrawer() {
-
-        }
-        
-        var instance;
-
-        
-        
-        
-        
-        function createInstance() {
-            var object = new Object("I am the instance");
-            return object;
-        }
-
-        return {
-            getInstance: function () {
-                if (!instance) {
-                    instance = createInstance();
-                }
-                return instance;
-            }
-        };
-    })();
     
     function CSlicerData(slicer) {
         this.slicer = slicer;
@@ -1651,15 +1623,14 @@
                                 this.buttons[nButton].setUnselectTmpState();
                             }
                             oButton.setHoverState();
-                            oButton.setSelectTmpState();
                             if(nFindButton < this.startButton) {
-                                for(nButton = Math.max(0, nFindButton); nButton < this.startButton; ++nButton) {
+                                for(nButton = Math.max(0, nFindButton); nButton <= this.startButton; ++nButton) {
                                     this.buttons[nButton].setSelectTmpState();
                                 }
                             }
                             else {
                                 nLast = Math.min(nFindButton, this.buttons.length - 1);
-                                for(nButton = this.startButton + 1; nButton <= nLast; ++nButton) {
+                                for(nButton = this.startButton; nButton <= nLast; ++nButton) {
                                     this.buttons[nButton].setSelectTmpState();
                                 }
                             }
@@ -1667,15 +1638,14 @@
                         else {
                             this.removeAllButtonsTmpState();
                             oButton.setHoverState();
-                            oButton.setSelectTmpState();
                             if(nFindButton < this.startButton) {
-                                for(nButton = Math.max(0, nFindButton); nButton < this.startButton; ++nButton) {
+                                for(nButton = Math.max(0, nFindButton); nButton <= this.startButton; ++nButton) {
                                     this.buttons[nButton].setInvertSelectTmpState();
                                 }
                             }
                             else {
                                 nLast = Math.min(nFindButton, this.buttons.length - 1);
-                                for(nButton = this.startButton + 1; nButton <= nLast; ++nButton) {
+                                for(nButton = this.startButton; nButton <= nLast; ++nButton) {
                                     this.buttons[nButton].setInvertSelectTmpState();
                                 }
                             }
