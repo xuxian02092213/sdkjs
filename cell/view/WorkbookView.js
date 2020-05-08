@@ -1107,8 +1107,9 @@
     if (c_oAscSelectionDialogType.None !== this.selectionDialogType) {
       return;
     }
+    var isStateFormatPainter = this.stateFormatPainter;
     var ws = this.getWorksheet();
-   var isStateFormatPainter = ws.changeSelectionDone();
+    ws.changeSelectionDone();
     this._onSelectionNameChanged(ws.getSelectionName(/*bRangeText*/false));
     // Проверим, нужно ли отсылать информацию о ячейке
     var ar = ws.model.selectionRange.getLast();

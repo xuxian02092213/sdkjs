@@ -11424,7 +11424,7 @@
 				font = xfs.font;
 			}
 		});
-		return font
+		return font;
 	};
 	Range.prototype.getAlignHorizontalByValue=function(align){
 		//возвращает Align в зависимости от значния в ячейке

@@ -70,38 +70,74 @@
 	};
 
 	/** @constructor */
-	function asc_CFont(name, size, color, b, i, u, s, sub, sup) {
-		this.name = name !== undefined ? name : "Arial";
-		this.size = size !== undefined ? size : 10;
-		this.color = color !== undefined ? color : null;
-		this.bold = !!b;
-		this.italic = !!i;
-		this.underline = !!u;
-		this.strikeout = !!s;
-		this.subscript = !!sub;
-		this.superscript = !!sup;
+	function CFont() {
+		this.name = null;
+		this.size = null;
+		this.color = null;
+		this.bold = false;
+		this.italic = false;
+		this.underline = false;
+		this.strikeout = false;
+		this.subscript = false;
+		this.superscript = false;
 	}
 
-	asc_CFont.prototype = {
-		asc_getName: function () {
-			return this.name;
-		}, asc_getSize: function () {
-			return this.size;
-		}, asc_getBold: function () {
-			return this.bold;
-		}, asc_getItalic: function () {
-			return this.italic;
-		}, asc_getUnderline: function () {
-			return this.underline;
-		}, asc_getStrikeout: function () {
-			return this.strikeout;
-		}, asc_getSubscript: function () {
-			return this.subscript;
-		}, asc_getSuperscript: function () {
-			return this.superscript;
-		}, asc_getColor: function () {
-			return this.color;
+	CFont.prototype._init = function (font) {
+		var va = font.getVerticalAlign();
+
+		this.name = font.getName();
+		this.size = font.getSize();
+		this.color = Asc.colorObjToAscColor(font.getColor());
+		this.bold = font.getBold();
+		this.italic = font.getItalic();
+		// ToDo убрать, когда будет реализовано двойное подчеркивание
+		this.underline = (Asc.EUnderline.underlineNone !== font.getUnderline());
+		this.strikeout = font.getStrikeout();
+		this.subscript = va === AscCommon.vertalign_SubScript;
+		this.superscript = va === AscCommon.vertalign_SuperScript;
+	};
+	CFont.prototype._initFromTextPr = function (textPr) {
+		this.name = textPr.FontFamily ? textPr.FontFamily.Name : null;
+		this.size = textPr.FontSize;
+		this.bold = textPr.Bold;
+		this.italic = textPr.Italic;
+		this.underline = textPr.Underline;
+		this.strikeout = textPr.Strikeout;
+		this.subscript = textPr.VertAlign === AscCommon.vertalign_SubScript;
+		this.superscript = textPr.VertAlign === AscCommon.vertalign_SuperScript;
+		if (textPr.Unifill) {
+			var oColor = textPr.Unifill.getRGBAColor();
+			this.color = AscCommon.CreateAscColorCustom(oColor.R, oColor.G, oColor.B);
+		} else if (textPr.Color) {
+			this.color = AscCommon.CreateAscColorCustom(textPr.Color.r, textPr.Color.g, textPr.Color.b);
 		}
+	};
+	CFont.prototype.asc_getName = function () {
+		return this.name;
+	};
+	CFont.prototype.asc_getSize = function () {
+		return this.size;
+	};
+	CFont.prototype.asc_getBold = function () {
+		return this.bold;
+	};
+	CFont.prototype.asc_getItalic = function () {
+		return this.italic;
+	};
+	CFont.prototype.asc_getUnderline = function () {
+		return this.underline;
+	};
+	CFont.prototype.asc_getStrikeout = function () {
+		return this.strikeout;
+	};
+	CFont.prototype.asc_getSubscript = function () {
+		return this.subscript;
+	};
+	CFont.prototype.asc_getSuperscript = function () {
+		return this.superscript;
+	};
+	CFont.prototype.asc_getColor = function () {
+		return this.color;
 	};
 
 	/** @constructor */
@@ -259,7 +295,7 @@
 		this.halign = "left";
 		this.valign = "top";
 		this.flags = null;
-		this.font = null;
+		this.font = new CFont();
 		this.fill = null;
 		this.fill2 = null;
 		this.border = null;
@@ -430,8 +466,8 @@
 	prot["asc_getMultiselect"] = prot.asc_getMultiselect;
 	prot["asc_getLockText"] = prot.asc_getLockText;
 
-	window["AscCommonExcel"].asc_CFont = asc_CFont;
-	prot = asc_CFont.prototype;
+	window["AscCommonExcel"].CFont = CFont;
+	prot = CFont.prototype;
 	prot["asc_getName"] = prot.asc_getName;
 	prot["asc_getSize"] = prot.asc_getSize;
 	prot["asc_getBold"] = prot.asc_getBold;
