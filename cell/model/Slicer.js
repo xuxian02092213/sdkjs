@@ -306,88 +306,7 @@
 		}
 		s.Seek2(_end_pos);
 	};
-
-	function BinaryWrapper(s) {
-		this.s = s;
-
-		this.m_arStack = [];
-		this.m_lStackPosition = 0;
-		//this.m_arMainTables = [];
-	}
-
-	BinaryWrapper.prototype.WriteUChar = function (val) {
-		this.s.CheckSize(1);
-		this.s.data[this.pos++] = val;
-	};
-	BinaryWrapper.prototype._WriteUChar2 = function (type, val) {
-		if (val != null) {
-			this.WriteUChar(type);
-			this.WriteUChar(val);
-		}
-	};
-	BinaryWrapper.prototype._WriteUInt1 = function (type, val) {
-		this.WriteUChar(type);
-		this.s.WriteULong(val);
-	};
-	BinaryWrapper.prototype._WriteUInt2 = function (type, val) {
-		if (val != null) {
-			this._WriteUInt1(type, val);
-		}
-	};
-	BinaryWrapper.prototype._WriteString1 = function (type, val) {
-		this.WriteUChar(type);
-		this.s.WriteString2(val);
-	};
-	BinaryWrapper.prototype._WriteString2 = function (type, val) {
-		if (val != null) {
-			this._WriteString1(type, val);
-		}
-	};
-	BinaryWrapper.prototype._WriteBool1 = function (type, val) {
-		this.WriteUChar(type);
-		this.s.WriteBool(val);
-	};
-	BinaryWrapper.prototype._WriteBool2 = function (type, val) {
-		if (val != null) {
-			this._WriteBool1(type, val);
-		}
-	};
-
-	BinaryWrapper.prototype.StartRecord = function (lType) {
-		this.m_arStack[this.m_lStackPosition] = this.s.pos + 5; // sizeof(BYTE) + sizeof(ULONG)
-		this.m_lStackPosition++;
-		this.WriteUChar(lType);
-		this.s.WriteULong(0);
-	};
-	BinaryWrapper.prototype.EndRecord = function () {
-		this.m_lStackPosition--;
-
-		var _seek = this.s.pos;
-		this.s.pos = this.m_arStack[this.m_lStackPosition] - 4;
-		this.s.WriteULong(_seek - this.m_arStack[this.m_lStackPosition]);
-		this.s.pos = _seek;
-	};
-	BinaryWrapper.prototype.WriteRecordArray4 = function (type, subtype, val_array) {
-		this.StartRecord(type);
-
-		var len = val_array.length;
-		this.s.WriteULong(len);
-
-		for (var i = 0; i < len; i++) {
-			this.WriteRecord4(subtype, val_array[i]);
-		}
-
-		this.EndRecord();
-	};
-	BinaryWrapper.prototype.WriteRecord4 = function (type, val) {
-		if (null != val) {
-			this.StartRecord(type);
-			val.toStream(this);
-			this.EndRecord();
-		}
-	};
-
-
+	
 	function CT_slicer(ws) {
 		//from documentation
 		this.name = null;
@@ -403,6 +322,8 @@
 		this.rowHeight = null;
 
 		this.ws = ws;
+
+		this._writeBinaryForHistory = null;
 
 		return this;
 	}
@@ -444,24 +365,34 @@
 			}
 		}
 	};
-	CT_slicer.prototype.Write_ToBinary2 = function(w) {
-		this.toStream(w, true);
-	};
-	CT_slicer.prototype.Read_FromBinary2 = function(r) {
-		this.fromStream(r, null, true);
-	};
-	CT_slicer.prototype.toStream = function (s, historySerialize) {
-		s = historySerialize ? new BinaryWrapper(s) : s;
 
+	CT_slicer.prototype.Write_ToBinary2 = function(w) {
+		this._writeBinaryForHistory = true;
+
+		var old = new AscCommon.CMemory(true);
+		pptx_content_writer.BinaryFileWriter.ExportToMemory(old);
+		pptx_content_writer.BinaryFileWriter.ImportFromMemory(w);
+		pptx_content_writer.BinaryFileWriter.WriteRecord4(0, this);
+		pptx_content_writer.BinaryFileWriter.ExportToMemory(w);
+		pptx_content_writer.BinaryFileWriter.ImportFromMemory(old);
+
+		this._writeBinaryForHistory = false;
+	};
+
+	CT_slicer.prototype.Read_FromBinary2 = function(r) {
+		var fileStream = r.ToFileStream();
+		fileStream.GetUChar();
+		this.fromStream(fileStream, null, true);
+		r.FromFileStream(fileStream);
+	}
+
+	CT_slicer.prototype.toStream = function (s) {
+		var historySerialize = this._writeBinaryForHistory;
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
 		s._WriteString2(0, this.name);
 		s._WriteString2(1, this.uid);
-		if (this.cacheDefinition) {
-			if (historySerialize) {
-				this.cacheDefinition.toStream(s, null, historySerialize);
-			} else {
-				s._WriteString2(2, this.cacheDefinition.name);
-			}
+		if (this.cacheDefinition && !historySerialize) {
+			s._WriteString2(2, this.cacheDefinition.name);
 		}
 		s._WriteString2(3, this.caption);
 		s._WriteUInt2(4, this.startItem);
@@ -472,6 +403,12 @@
 		s._WriteBool2(9, this.lockedPosition);
 		s._WriteUInt2(10, this.rowHeight);
 		s.WriteUChar(AscCommon.g_nodeAttributeEnd);
+
+		if (null != this.cacheDefinition && historySerialize) {
+			s.StartRecord(0);
+			this.cacheDefinition.toStream(s, null, true);
+			s.EndRecord();
+		}
 	};
 	CT_slicer.prototype.fromStream = function (s, slicerCaches, historySerialize) {
 		var _len = s.GetULong();
@@ -490,13 +427,8 @@
 				case 0: { this.name = s.GetString2(); break; }
 				case 1: { this.uid = s.GetString2(); break; }
 				case 2: {
-					if (historySerialize) {
-						this.cacheDefinition = new CT_slicerCacheDefinition(/*ws*/);//TODO ws
-						this.cacheDefinition.fromStream(s);
-					} else {
-						var cache = s.GetString2();
-						this.cacheDefinition = slicerCaches[cache] || null;
-					}
+					var cache = s.GetString2();
+					this.cacheDefinition = slicerCaches[cache] || null;
 					break;
 				}
 				case 3: { this.caption = s.GetString2(); break; }
@@ -512,6 +444,28 @@
 					return;
 			}
 		}
+
+		while (true)
+		{
+			if (s.cur >= _end_pos)
+				break;
+			_at = s.GetUChar();
+			switch (_at)
+			{
+				case 0:
+				{
+					this.cacheDefinition = new CT_slicerCacheDefinition();
+					this.cacheDefinition.fromStream(s);
+					break;
+				}
+				default:
+				{
+					s.SkipRecord();
+					break;
+				}
+			}
+		}
+
 		s.Seek2(_end_pos);
 	};
 	CT_slicer.prototype.isExt = function () {
