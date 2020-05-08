@@ -463,7 +463,9 @@ g_oColorManager = new ColorManager();
 		NumAbs: null,
 		BorderAbs: null,
 		AlignAbs: null,
-		ColorAuto: new RgbColor(0)
+		ColorAuto: new RgbColor(0),
+
+		xfs: new CellXfs()
 	};
 
 	/** @constructor */
@@ -1618,8 +1620,6 @@ var g_oFontProperties = {
 		var res = null;
 		if (this.patternFill && c_oAscPatternType.None !== this.patternFill.patternType) {
 			res = this.patternFill.fgColor || AscCommonExcel.g_oColorManager.getThemeColor(g_nColorTextDefault, 0);
-		} else if (this.gradientFill) {
-			res = this.gradientFill.stop.length > 0 ? this.gradientFill.stop[0].color : AscCommonExcel.g_oColorManager.getThemeColor(g_nColorTextDefault, 0)
 		}
 		return res;
 	};
@@ -2611,7 +2611,7 @@ CellXfs.prototype =
 	},
 	getOperationCache: function(operation, val) {
 		var res = undefined;
-		var operation = this.operationCache[operation];
+		operation = this.operationCache[operation];
 		if (operation) {
 			res = operation[val];
 		}
@@ -3081,7 +3081,7 @@ function StyleManager(){
 }
 StyleManager.prototype =
 {
-	init: function(wb, firstXf, firstFont, firstFill, secondFill, firstBorder, normalXf) {
+	init: function(firstXf, firstFont, firstFill, secondFill, firstBorder, normalXf) {
 		g_StyleCache.firstXf = firstXf;
 		g_StyleCache.firstFont = firstFont;
 		g_StyleCache.firstFill = firstFill;
@@ -3089,15 +3089,15 @@ StyleManager.prototype =
 		g_StyleCache.firstBorder = firstBorder;
 		g_StyleCache.normalXf = normalXf;
 		if(null != firstXf.font)
-			g_oDefaultFormat.Font = firstXf.font;
+			g_oDefaultFormat.xfs.font = g_oDefaultFormat.Font = firstXf.font;
 		if(null != firstXf.fill)
-			g_oDefaultFormat.Fill = firstXf.fill.clone();
+			g_oDefaultFormat.xfs.fill = g_oDefaultFormat.Fill = firstXf.fill.clone();
 		if(null != firstXf.border)
-			g_oDefaultFormat.Border = firstXf.border.clone();
+			g_oDefaultFormat.xfs.border = g_oDefaultFormat.Border = firstXf.border.clone();
 		if(null != firstXf.num)
-			g_oDefaultFormat.Num = firstXf.num.clone();
+			g_oDefaultFormat.xfs.num = g_oDefaultFormat.Num = firstXf.num.clone();
 		if(null != firstXf.align)
-			g_oDefaultFormat.Align = firstXf.align.clone();
+			g_oDefaultFormat.xfs.align = g_oDefaultFormat.Align = firstXf.align.clone();
 		if (null !== firstXf.XfId) {
 			g_oDefaultFormat.XfId = firstXf.XfId;
 		}

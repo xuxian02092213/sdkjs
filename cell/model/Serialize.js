@@ -6055,7 +6055,7 @@
 			if (firstXf && !this.isCopyPaste) {
 				//addXf with force flag should be last operation
 				firstXf = g_StyleCache.addXf(firstXf, true);
-                this.wb.oStyleManager.init(this.wb, firstXf, firstFont, firstFill, secondFill, firstBorder, normalXf);
+                this.wb.oStyleManager.init(firstXf, firstFont, firstFill, secondFill, firstBorder, normalXf);
 			}
             this.InitTableStyles(this.wb.TableStyles.CustomStyles, oStyleObject.oCustomTableStyles, oStyleObject.aDxfs);
             wb.SlicerStyles.addCustomStylesAtOpening(oStyleObject.oCustomSlicerStyles, oStyleObject.aExtDxfs);
