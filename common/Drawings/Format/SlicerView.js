@@ -81,6 +81,23 @@
     SCROLL_COLORS[STYLE_TYPE.HOVERED_SELECTED_NO_DATA] = 0xADADAD;
     SCROLL_COLORS[STYLE_TYPE.HOVERED_UNSELECTED_DATA] = 0xCFCFCF;
     SCROLL_COLORS[STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA] = 0xCFCFCF;
+
+    var SCROLL_BUTTON_TYPE_LEFT = 0;
+    var SCROLL_BUTTON_TYPE_TOP = 1;
+    var SCROLL_BUTTON_TYPE_RIGHT = 2;
+    var SCROLL_BUTTON_TYPE_BOTTOM = 3;
+    
+    var SCROLL_ARROW_COLORS = {};
+    SCROLL_ARROW_COLORS[STYLE_TYPE.WHOLE] = 0xF1F1F1;
+    SCROLL_ARROW_COLORS[STYLE_TYPE.HEADER] = 0xF1F1F1;
+    SCROLL_ARROW_COLORS[STYLE_TYPE.SELECTED_DATA] = 0xFFFFFF;
+    SCROLL_ARROW_COLORS[STYLE_TYPE.SELECTED_NO_DATA] = 0xFFFFFF;
+    SCROLL_ARROW_COLORS[STYLE_TYPE.UNSELECTED_DATA] = 0xADADAD;
+    SCROLL_ARROW_COLORS[STYLE_TYPE.UNSELECTED_NO_DATA] = 0xADADAD;
+    SCROLL_ARROW_COLORS[STYLE_TYPE.HOVERED_SELECTED_DATA] = 0xFFFFFF;
+    SCROLL_ARROW_COLORS[STYLE_TYPE.HOVERED_SELECTED_NO_DATA] = 0xFFFFFF;
+    SCROLL_ARROW_COLORS[STYLE_TYPE.HOVERED_UNSELECTED_DATA] = 0xFFFFFF;
+    SCROLL_ARROW_COLORS[STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA] = 0xFFFFFF;
     
     var HEADER_BUTTON_COLORS = {};
     HEADER_BUTTON_COLORS[STYLE_TYPE.WHOLE] = null;
@@ -1755,14 +1772,50 @@
         return null;
     };
     
+    function CScrollButton(parent, type) {
+        CInterfaceButton.call(this, parent);
+        this.type = type;
+    }
+    CScrollButton.prototype = Object.create(CInterfaceButton.prototype);
+    CScrollButton.prototype.draw = function (graphics) {
+        CInterfaceButton.prototype.draw.call(this, graphics);
+        var dInd = this.extX / 4.0;
+        var dMid = this.extX / 2.0;
+
+        var nColor = SCROLL_ARROW_COLORS[this.getState()];
+        graphics.b_color1((nColor >> 16) & 0xFF, (nColor >> 8) & 0xFF, nColor & 0xFF, 0xFF);
+        if(this.type === SCROLL_BUTTON_TYPE_TOP) {
+            graphics.SaveGrState();
+            graphics.transform3(this.transform);
+            graphics._s();
+            graphics._m(dInd, dMid);
+            graphics._l(dMid, dInd);
+            graphics._l(this.extX - dInd, dMid);
+            graphics._z();
+            graphics.df();
+            graphics.RestoreGrState();
+        }
+        else if(this.type === SCROLL_BUTTON_TYPE_BOTTOM) {
+            graphics.SaveGrState();
+            graphics.transform3(this.transform);
+            graphics._s();
+            graphics._m(dInd, dMid);
+            graphics._l(dMid, this.extY - dInd);
+            graphics._l(this.extX - dInd, dMid);
+            graphics._z();
+            graphics.df();
+            graphics.RestoreGrState();
+        }
+    };
+    
     function CScroll(parent) {
         this.parent = parent;
         this.extX = 0;
         this.extY = 0;
         this.bVisible = false;
         this.buttons = [];
-        this.buttons[0] = new CInterfaceButton(this);
-        this.buttons[1] = new CInterfaceButton(this);
+        this.buttons[0] = new CScrollButton(this, SCROLL_BUTTON_TYPE_TOP);
+        this.buttons[1] = new CScrollButton(this, SCROLL_BUTTON_TYPE_BOTTOM);
         this.state = STYLE_TYPE.UNSELECTED_DATA;
         this.timerId = null;
 
@@ -1941,8 +1994,10 @@
         graphics.transform3(this.parent.getFullTransformMatrix());
         graphics.p_color(0xCE, 0xCE, 0xCE, 0xFF);
         graphics.b_color1((nColor >> 16) & 0xFF, (nColor >> 8) & 0xFF, nColor & 0xFF, 0xFF);
-        graphics.AddSmartRect(x, y, extX, extY, 0);
+        graphics.p_width(0)
+        graphics.rect(x, y, extX, extY);
         graphics.df();
+        graphics.ds();
         //graphics.drawHorLine(1, y, x, x + extX, 0);
         //graphics.drawHorLine(1, y + extY, x, x + extX, 0);
         //graphics.drawVerLine(1, x, y, y + extY, 0);
