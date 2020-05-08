@@ -871,7 +871,7 @@
 	c_arrIcons[EIconSetType.Stars3] = [iStarSilver, iStarHalf, iStarGold];
 	c_arrIcons[EIconSetType.Boxes5] = [iZeroFilledBoxes, iOneFilledBoxes, iTwoFilledBoxes, iThreeFilledBoxes, iFourFilledBoxes];
 
-	function getIconsForLoad() {
+	function getCFIconsForLoad() {
 		return [iCheckGreen, iCheckSymbolGreen, iCircleTwoWhiteQuarters, iCircleBlack, iCircleGray, iCircleGreen,
 			iCircleLightRed, iCircleOneWhiteQuarter, iCircleRed, iCircleThreeWhiteQuarters, iCircleWhite,
 			iCircleYellow, iCrossRed, iCrossSymbolRed, iDashYellow, iDiamondRed, iDown, iDownGray, iDownIncline,
@@ -923,7 +923,7 @@
 
 	window['AscCommonExcel'].cDefIconSize = cDefIconSize;
 	window['AscCommonExcel'].cDefIconFont = cDefIconFont;
-	window['AscCommonExcel'].getIconsForLoad = getIconsForLoad;
+	window['AscCommonExcel'].getCFIconsForLoad = getCFIconsForLoad;
 	window['AscCommonExcel'].getCFIcon = getCFIcon;
 	window['AscCommonExcel'].getDataBarGradientColor = getDataBarGradientColor;
 

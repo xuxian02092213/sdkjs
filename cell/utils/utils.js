@@ -2798,6 +2798,11 @@
 			return api.asc_getLocaleExample(AscCommon.getShortTimeFormat(), this.getExcelDateWithTime(true) - this.getTimezoneOffset()/(60*24));
 		};
 
+		function getIconsForLoad() {
+			return AscCommonExcel.getCFIconsForLoad().concat(AscCommonExcel.getSlicerIconsForLoad());
+		}
+
+
 		/*
 		 * Export
 		 * -----------------------------------------------------------------------------
@@ -2849,6 +2854,7 @@
 		window["Asc"].getEndValueRange = getEndValueRange;
 		window["AscCommonExcel"].checkStylesNames = checkStylesNames;
 		window["AscCommonExcel"].generateStyles = generateStyles;
+		window["AscCommonExcel"].getIconsForLoad = getIconsForLoad;
 
 		window["AscCommonExcel"].referenceType = referenceType;
 		window["Asc"].Range = Range;

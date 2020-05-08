@@ -69,8 +69,7 @@
     STYLE_TYPE.HOVERED_SELECTED_NO_DATA = STATE_FLAG_SELECTED | 0 | STATE_FLAG_HOVERED;
     STYLE_TYPE.HOVERED_UNSELECTED_DATA = 0 | STATE_FLAG_DATA | STATE_FLAG_HOVERED;
     STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA = 0 | 0 | STATE_FLAG_HOVERED;
-
-
+    
     var SCROLL_COLORS = {};
     SCROLL_COLORS[STYLE_TYPE.WHOLE] = 0xF1F1F1;
     SCROLL_COLORS[STYLE_TYPE.HEADER] = 0xF1F1F1;
@@ -82,12 +81,27 @@
     SCROLL_COLORS[STYLE_TYPE.HOVERED_SELECTED_NO_DATA] = 0xADADAD;
     SCROLL_COLORS[STYLE_TYPE.HOVERED_UNSELECTED_DATA] = 0xCFCFCF;
     SCROLL_COLORS[STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA] = 0xCFCFCF;
-
-    function CTextBox(txBody, transformText) {
-        this.txBody = txBody;
-        this.transformText = transformText;
+    
+    var HEADER_BUTTON_COLORS = {};
+    HEADER_BUTTON_COLORS[STYLE_TYPE.WHOLE] = null;
+    HEADER_BUTTON_COLORS[STYLE_TYPE.HEADER] = null;
+    HEADER_BUTTON_COLORS[STYLE_TYPE.SELECTED_DATA] = 0x7D858C;
+    HEADER_BUTTON_COLORS[STYLE_TYPE.SELECTED_NO_DATA] = 0x7D858C;
+    HEADER_BUTTON_COLORS[STYLE_TYPE.UNSELECTED_DATA] = null;
+    HEADER_BUTTON_COLORS[STYLE_TYPE.UNSELECTED_NO_DATA] = null;
+    HEADER_BUTTON_COLORS[STYLE_TYPE.HOVERED_SELECTED_DATA] = 0x7D858C;
+    HEADER_BUTTON_COLORS[STYLE_TYPE.HOVERED_SELECTED_NO_DATA] = 0x7D858C;
+    HEADER_BUTTON_COLORS[STYLE_TYPE.HOVERED_UNSELECTED_DATA] = 0xD8DADC;
+    HEADER_BUTTON_COLORS[STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA] = 0xD8DADC;
+    
+    var ICON_MULTISELECT = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4NCjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNNCA1QzQgNC40NDc3MiA0LjQ0NzcyIDQgNSA0SDE1QzE1LjU1MjMgNCAxNiA0LjQ0NzcyIDE2IDVWNkMxNiA2LjU1MjI4IDE1LjU1MjMgNyAxNSA3SDVDNC40NDc3MiA3IDQgNi41NTIyOCA0IDZWNVpNMTUgMTNINUw1IDE0SDE1VjEzWk01IDEyQzQuNDQ3NzIgMTIgNCAxMi40NDc3IDQgMTNWMTRDNCAxNC41NTIzIDQuNDQ3NzIgMTUgNSAxNUgxNUMxNS41NTIzIDE1IDE2IDE0LjU1MjMgMTYgMTRWMTNDMTYgMTIuNDQ3NyAxNS41NTIzIDEyIDE1IDEySDVaTTUgOEM0LjQ0NzcyIDggNCA4LjQ0NzcyIDQgOVYxMEM0IDEwLjU1MjMgNC40NDc3MiAxMSA1IDExSDE1QzE1LjU1MjMgMTEgMTYgMTAuNTUyMyAxNiAxMFY5QzE2IDguNDQ3NzIgMTUuNTUyMyA4IDE1IDhINVoiIGZpbGw9IiM0NDQ0NDQiLz4NCjwvc3ZnPg0K";
+    var ICON_MULTISELECT_INVERTED = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4NCjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNNCA1QzQgNC40NDc3MiA0LjQ0NzcyIDQgNSA0SDE1QzE1LjU1MjMgNCAxNiA0LjQ0NzcyIDE2IDVWNkMxNiA2LjU1MjI4IDE1LjU1MjMgNyAxNSA3SDVDNC40NDc3MiA3IDQgNi41NTIyOCA0IDZWNVpNMTUgMTNINUw1IDE0SDE1VjEzWk01IDEyQzQuNDQ3NzIgMTIgNCAxMi40NDc3IDQgMTNWMTRDNCAxNC41NTIzIDQuNDQ3NzIgMTUgNSAxNUgxNUMxNS41NTIzIDE1IDE2IDE0LjU1MjMgMTYgMTRWMTNDMTYgMTIuNDQ3NyAxNS41NTIzIDEyIDE1IDEySDVaTTUgOEM0LjQ0NzcyIDggNCA4LjQ0NzcyIDQgOVYxMEM0IDEwLjU1MjMgNC40NDc3MiAxMSA1IDExSDE1QzE1LjU1MjMgMTEgMTYgMTAuNTUyMyAxNiAxMFY5QzE2IDguNDQ3NzIgMTUuNTUyMyA4IDE1IDhINVoiIGZpbGw9IndoaXRlIi8+DQo8L3N2Zz4NCg==";
+    var ICON_CLEAR_FILTER = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4NCjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNMTAgMTZMOCAxNFYxMEwzIDVIMTVMMTAgMTBWMTZaTTE2LjE0NjQgMTYuODUzNkwxNC41IDE1LjIwNzFMMTIuODUzNiAxNi44NTM2TDEyLjE0NjQgMTYuMTQ2NUwxMy43OTI5IDE0LjVMMTIuMTQ2NCAxMi44NTM2TDEyLjg1MzYgMTIuMTQ2NUwxNC41IDEzLjc5MjlMMTYuMTQ2NCAxMi4xNDY1TDE2Ljg1MzYgMTIuODUzNkwxNS4yMDcxIDE0LjVMMTYuODUzNiAxNi4xNDY1TDE2LjE0NjQgMTYuODUzNloiIGZpbGw9IiM0NDQ0NDQiLz4NCjwvc3ZnPg0K";
+    var ICON_CLEAR_FILTER_DISABLED = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4NCjxnIG9wYWNpdHk9IjAuNCI+DQo8cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTEwIDE2TDggMTRWMTBMMyA1SDE1TDEwIDEwVjE2Wk0xNi4xNDY0IDE2Ljg1MzZMMTQuNSAxNS4yMDcxTDEyLjg1MzYgMTYuODUzNkwxMi4xNDY0IDE2LjE0NjVMMTMuNzkyOSAxNC41TDEyLjE0NjQgMTIuODUzNkwxMi44NTM2IDEyLjE0NjVMMTQuNSAxMy43OTI5TDE2LjE0NjQgMTIuMTQ2NUwxNi44NTM2IDEyLjg1MzZMMTUuMjA3MSAxNC41TDE2Ljg1MzYgMTYuMTQ2NUwxNi4xNDY0IDE2Ljg1MzZaIiBmaWxsPSIjNDQ0NDQ0Ii8+DQo8L2c+DQo8L3N2Zz4NCg==";
+    
+    function getSlicerIconsForLoad() {
+        return [ICON_MULTISELECT, ICON_MULTISELECT_INVERTED, ICON_CLEAR_FILTER, ICON_CLEAR_FILTER_DISABLED];
     }
-
     
     function CreateButtonHoverGradient() {
         var oFill = new AscCommonExcel.Fill(), oGF, oGS;
@@ -104,7 +118,40 @@
         oFill.gradientFill = oGF;
         return oFill;
     }
+    
+    function CTextBox(txBody, transformText) {
+        this.txBody = txBody;
+        this.transformText = transformText;
+    }
 
+    var ButtonImageDrawer = (function () {
+        
+        
+        function CButtonDrawer() {
+
+        }
+        
+        var instance;
+
+        
+        
+        
+        
+        function createInstance() {
+            var object = new Object("I am the instance");
+            return object;
+        }
+
+        return {
+            getInstance: function () {
+                if (!instance) {
+                    instance = createInstance();
+                }
+                return instance;
+            }
+        };
+    })();
+    
     function CSlicerData(slicer) {
         this.slicer = slicer;
 
@@ -712,6 +759,7 @@
         this.buttons = [];
         this.buttons.push(new CInterfaceButton(this));
         this.buttons.push(new CInterfaceButton(this));
+        this.buttons[1].removeTmpState();
         this.setBDeleted(false);
         this.setTransformParams(0, 0, 0, 0, 0, false, false);
         this.createTextBody();
@@ -864,9 +912,10 @@
     };
     CHeader.prototype.getBorder = function (nType) {
         var oBorder = null;
+        return oBorder;
         if(nType & STATE_FLAG_SELECTED || nType & STATE_FLAG_HOVERED) {
             var r = 204, g = 204, b = 204;
-            var oBorder = new AscCommonExcel.Border(null);
+            oBorder = new AscCommonExcel.Border(null);
             oBorder.l = new AscCommonExcel.BorderProp();
             oBorder.l.setStyle(AscCommon.c_oAscBorderStyles.Thin);
             oBorder.l.c = AscCommonExcel.createRgbColor(r, g, b);
@@ -883,7 +932,13 @@
         return oBorder;
     };
     CHeader.prototype.getFill = function (nType) {
-
+        var nColor = HEADER_BUTTON_COLORS[nType];
+        var oFill = null;
+        if(nColor !== null) {
+            oFill = new AscCommonExcel.Fill();
+            oFill.fromColor(new AscCommonExcel.RgbColor(nColor));
+        }
+        return oFill;
         if(nType === STYLE_TYPE.WHOLE || nType === STYLE_TYPE.HEADER) {
             return null;
         }
@@ -906,6 +961,26 @@
             }
         }
         return oFill;
+    };
+    CHeader.prototype.getIcon = function(nIndex, nType) {
+        var sRet;
+        if(nIndex === 0) {
+            if(nType & STATE_FLAG_SELECTED) {
+                sRet = ICON_MULTISELECT_INVERTED;
+            }
+            else {
+                sRet = ICON_MULTISELECT; 
+            }
+        }
+        else {
+            if(nType & STATE_FLAG_WHOLE) {
+                sRet = ICON_CLEAR_FILTER_DISABLED;
+            }
+            else {
+                sRet = ICON_CLEAR_FILTER;
+            }
+        }
+        return sRet;
     };
     CHeader.prototype.getFullTransformMatrix = function () {
         var oMT = AscCommon.global_MatrixTransformer;
@@ -945,9 +1020,6 @@
         bRet = bRet || this.buttons[1].onMouseUp(e, x, y);
         this.setEventListener(null);
         return bRet;
-    };
-    CHeader.prototype.getButtons = function (e, x, y) {
-        return this.buttons;
     };
     CHeader.prototype.getButtonIndex = function (oButton) {
         for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
@@ -996,7 +1068,28 @@
         }
     };
     CHeader.prototype.getButtonState = function (nIndex) {
-        return this.buttons[nIndex].getState();
+        var oButton = this.buttons[nIndex];
+        var nRet = STYLE_TYPE.WHOLE;
+        if(!oButton) {
+            return nRet
+        }
+        if(nIndex === 0) {
+            if(oButton.tmpState !== null) {
+                nRet = oButton.tmpState;
+            }
+            else {
+                nRet = STYLE_TYPE.WHOLE;
+            }
+        }
+        else {
+            if(this.slicer.isAllValuesSelected()) {
+                nRet = STYLE_TYPE.WHOLE;
+            }
+            else {
+                nRet = STYLE_TYPE.UNSELECTED_DATA;
+            }
+        }
+        return nRet;
     };
     CHeader.prototype.getParentObjects = function () {
         return this.slicer.getParentObjects();
@@ -1007,7 +1100,6 @@
     CHeader.prototype.getScrollOffsetY = function () {
         return 0;
     };
-
 
     function CButtonBase(parent) {
         AscFormat.CShape.call(this);
@@ -1079,10 +1171,10 @@
         return nState;
     };
     CButtonBase.prototype.setUnselectTmpState = function() {
-        this.tmpState =  this.getOwnState() & (~STATE_FLAG_SELECTED);
+        this.setTmpState(this.getOwnState() & (~STATE_FLAG_SELECTED));
     };
     CButtonBase.prototype.setSelectTmpState = function() {
-        this.tmpState =  this.getOwnState() | (STATE_FLAG_SELECTED);
+        this.setTmpState(this.getOwnState() | STATE_FLAG_SELECTED);
     };
     CButtonBase.prototype.setHoverState = function() {
         this.isHovered = true;
@@ -1103,7 +1195,7 @@
         this.tmpState = state;
     };
     CButtonBase.prototype.removeTmpState = function() {
-        this.tmpState = null;
+        this.setTmpState(null);
     };
     CButtonBase.prototype.isSelected = function() {
         return (this.getState() & STATE_FLAG_SELECTED) !== 0;
@@ -1166,7 +1258,6 @@
             oSide = oBorder.l;
             if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
                 if(oSide.c) {
-
                     graphics.p_color(oSide.c.getR(), oSide.c.getG(), oSide.c.getB(), 255);
                 }
                 else {
@@ -1207,7 +1298,6 @@
                 }
                 graphics.drawHorLine(2, this.extY, 0, this.extX, 0);
             }
-            graphics.drawVerLine();
             graphics.RestoreGrState();
         }
     };
@@ -1242,8 +1332,7 @@
         this.parent.setEventListener(null);
         return false;
     };
-
-
+    
     function CButton(parent) {
         CButtonBase.call(this, parent);
         this.textBoxes = {};
@@ -1292,12 +1381,9 @@
 
     function CInterfaceButton(parent) {
         CButtonBase.call(this, parent);
-        this.tmpState = STYLE_TYPE.UNSELECTED_DATA;
+        this.setTmpState(STYLE_TYPE.UNSELECTED_DATA);
     }
     CInterfaceButton.prototype = Object.create(CButtonBase.prototype);
-    CInterfaceButton.prototype.removeTmpState = function () {
-
-    };
     CInterfaceButton.prototype.isDisabled = function () {
         return this.parent.isButtonDisabled(this.parent.getButtonIndex(this));
     };
@@ -1330,6 +1416,19 @@
             this.parent.handleMouseUp(this.parent.getButtonIndex(this));
         }
         return bRet;
+    };
+    CInterfaceButton.prototype.draw = function(graphics) {
+        CButtonBase.prototype.draw.call(this, graphics);
+        if(graphics.IsSlideBoundsCheckerType) {
+            return;
+        }
+        var sIcon = this.parent.getIcon(this.parent.getButtonIndex(this), this.getState());
+        if(null !== sIcon) {
+            graphics.SaveGrState();
+            graphics.transform3(this.transform);
+            graphics.drawImage(sIcon, 0, 0, this.extX, this.extY, 255, null, null);
+            graphics.RestoreGrState();
+        }
     };
 
     function CButtonsContainer(slicer) {
@@ -1645,9 +1744,6 @@
         }
         return bRet;
     };
-    CButtonsContainer.prototype.getButtons = function () {
-        return this.buttons;
-    };
     CButtonsContainer.prototype.setEventListener = function (child) {
         this.eventListener = child;
         if(child) {
@@ -1669,11 +1765,9 @@
     CButtonsContainer.prototype.getScrollOffsetX = function () {
         return 0;
     };
-
     CButtonsContainer.prototype.getScrollOffsetY = function () {
         return -(this.getRowStart(this.scrollTop) - this.y);
     };
-
     CButtonsContainer.prototype.onWheel = function (deltaX, deltaY) {
         return this.scroll.onWheel(deltaX, deltaY);
     };
@@ -1687,7 +1781,10 @@
             this.buttons[nButton].removeTmpState();
         }
     };
-
+    CButtonsContainer.prototype.getIcon = function (nIndex, nType) {
+        return null;
+    };
+    
     function CScroll(parent) {
         this.parent = parent;
         this.extX = 0;
@@ -1964,9 +2061,6 @@
         this.setEventListener(null);
         return bRet;
     };
-    CScroll.prototype.getButtons = function (e, x, y) {
-        return this.buttons;
-    };
     CScroll.prototype.isButtonDisabled = function (nIndex) {
         return !this.bVisible;
     };
@@ -2074,7 +2168,14 @@
         this.endScroll();
         return true;
     };
+    CScroll.prototype.getIcon = function(nIndex, nType) {
+        return null;
+    };
 
-    window['AscFormat'] = window['AscFormat'] || {};
-    window['AscFormat'].CSlicer = CSlicer;
+    window["AscFormat"] = window["AscFormat"] || {};
+    window["AscFormat"].CSlicer = CSlicer;
+    
+    window["AscCommonExcel"] = window["AscCommonExcel"] || {};
+    window["AscCommonExcel"].getSlicerIconsForLoad = getSlicerIconsForLoad;
+    
 })();
