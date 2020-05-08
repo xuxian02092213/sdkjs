@@ -20315,8 +20315,12 @@
 		//предполагается, что лок будет проверен на этапе взаимодествия с шейпом
 		//залочена таблица - залочена работа с контентом шейпа
 		var ws = this.model;
-		var slicerCache = this.model.getSlicerCachesBySourceName(name);
-		var obj = slicerCache.getFilterObj();
+		var slicer = this.model.getSlicerByName(name);
+		var obj;
+		if (slicer && slicer.obj && slicer.obj.cacheDefinition) {
+			var slicerCache = slicer.obj.cacheDefinition;
+			obj = slicerCache.getFilterObj();
+		}
 
 		var createSimpleFilterOptions = function () {
 			//get values
