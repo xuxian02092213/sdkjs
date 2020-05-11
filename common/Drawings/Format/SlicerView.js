@@ -524,9 +524,9 @@
         return false;
     };
     CSlicer.prototype.internalDraw = function(graphics, transform, transformText, pageIndex) {
-        var r = graphics.updatedRect;
-        if(r) {
-            if(!this.bounds.isIntersect(r.x, r.y, r.x + r.w, r.y + r.h)) {
+        var oUR = graphics.updatedRect;
+        if(oUR && this.bounds) {
+            if(!oUR.isIntersectOther(this.bounds)) {
                 return;
             }
         }
@@ -534,12 +534,16 @@
         if(graphics.IsSlideBoundsCheckerType) {
             return;
         }
+        graphics.SaveGrState();
+        graphics.transform3(this.transform, false);
+        graphics.AddClipRect(0, 0, this.extX, this.extY);
         if(this.header) {
             this.header.draw(graphics, transform, transformText, pageIndex);
         }
         if(this.buttonsContainer) {
             this.buttonsContainer.draw(graphics, transform, transformText, pageIndex);
         }
+        graphics.RestoreGrState();
         var oBorder = this.getBorder(STYLE_TYPE.WHOLE);
         if(oBorder) {
             var oTransform = transform || this.transform;
@@ -1088,6 +1092,8 @@
     CHeader.prototype.getScrollOffsetY = function () {
         return 0;
     };
+    CHeader.prototype.clipTextRect = function(graphics, transform, transformText, pageIndex) {
+    };
 
     function CButtonBase(parent) {
         AscFormat.CShape.call(this);
@@ -1365,6 +1371,8 @@
                 this.txBody.recalculateOneString(sText);
             }
         }
+    };
+    CButton.prototype.clipTextRect = function (graphics, transform, transformText, pageIndex) {
     };
 
     function CInterfaceButton(parent) {
