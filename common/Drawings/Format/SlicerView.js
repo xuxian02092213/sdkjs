@@ -1466,9 +1466,9 @@
         return bRet;
     };
     CInterfaceButton.prototype.onMouseMove = function (e, x, y) {
-        if(this.isDisabled()) {
-            return false;
-        }
+        // if(this.isDisabled()) {
+        //     return false;
+        // }
         return CButtonBase.prototype.onMouseMove.call(this, e, x, y);
     };
     CInterfaceButton.prototype.onMouseUp = function (e, x, y) {
