@@ -2430,7 +2430,7 @@ GraphicOption.prototype.union = function(oGraphicOption) {
                         oSlicer.setBDeleted(false);
                         oSlicer.setWorksheet(worksheet.model);
                         oSlicer.setTransformParams(x, y, dSlicerWidth, dSlicerHeight, 0, false, false);
-                        oSlicer.addToDrawingObjects(undefined, AscCommon.c_oAscCellAnchorType.cellanchorTwoCell);
+                        oSlicer.addToDrawingObjects(undefined, AscCommon.c_oAscCellAnchorType.cellanchorOneCell);
                         oSlicer.checkDrawingBaseCoords();
                     }
                     _this.controller.startRecalculate();
