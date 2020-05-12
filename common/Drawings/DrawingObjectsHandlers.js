@@ -368,6 +368,11 @@ function handleFloatObjects(drawingObjectsController, drawingArr, e, x, y, group
         }
         else
         {
+            var sCursor = drawing.getCursorType(e, x, y);
+            if(sCursor)
+            {
+                return {objectId: drawing.Get_Id(), cursorType: sCursor, bMarker: false};
+            }
             return handleShapeImage(drawing, drawingObjectsController, e, x, y, group, pageIndex, bWord);
         }
     }

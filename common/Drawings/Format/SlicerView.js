@@ -668,6 +668,16 @@
             bRet = bRet || bRes;
         }
         return bRet;
+    };  
+    CSlicer.prototype.getCursorType = function (e, x, y) {
+        if(!this.hit(x, y)) {
+            return null;
+        }
+        var sRet = (this.header && this.header.getCursorType(e, x, y)) || (this.buttonsContainer && this.buttonsContainer.getCursorType(e, x, y));
+        if(sRet) {
+            return sRet;
+        }
+        return sRet;
     };
     CSlicer.prototype.onMouseUp = function (e, x, y) {
         var bRet = false;
@@ -814,12 +824,7 @@
         oButton.recalculate();
     };
     CHeader.prototype.draw = function (graphics) {
-        var oMT = AscCommon.global_MatrixTransformer;
-        var oTransform = this.transform.CreateDublicate();
-        oMT.MultiplyAppend(oTransform, this.slicer.transform);
-        var oTransformText = this.transformText.CreateDublicate();
-        oMT.MultiplyAppend(oTransformText, this.slicer.transform);
-        AscFormat.CShape.prototype.draw.call(this, graphics, oTransform, oTransformText);
+        AscFormat.CShape.prototype.draw.call(this, graphics);
         if(graphics.IsSlideBoundsCheckerType) {
             return;
         }
@@ -828,7 +833,7 @@
         var oBorder = this.slicer.getBorder(STYLE_TYPE.HEADER);
         if(oBorder) {
             graphics.SaveGrState();
-            graphics.transform3(oTransform);
+            graphics.transform3(this.transform);
             var oSide, bDrawn = false;
             oSide = oBorder.l;
             if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None) {
@@ -962,14 +967,45 @@
         return sRet;
     };
     CHeader.prototype.getFullTransformMatrix = function () {
-        var oMT = AscCommon.global_MatrixTransformer;
-        var oTransform = oMT.CreateDublicateM(this.transform);
-        oMT.MultiplyAppend(oTransform, this.slicer.transform);
-        return oTransform;
+        return this.transform;
     };
     CHeader.prototype.getInvFullTransformMatrix = function () {
-        return this.slicer.invertTransform;
+        return this.invertTransform;
     };
+
+    CHeader.prototype.recalculateTransform = function() {
+        AscFormat.CShape.prototype.recalculateTransform.call(this);
+        var oMT = AscCommon.global_MatrixTransformer;
+        this.transform = this.getFullTransform();
+        this.invertTransform = oMT.Invert(this.transform);
+    };
+    CHeader.prototype.recalculateTransformText = function() {
+        AscFormat.CShape.prototype.recalculateTransformText.call(this);
+        var oMT = AscCommon.global_MatrixTransformer;
+        this.transformText = this.getFullTextTransform();
+        this.invertTransformText = oMT.Invert(this.transformText);
+    };
+    CHeader.prototype.getFullTransform = function() {
+        var oMT = AscCommon.global_MatrixTransformer;
+        var oTransform = oMT.CreateDublicateM(this.localTransform);
+
+        var oParentTransform = this.slicer.transform;
+        oParentTransform && oMT.MultiplyAppend(oTransform, oParentTransform);
+        return oTransform;
+    };
+    CHeader.prototype.getFullTextTransform = function() {
+        var oMT = AscCommon.global_MatrixTransformer;
+        var oParentTransform = this.slicer.transform;
+        var oTransformText = oMT.CreateDublicateM(this.localTransformText);
+        oParentTransform && oMT.MultiplyAppend(oTransformText, oParentTransform);
+        return oTransformText;
+    };
+    CHeader.prototype.getInvFullTransformMatrix = function() {
+        var oMT = AscCommon.global_MatrixTransformer;
+        return oMT.Invert(this.getFullTransform());
+    };
+    
+    
     CHeader.prototype.isEventListener = function (child) {
         return this.eventListener === child;
     };
@@ -987,6 +1023,17 @@
         bRet = bRet || this.buttons[0].onMouseDown(e, x, y);
         bRet = bRet || this.buttons[1].onMouseDown(e, x, y);
         return bRet;
+    };  
+    CHeader.prototype.getCursorType = function (e, x, y) {
+        if(!this.hit(x, y)) {
+            return null;
+        }
+        var sRet = this.buttons[0].getCursorType(e, x, y);
+        if(sRet) {
+            return  sRet;
+        }
+        sRet = this.buttons[1].getCursorType(e, x, y);
+        return sRet;
     };
     CHeader.prototype.onMouseUp = function (e, x, y) {
         var bRet = false;
@@ -1150,11 +1197,13 @@
         else {
             nState = this.getOwnState();
         }
-        if(this.isHovered) {
-            nState |= STATE_FLAG_HOVERED;
-        }
-        else {
-            nState &= (~STATE_FLAG_HOVERED);
+        if(nState !== STYLE_TYPE.WHOLE && nState !== STYLE_TYPE.HEADER) {
+            if(this.isHovered) {
+                nState |= STATE_FLAG_HOVERED;
+            }
+            else {
+                nState &= (~STATE_FLAG_HOVERED);
+            }
         }
         return nState;
     };
@@ -1334,6 +1383,14 @@
     };
     CButtonBase.prototype.onUpdate = function(oBounds) {
         this.parent.onUpdate(oBounds);
+    };
+    CButtonBase.prototype.getCursorType = function(e, x, y) {
+        if(!this.hit(x, y)) {
+            return null;
+        }
+        else {
+            return "default";
+        }
     };
     
     function CButton(parent) {
@@ -1803,6 +1860,12 @@
     };
     CButtonsContainer.prototype.getIcon = function (nIndex, nType) {
         return null;
+    };
+    CButtonsContainer.prototype.getCursorType = function (e, x, y) {
+        if(!this.hit(x, y)) {
+            return null;
+        }
+        return "default";
     };
     
     function CScrollButton(parent, type) {
