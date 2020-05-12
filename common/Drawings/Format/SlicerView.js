@@ -824,6 +824,12 @@
         oButton.recalculate();
     };
     CHeader.prototype.draw = function (graphics) {
+        var oUR = graphics.updatedRect;
+        if(oUR && this.bounds) {
+            if(!oUR.isIntersectOther(this.bounds)) {
+                return;
+            }
+        }
         AscFormat.CShape.prototype.draw.call(this, graphics);
         if(graphics.IsSlideBoundsCheckerType) {
             return;
@@ -1287,6 +1293,12 @@
         this.bounds.h = this.bounds.b - this.bounds.t;
     };
     CButtonBase.prototype.draw = function (graphics) {
+        var oUR = graphics.updatedRect;
+        if(oUR && this.bounds) {
+            if(!oUR.isIntersectOther(this.bounds)) {
+                return;
+            }
+        }
         var parents = this.getParentObjects();
         this.brush = AscCommonExcel.convertFillToUnifill(this.parent.getFill(this.getState()));
         this.brush.calculate(parents.theme, parents.slide, parents.layout, parents.master, {R: 0, G: 0, B: 0, A: 255});
