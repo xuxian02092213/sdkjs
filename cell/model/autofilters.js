@@ -725,6 +725,11 @@
 					minChangeRow = hiddenProps.minChangeRow;
 				}
 
+				//update slicer
+				if (currentFilter && !currentFilter.isAutoFilter()) {
+					this.updateSlicer(currentFilter.DisplayName);
+				}
+
 				//history
 				this._addHistoryObj(oldFilter, AscCH.historyitem_AutoFilter_Apply,
 					{activeCells: ar, autoFiltersObject: autoFiltersObject});
@@ -4283,7 +4288,17 @@
 				}
 				return {values: _values, automaticRowCount: automaticRowCount, ignoreCustomFilter: ignoreCustomFilter};
 			},
-			
+
+			updateSlicer: function(tableName) {
+				var worksheet = this.worksheet;
+				var _slicers = worksheet.getSlicersByTableName(tableName);
+				if (_slicers) {
+					for (var i = 0; i < _slicers.length; i++) {
+						worksheet.onSlicerUpdate(_slicers[i].name);
+					}
+				}
+			},
+
 			_getTrueColId: function(filter, colId, checkShowButton)
 			{
 				//TODO - добавил условие, чтобы не было ошибки(bug 30007). возможно, второму пользователю нужно запретить все действия с измененной таблицей.
