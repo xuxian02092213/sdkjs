@@ -7750,14 +7750,14 @@
 		this.aSlicers.push(slicer);
 		var oCache = slicer.getCacheDefinition();
 
-		History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_Add, this.getId(), null,
-		 			new AscCommonExcel.UndoRedoData_Slicer(null, slicer));
+		History.Add(AscCommonExcel.g_oUndoRedoWorksheet, AscCH.historyitem_Worksheet_SlicerAdd, this.getId(), null,
+			new AscCommonExcel.UndoRedoData_FromTo(null, slicer));
 
-		/*if (oCache) {
+		if (oCache) {
 			var _name = oCache.name;
 			var newDefName = new Asc.asc_CDefName(_name, "#N/A", null, false, null, null, true);
 			this.workbook.editDefinesNames(null, newDefName);
-		}*/
+		}
 
 		History.EndTransaction();
 	};

@@ -2787,6 +2787,18 @@ function (window, undefined) {
 			var pivot = data.getData();
 			pivot.init();
 			ws.insertPivotTable(pivot, false, true);
+		} else if (AscCH.historyitem_Worksheet_SlicerAdd === Type) {
+			if (bUndo) {
+				ws.deleteSlicer(Data.to.name);
+			} else {
+				ws.aSlicers.push(Data.to);
+			}
+		} else if (AscCH.historyitem_Worksheet_SlicerDelete === Type) {
+			if (bUndo) {
+				ws.aSlicers.push(Data.from)
+			} else {
+				ws.deleteSlicer(Data.from.name);
+			}
 		}
 	};
 	UndoRedoWoorksheet.prototype.forwardTransformationIsAffect = function (Type) {
@@ -3285,22 +3297,14 @@ function (window, undefined) {
 		}
 
 		switch (Type) {
-			case AscCH.historyitem_Slicer_Add: {
-				if (bUndo) {
-					oModel.deleteSlicer(Data.name);
-				} else {
-					oModel.insertSlicer(Data.colName, Data.objName, Data.type);
-				}
+			/*case AscCH.historyitem_Slicer_Add: {
+
 				break;
 			}
 			case AscCH.historyitem_Slicer_Delete: {
-				if (bUndo) {
-					oModel.insertSlicer(Data.colName, Data.objName, Data.type);
-				} else {
-					oModel.deleteSlicer(Data.objName);
-				}
+
 				break;
-			}
+			}*/
 		}
 	};
 

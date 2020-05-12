@@ -85,6 +85,8 @@ function (window, undefined) {
 	window['AscCH'].historyitem_Worksheet_PivotAdd = 40;
 	window['AscCH'].historyitem_Worksheet_PivotDelete = 41;
 	window['AscCH'].historyitem_Worksheet_PivotReplace = 42;
+	window['AscCH'].historyitem_Worksheet_SlicerAdd = 43;
+	window['AscCH'].historyitem_Worksheet_SlicerDelete = 44;
 
 	window['AscCH'].historyitem_RowCol_Fontname = 1;
 	window['AscCH'].historyitem_RowCol_Fontsize = 2;
@@ -229,9 +231,6 @@ function (window, undefined) {
 	window['AscCH'].historyitem_Different_Odd_Even = 10;
 
 	window['AscCH'].historyitem_SortState_Add = 1;
-
-	window['AscCH'].historyitem_Slicer_Add = 1;
-	window['AscCH'].historyitem_Slicer_Delete = 1;
 
 function CHistory()
 {
