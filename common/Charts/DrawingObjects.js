@@ -1720,22 +1720,27 @@ GraphicOption.prototype.union = function(oGraphicOption) {
     DrawingBase.prototype.getBoundsFromTo = function() {
         return this.boundsFromTo;
     };
-    DrawingBase.prototype.onUpdate = function () {
+    DrawingBase.prototype.onUpdate = function (oRect) {
         var oDO = this.getDrawingObjects();
         if(!oDO) {
             return;
         }
-        var oRange, oRect = null;
+        var oRange, oClipRect = null;
         if(this.isUseInDocument()) {
-            var oB = this.getBoundsFromTo();
-            var c1 = oB.from.col;
-            var r1 = oB.from.row;
-            var c2 = oB.to.col;
-            var r2 = oB.to.row;
-            oRange = new Asc.Range(c1, r1, c2, r2, true);
-            oRect =  worksheet.rangeToRectAbs(oRange, 3);
+            if(!oRect) {
+                var oB = this.getBoundsFromTo();
+                var c1 = oB.from.col;
+                var r1 = oB.from.row;
+                var c2 = oB.to.col;
+                var r2 = oB.to.row;
+                oRange = new Asc.Range(c1, r1, c2, r2, true);
+                oClipRect =  worksheet.rangeToRectAbs(oRange, 3);
+            }
+            else {
+                oClipRect = oRect;
+            }
         }
-        oDO.showDrawingObjects(new AscFormat.GraphicOption(oRect));
+        oDO.showDrawingObjects(new AscFormat.GraphicOption(oClipRect));
     };
     DrawingBase.prototype.onSlicerUpdate = function (sName) {
         if(!this.graphicObject) {

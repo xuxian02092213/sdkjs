@@ -623,7 +623,7 @@
         this.removeAllButtonsTmpState();
         this.handleUpdateExtents();
         this.recalculate();
-        this.onUpdate();
+        this.onUpdate(this.bounds);
     };
     CSlicer.prototype.removeAllButtonsTmpState = function() {
         if(this.buttonsContainer) {
@@ -639,11 +639,7 @@
             if(!e.IsLocked) {
                 return this.onMouseUp(e, x, y);
             }
-            bRet =  this.eventListener.onMouseMove(e, x, y);
-
-            if(bRet) {
-                this.onUpdate();
-            }
+            this.eventListener.onMouseMove(e, x, y);
             return true;
         }
         if(this.header) {
@@ -651,9 +647,6 @@
         }
         if(this.buttonsContainer) {
             bRet = bRet || this.buttonsContainer.onMouseMove(e, x, y);
-        }
-        if(bRet) {
-            this.onUpdate();
         }
         if(this.hitInInnerArea(x, y)) {
             bRet = true;
@@ -674,9 +667,6 @@
             bRes = this.buttonsContainer.onMouseDown(e, x, y);
             bRet = bRet || bRes;
         }
-        if(bRet) {
-            this.onUpdate();
-        }
         return bRet;
     };
     CSlicer.prototype.onMouseUp = function (e, x, y) {
@@ -684,12 +674,9 @@
         if(this.eventListener) {
             bRet = this.eventListener.onMouseUp(e, x, y);
             this.setEventListener(null);
-            this.onUpdate();
+            this.onUpdate(this.bounds);
             this.onViewUpdate();
             return bRet;
-        }
-        if(bRet) {
-            this.onUpdate();
         }
         return bRet;
     };
@@ -734,7 +721,7 @@
             }
         }
         if(bRet) {
-            this.onUpdate();
+            this.onUpdate(this.bounds);
             var oController = this.getDrawingObjectsController();
             if(oController) {
                 this.deselect(oController);
@@ -1048,7 +1035,7 @@
         }
         if(nIndex === 0) {
             oButton.setInvertSelectTmpState();
-            this.slicer.onUpdate();
+            this.slicer.onUpdate(oButton.bounds);
         }
     };
     CHeader.prototype.isButtonDisabled = function (nIndex) {
@@ -1094,7 +1081,14 @@
     };
     CHeader.prototype.clipTextRect = function(graphics, transform, transformText, pageIndex) {
     };
-
+    CHeader.prototype.onUpdate = function(oBounds) {
+        var oClipBounds = oBounds;
+        if(!oClipBounds) {
+            oClipBounds = this.bounds;
+        }
+        this.slicer.onUpdate(oClipBounds);    
+    };
+    
     function CButtonBase(parent) {
         AscFormat.CShape.call(this);
         this.parent = parent;
@@ -1171,10 +1165,18 @@
         this.setTmpState(this.getOwnState() | STATE_FLAG_SELECTED);
     };
     CButtonBase.prototype.setHoverState = function() {
+        var bOld = this.isHovered;
         this.isHovered = true;
+        if(bOld !== this.isHovered) {
+            this.onUpdate(this.bounds);
+        }
     };
     CButtonBase.prototype.setNotHoverState = function() {
+        var bOld = this.isHovered;
         this.isHovered = false;
+        if(bOld !== this.isHovered) {
+            this.onUpdate(this.bounds);
+        }
     };
     CButtonBase.prototype.setInvertSelectTmpState = function() {
         var nOwnState = this.getOwnState();
@@ -1186,7 +1188,11 @@
         }
     };
     CButtonBase.prototype.setTmpState = function(state) {
+        var nOld = this.tmpState;
         this.tmpState = state;
+        if(nOld !== this.tmpState) {
+            this.onUpdate(this.bounds);
+        }
     };
     CButtonBase.prototype.removeTmpState = function() {
         this.setTmpState(null);
@@ -1326,6 +1332,9 @@
         this.parent.setEventListener(null);
         return false;
     };
+    CButtonBase.prototype.onUpdate = function(oBounds) {
+        this.parent.onUpdate(oBounds);
+    };
     
     function CButton(parent) {
         CButtonBase.call(this, parent);
@@ -1414,6 +1423,12 @@
         return bRet;
     };
     CInterfaceButton.prototype.draw = function(graphics) {
+        var oUR = graphics.updatedRect;
+        if(oUR && this.bounds) {
+            if(!oUR.isIntersectOther(this.bounds)) {
+                return;
+            }
+        }
         CButtonBase.prototype.draw.call(this, graphics);
         if(graphics.IsSlideBoundsCheckerType) {
             return;
@@ -1626,9 +1641,20 @@
         this.scrollTop = Math.max(0, Math.min(this.scroll.getScrollTop(), this.getScrolledRows()));
         this.checkScrollTop();
         if(this.scrollTop !== nOldScroll) {
-            this.slicer.onUpdate();
+            this.onUpdate(this.getBounds());
         }
-
+    };
+    CButtonsContainer.prototype.getBounds = function () {
+        var l, t, r, b;
+        var oTransform = this.slicer.transform;
+        l = oTransform.TransformPointX(this.x, this.y);
+        t = oTransform.TransformPointY(this.x, this.y);
+        r = oTransform.TransformPointX(this.x + this.extX, this.y + this.extY);
+        b = oTransform.TransformPointY(this.x + this.extX, this.y + this.extY);
+        return new AscFormat.CGraphicBounds(l, t, r, b);
+    };
+    CButtonsContainer.prototype.onUpdate = function (oBounds) {
+        this.slicer.onUpdate(oBounds);
     };
     CButtonsContainer.prototype.onMouseMove = function (e, x, y) {
         if(this.eventListener) {
@@ -1830,6 +1856,18 @@
         this.startScrollerPos = null;
         this.startScrollTop = null;
     }
+    CScroll.prototype.getBounds = function() {
+        var oTransform = this.getFullTransformMatrix(); 
+        var x = this.getPosX();
+        var y = this.getPosY();
+        var extX = this.getWidth();
+        var extY = this.getHeight();
+        var l = oTransform.TransformPointX(x, y);
+        var t = oTransform.TransformPointY(x, y);
+        var r = oTransform.TransformPointX(x + extX, y + extY);
+        var b = oTransform.TransformPointY(x + extX, y + extY);
+        return new AscFormat.CGraphicBounds(l, t, r, b);
+    };
     CScroll.prototype.getTxStyles = function () {
         return this.parent.getTxStyles();
     };
@@ -2036,13 +2074,13 @@
         var nState = this.getState();
         if(nState & STATE_FLAG_HOVERED) {
             if(!bHit) {
-                this.state = nState & (~STATE_FLAG_HOVERED);
+                this.setState(nState & (~STATE_FLAG_HOVERED));
                 bRet = true;
             }
         }
         else {
             if(bHit) {
-                this.state = nState | STATE_FLAG_HOVERED;
+                this.setState(nState | STATE_FLAG_HOVERED);
                 bRet = true;
             }
         }
@@ -2059,7 +2097,7 @@
                     //TODO: Use object for scroller
                     this.startScrollerPos = y;
                     this.startScrollTop = this.parent.scrollTop;
-                    this.state = this.state | STATE_FLAG_SELECTED;
+                    this.setState(this.state | STATE_FLAG_SELECTED);
                     this.parent.setEventListener(this);
                     this.parent.onScroll();
                     //-----------------------------
@@ -2156,11 +2194,13 @@
     CScroll.prototype.setTmpScroll = function (val) {
         this.tmpScrollerPos = Math.max(0, Math.min(this.getMaxRelScrollerY(), val));
         this.parent.onScroll();
+        this.onUpdate(this.getBounds());
     };
     CScroll.prototype.clearTmpScroll = function () {
         if(this.tmpScrollerPos !== null) {
             this.tmpScrollerPos = null;
             this.parent.onScroll();
+            this.onUpdate(this.getBounds());
         }
     };
     CScroll.prototype.endScroll = function () {
@@ -2169,7 +2209,7 @@
             this.timerId = null;
         }
         this.clearTmpScroll();
-        this.state = this.state & (~STATE_FLAG_SELECTED);
+        this.setState(this.state & (~STATE_FLAG_SELECTED));
         this.startScrollerPos = null;
         this.startScrollTop = null;
     };
@@ -2202,6 +2242,16 @@
     };
     CScroll.prototype.getIcon = function(nIndex, nType) {
         return null;
+    };
+    CScroll.prototype.onUpdate = function(oBounds) {
+        this.parent.onUpdate(oBounds);
+    };
+    CScroll.prototype.setState = function(nState) {
+        var nOld = this.state;
+        this.state = nState;
+        if(this.state !== nOld) {
+            this.onUpdate(this.getBounds());
+        }
     };
 
     window["AscFormat"] = window["AscFormat"] || {};

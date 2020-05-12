@@ -1931,13 +1931,13 @@
         return false;
     };
 
-    CGraphicObjectBase.prototype.onUpdate = function () {
+    CGraphicObjectBase.prototype.onUpdate = function (oRect) {
         if(this.drawingBase) {
-            this.drawingBase.onUpdate();
+            this.drawingBase.onUpdate(oRect);
         }
         else {
             if(this.group) {
-                this.group.onUpdate()
+                this.group.onUpdate(oRect)
             }
         }
     };
