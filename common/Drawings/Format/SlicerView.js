@@ -1014,14 +1014,14 @@
             return this.eventListener.onMouseMove(e, x, y);
         }
         var bRet = false;
-        bRet = bRet || this.buttons[0].onMouseMove(e, x, y);
-        bRet = bRet || this.buttons[1].onMouseMove(e, x, y);
+        bRet |= this.buttons[0].onMouseMove(e, x, y);
+        bRet |= this.buttons[1].onMouseMove(e, x, y);
         return bRet;
     };
     CHeader.prototype.onMouseDown = function (e, x, y) {
         var bRet = false;
-        bRet = bRet || this.buttons[0].onMouseDown(e, x, y);
-        bRet = bRet || this.buttons[1].onMouseDown(e, x, y);
+        bRet |= this.buttons[0].onMouseDown(e, x, y);
+        bRet |= this.buttons[1].onMouseDown(e, x, y);
         return bRet;
     };  
     CHeader.prototype.getCursorType = function (e, x, y) {
@@ -1042,8 +1042,8 @@
             this.eventListener = null;
             return bRet;
         }
-        bRet = bRet || this.buttons[0].onMouseUp(e, x, y);
-        bRet = bRet || this.buttons[1].onMouseUp(e, x, y);
+        bRet |= this.buttons[0].onMouseUp(e, x, y);
+        bRet |= this.buttons[1].onMouseUp(e, x, y);
         this.setEventListener(null);
         return bRet;
     };
@@ -1692,6 +1692,12 @@
         this.scrollTop = Math.max(0, Math.min(this.scroll.getScrollTop(), this.getScrolledRows()));
         this.checkScrollTop();
         if(this.scrollTop !== nOldScroll) {
+            for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
+                var oButton = this.buttons[nButton];
+                oButton.recalculateTransform();
+                oButton.recalculateTransformText();
+                oButton.recalculateBounds();
+            }
             this.onUpdate(this.getBounds());
         }
     };
@@ -1765,9 +1771,9 @@
             }
             else {
                 for(nButton = 0; nButton < this.buttons.length; ++nButton) {
-                    bRet = bRet || this.buttons[nButton].onMouseMove(e, x, y);
+                    bRet |= this.buttons[nButton].onMouseMove(e, x, y);
                 }
-                bRet = bRet || this.scroll.onMouseMove(e, x, y);
+                bRet |= this.scroll.onMouseMove(e, x, y);
             }
         }
         return bRet;
@@ -1808,12 +1814,15 @@
         }
         if(!this.slicer.isEventListener(this)) {
             for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
-                bRet = bRet || this.buttons[nButton].onMouseUp(e, x, y);
+                bRet |= this.buttons[nButton].onMouseUp(e, x, y);
             }
-            bRet = bRet || this.scroll.onMouseUp(e, x, y);
+            bRet |= this.scroll.onMouseUp(e, x, y);
             this.setEventListener(null);
         }
         return bRet;
+    };
+    CButtonsContainer.prototype.onWheel = function (deltaX, deltaY) {
+        return this.scroll.onWheel(deltaX, deltaY);
     };
     CButtonsContainer.prototype.setEventListener = function (child) {
         this.eventListener = child;
@@ -1838,9 +1847,6 @@
     };
     CButtonsContainer.prototype.getScrollOffsetY = function () {
         return -(this.getRowStart(this.scrollTop) - this.y);
-    };
-    CButtonsContainer.prototype.onWheel = function (deltaX, deltaY) {
-        return this.scroll.onWheel(deltaX, deltaY);
     };
     CButtonsContainer.prototype.selectAllButtons = function () {
         for(var nButton = 0; nButton < this.buttons.length; ++nButton) {
@@ -2123,8 +2129,8 @@
             this.setTmpScroll(dy + this.internalGetRelScrollerY(this.startScrollTop));
             return true;
         }
-        bRet = bRet || this.buttons[0].onMouseMove(e, x, y);
-        bRet = bRet || this.buttons[1].onMouseMove(e, x, y);
+        bRet |= this.buttons[0].onMouseMove(e, x, y);
+        bRet |= this.buttons[1].onMouseMove(e, x, y);
 
         //TODO: Use object for scroller
         var bHit = this.hitInScroller(x, y);
@@ -2147,8 +2153,8 @@
     CScroll.prototype.onMouseDown = function (e, x, y) {
         var bRet = false;
         if(this.hit(x, y)) {
-            bRet = bRet || this.buttons[0].onMouseDown(e, x, y);
-            bRet = bRet || this.buttons[1].onMouseDown(e, x, y);
+            bRet |= this.buttons[0].onMouseDown(e, x, y);
+            bRet |= this.buttons[1].onMouseDown(e, x, y);
             if(!bRet) {
                 if(this.hitInScroller(x, y)) {
                     //TODO: Use object for scroller
@@ -2183,8 +2189,8 @@
             this.eventListener = null;
             return bRet;
         }
-        bRet = bRet || this.buttons[0].onMouseUp(e, x, y);
-        bRet = bRet || this.buttons[1].onMouseUp(e, x, y);
+        bRet |= this.buttons[0].onMouseUp(e, x, y);
+        bRet |= this.buttons[1].onMouseUp(e, x, y);
         this.setEventListener(null);
         return bRet;
     };

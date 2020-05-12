@@ -1758,6 +1758,7 @@
                 deltaY = this.smoothWheelCorrector.get_DeltaY(deltaY);
 			}
 			if(this.handlers.trigger("graphicObjectMouseWheel", deltaX, deltaY)) {
+				self._onMouseMove(event);
 				AscCommon.stopEvent(event);
 				return true;
 			}
