@@ -1216,6 +1216,12 @@
 							//проверяем, попадает хотя бы одна ячейка из диапазона в область фильтра
 							if (range.isIntersect(tableRange)) {
 								this._setColorStyleTable(tableRange, currentFilter);
+
+								//добавил сюда обновление срезав первую очередь по причине того, что мы
+								//не можем обновить срез после table->apply->undo(ракрытие/скрытие строк при undo делается
+								//позже чем происходит добавления в модель фильтра)
+								//TODO стоит пересмотреть - возможно стоит обновлять только для случая изменения строк
+								this.updateSlicer(currentFilter.DisplayName);
 							}
 						}
 					}
@@ -1285,6 +1291,7 @@
 				if (worksheet.TableParts) {
 					for (var i = worksheet.TableParts.length - 1; i >= 0; i--) {
 						var tablePart = worksheet.TableParts[i];
+						this.deleteSlicer(tablePart.DisplayName);
 						changeFilter(tablePart, true, i);
 					}
 				}
@@ -4295,6 +4302,16 @@
 				if (_slicers) {
 					for (var i = 0; i < _slicers.length; i++) {
 						worksheet.onSlicerUpdate(_slicers[i].name);
+					}
+				}
+			},
+
+			deleteSlicer: function(tableName) {
+				var worksheet = this.worksheet;
+				var _slicers = worksheet.getSlicersByTableName(tableName);
+				if (_slicers) {
+					for (var i = 0; i < _slicers.length; i++) {
+						worksheet.onSlicerDelete(_slicers[i].name);
 					}
 				}
 			},
