@@ -37,13 +37,13 @@
     AscDFH.drawingsChangesMap[AscDFH.historyitem_SlicerViewName] = function(oClass, value){oClass.name = value;};
     AscDFH.changesFactory[AscDFH.historyitem_SlicerViewName] = window['AscDFH'].CChangesDrawingsString;
 
-    var LEFT_PADDING = 3;
-    var RIGHT_PADDING = 3;
-    var BOTTOM_PADDING = 3;
+    var LEFT_PADDING = 2.54;
+    var RIGHT_PADDING = LEFT_PADDING;
+    var BOTTOM_PADDING = LEFT_PADDING;
     var TOP_PADDING = 2;
-    var SPACE_BETWEEN = 1.5;
+    var SPACE_BETWEEN = LEFT_PADDING / 2;
     var HEADER_BUTTON_WIDTH = RIGHT_PADDING * 175 / 73;
-    var HEADER_TOP_PADDING = RIGHT_PADDING;
+    var HEADER_TOP_PADDING = LEFT_PADDING / 4;
     var HEADER_BOTTOM_PADDING = HEADER_TOP_PADDING;
     var HEADER_LEFT_PADDING = LEFT_PADDING;
     var HEADER_RIGHT_PADDING = 2*RIGHT_PADDING + 2*HEADER_BUTTON_WIDTH;
@@ -1716,10 +1716,10 @@
     CButtonsContainer.prototype.getBounds = function () {
         var l, t, r, b;
         var oTransform = this.slicer.transform;
-        l = oTransform.TransformPointX(this.x, this.y);
-        t = oTransform.TransformPointY(this.x, this.y);
-        r = oTransform.TransformPointX(this.x + this.extX, this.y + this.extY);
-        b = oTransform.TransformPointY(this.x + this.extX, this.y + this.extY);
+        l = oTransform.TransformPointX(this.x, this.y) - 0.5;
+        t = oTransform.TransformPointY(this.x, this.y) - 0.5;
+        r = oTransform.TransformPointX(this.x + this.extX, this.y + this.extY) + 0.5;
+        b = oTransform.TransformPointY(this.x + this.extX, this.y + this.extY) + 0.5;
         return new AscFormat.CGraphicBounds(l, t, r, b);
     };
     CButtonsContainer.prototype.onUpdate = function (oBounds) {
