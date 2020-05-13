@@ -7871,15 +7871,8 @@
 			History.StartTransaction();
 
 			for (var i = 0; i < slicers.length; i++) {
-				if (slicers[i].caption === oldVal) {
-					slicers[i].setCaption(newVal);
-				}
-				slicers[i].cacheDefinition.setSourceName(newVal);
-				var _tableCache = slicers[i].cacheDefinition.getTableSlicerCache();
-				_tableCache.setColumn(newVal);
+				slicers[i].setTableColName(oldVal, newVal);
 			}
-
-			//TODO передать информацию во view о смене caption
 
 			History.EndTransaction();
 		}

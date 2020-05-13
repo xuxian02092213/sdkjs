@@ -232,6 +232,10 @@ function (window, undefined) {
 
 	window['AscCH'].historyitem_SortState_Add = 1;
 
+	window['AscCH'].historyitem_Slicer_SetCaption = 1;
+	window['AscCH'].historyitem_Slicer_SetCacheSourceName = 2;
+	window['AscCH'].historyitem_Slicer_SetTableColName = 3;
+
 function CHistory()
 {
 	this.workbook = null;

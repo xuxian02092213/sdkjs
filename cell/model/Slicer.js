@@ -472,8 +472,10 @@
 		return !!this.getTableSlicerCache();
 	};
 	CT_slicer.prototype.setCaption = function (val) {
-		//TODO history
+		var oldVal = this.caption;
 		this.caption = val;
+		History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCaption,
+			null, null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val), true);
 	};
 	CT_slicer.prototype.getSlicerCache = function () {
 		return this.cacheDefinition;
@@ -509,6 +511,44 @@
 		}
 
 		return name;
+	};
+
+	CT_slicer.prototype.setTableColName = function (oldVal, newVal) {
+		History.Create_NewPoint();
+		History.StartTransaction();
+
+		//TODO передать информацию во view о смене caption
+		if (this.caption === oldVal) {
+			this.setCaption(newVal);
+		}
+		this.setSourceName(newVal);
+		this.setTableCacheColName(newVal);
+
+
+		History.EndTransaction();
+	};
+
+	CT_slicer.prototype.setSourceName = function (val) {
+		if (this.cacheDefinition) {
+			var oldVal = this.cacheDefinition.sourceName;
+			this.cacheDefinition.setSourceName(val);
+			History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCacheSourceName,
+				null, null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val), true);
+		}
+	};
+
+	CT_slicer.prototype.setTableCacheColName = function (val) {
+		if (!this.cacheDefinition) {
+			return;
+		}
+
+		var _tableCache = this.cacheDefinition.getTableSlicerCache();
+		if (_tableCache) {
+			var oldVal = _tableCache.column;
+			_tableCache.setColName(val);
+			History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetTableColName,
+				null, null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val), true);
+		}
 	};
 
 
@@ -705,7 +745,6 @@
 	};
 
 	CT_slicerCacheDefinition.prototype.setSourceName = function (val) {
-		//TODO history
 		this.sourceName = val;
 	};
 
@@ -1413,6 +1452,10 @@
 		//TODO history
 		this.tableId = val;
 	};
+	CT_tableSlicerCache.prototype.setColName = function (val) {
+		//TODO history
+		this.column = val;
+	};
 
 	function CT_tabularSlicerCache() {
 		this.items = [];//TabularSlicerCacheItem
@@ -1488,7 +1531,10 @@
 		s.Seek2(_end_pos);
 	};
 	CT_tabularSlicerCache.prototype.setColumn = function (val) {
+		var oldVal = this.column;
 		this.column = val;
+		History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCacheSourceName,
+			null, null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, this.column), true);
 	};
 
 	function CT_slicerCacheOlapLevelName() {

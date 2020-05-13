@@ -1944,13 +1944,14 @@ function (window, undefined) {
 		}
 	};
 
-	function UndoRedoData_Slicer(from, to) {
+	function UndoRedoData_Slicer(name, from, to) {
+		this.name = name;
 		this.from = from;
 		this.to = to;
 	}
 
 	UndoRedoData_Slicer.prototype.Properties = {
-		from: 0, to: 1
+		name: 0, from: 1, to: 2
 	};
 	UndoRedoData_Slicer.prototype.getType = function () {
 		return UndoRedoDataTypes.SlicerData;
@@ -1960,6 +1961,9 @@ function (window, undefined) {
 	};
 	UndoRedoData_Slicer.prototype.getProperty = function (nType) {
 		switch (nType) {
+			case this.Properties.name:
+				return this.name;
+				break;
 			case this.Properties.from:
 				return this.from;
 				break;
@@ -1971,6 +1975,9 @@ function (window, undefined) {
 	};
 	UndoRedoData_Slicer.prototype.setProperty = function (nType, value) {
 		switch (nType) {
+			case this.Properties.name:
+				this.name = value;
+				break;
 			case this.Properties.from:
 				this.from = value;
 				break;
@@ -1979,7 +1986,6 @@ function (window, undefined) {
 				break;
 		}
 	};
-
 
 	//для применения изменений
 	var UndoRedoClassTypes = new function () {
@@ -3296,15 +3302,24 @@ function (window, undefined) {
 			return;
 		}
 
+		var slicer;
 		switch (Type) {
-			/*case AscCH.historyitem_Slicer_Add: {
-
+			case AscCH.historyitem_Slicer_SetCaption: {
+				slicer = oModel.getSlicerByName(Data.name);
+				slicer.setCaption(bUndo ? Data.from : Data.to);
 				break;
 			}
-			case AscCH.historyitem_Slicer_Delete: {
-
+			case AscCH.historyitem_Slicer_SetCacheSourceName: {
+				slicer = oModel.getSlicerByName(Data.name);
+				slicer.setSourceName(bUndo ? Data.from : Data.to);
 				break;
-			}*/
+			}
+			case AscCH.historyitem_Slicer_SetTableColName: {
+				slicer = oModel.getSlicerByName(Data.name);
+				slicer.setTableCacheColName(bUndo ? Data.from : Data.to);
+				break;
+			}
+
 		}
 	};
 
