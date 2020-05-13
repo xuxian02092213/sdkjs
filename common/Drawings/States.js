@@ -384,6 +384,9 @@ NullState.prototype =
                     _x = -1000;
                 }
             }
+            if(oDrawing.hit(x, y)) {
+                _x = -1000;
+            }
         }
     },
 
