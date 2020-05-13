@@ -475,7 +475,7 @@
 		var oldVal = this.caption;
 		this.caption = val;
 		History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCaption,
-			null, null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val), true);
+			this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val), true);
 	};
 	CT_slicer.prototype.getSlicerCache = function () {
 		return this.cacheDefinition;
@@ -533,7 +533,7 @@
 			var oldVal = this.cacheDefinition.sourceName;
 			this.cacheDefinition.setSourceName(val);
 			History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCacheSourceName,
-				null, null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val), true);
+				this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val), true);
 		}
 	};
 
@@ -547,7 +547,7 @@
 			var oldVal = _tableCache.column;
 			_tableCache.setColName(val);
 			History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetTableColName,
-				null, null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val), true);
+				this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val), true);
 		}
 	};
 

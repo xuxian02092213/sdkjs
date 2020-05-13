@@ -3306,17 +3306,23 @@ function (window, undefined) {
 		switch (Type) {
 			case AscCH.historyitem_Slicer_SetCaption: {
 				slicer = oModel.getSlicerByName(Data.name);
-				slicer.setCaption(bUndo ? Data.from : Data.to);
+				if (slicer && slicer.obj) {
+					slicer.obj.setCaption(bUndo ? Data.from : Data.to);
+				}
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetCacheSourceName: {
 				slicer = oModel.getSlicerByName(Data.name);
-				slicer.setSourceName(bUndo ? Data.from : Data.to);
+				if (slicer && slicer.obj) {
+					slicer.obj.setSourceName(bUndo ? Data.from : Data.to);
+				}
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetTableColName: {
 				slicer = oModel.getSlicerByName(Data.name);
-				slicer.setTableCacheColName(bUndo ? Data.from : Data.to);
+				if (slicer && slicer.obj) {
+					slicer.obj.setTableCacheColName(bUndo ? Data.from : Data.to);
+				}
 				break;
 			}
 

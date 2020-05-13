@@ -7853,7 +7853,7 @@
 		for (var i = 0; i < this.aSlicers.length; i++) {
 			//пока сделал только для форматированных таблиц
 			var tableSlicerCache = this.aSlicers[i].getTableSlicerCache();
-			if (tableSlicerCache && tableSlicerCache.tableId === val && tableSlicerCache.column === colName) {
+			if (tableSlicerCache && tableSlicerCache.tableId === tableName && tableSlicerCache.column === colName) {
 				res.push(this.aSlicers[i]);
 			}
 		}
@@ -7861,7 +7861,7 @@
 	};
 
 	Worksheet.prototype.changeTableColName = function (tableName, oldVal, newVal) {
-		if (this.worksheet.workbook.bUndoChanges || this.worksheet.workbook.bRedoChanges) {
+		if (this.workbook.bUndoChanges || this.workbook.bRedoChanges) {
 			return;
 		}
 
