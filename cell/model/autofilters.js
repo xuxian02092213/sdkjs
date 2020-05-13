@@ -2848,10 +2848,9 @@
 					range = new Asc.Range(props.nCol, props.nRow, props.nCol, props.nRow);
 				}
 
+				var isStartLockRecal = false;
 				if (worksheet.TableParts) {
 					//TODO проверить, возможно всегда стоит оборачивать в r1c1mode = false
-					worksheet.workbook.dependencyFormulas.buildDependency();
-					worksheet.workbook.dependencyFormulas.lockRecal();
 					
 					for (var i = 0; i < worksheet.TableParts.length; i++) {
 						var filter = worksheet.TableParts[i];
@@ -2870,6 +2869,12 @@
 									continue;
 								}
 
+								if (!isStartLockRecal) {
+									worksheet.workbook.dependencyFormulas.buildDependency();
+									worksheet.workbook.dependencyFormulas.lockRecal();
+									isStartLockRecal = true;
+								}
+
 								cell = worksheet.getCell3(ref.r1, j);
 								val = props ? props.val : cell.getValueWithFormat();
 
@@ -2886,7 +2891,7 @@
 									}
 									filter.TableColumns[j - tableRange.c1].Name = generateName;
 									newVal = generateName;
-								} else if (val != "" && intersection.c1 <= j && intersection.c2 >= j) {
+								} else if (val !== "" && intersection.c1 <= j && intersection.c2 >= j) {
 									filter.TableColumns[j - tableRange.c1].Name = val;
 									if (!bUndo) {
 										//если пытаемся вбить формулу в заголовок - оставляем только результат
@@ -2894,14 +2899,10 @@
 										//считаю, что результат формулы добавлять более логично
 										var valueData = new AscCommonExcel.UndoRedoData_CellValueData(null, new AscCommonExcel.CCellValue({text: cell.getValueWithFormat()}));
 										cell.setValueData(valueData);
-										/*if(cell.isFormula()) {
-										 var valueData = new AscCommonExcel.UndoRedoData_CellValueData(null, new AscCommonExcel.CCellValue({text: cell.getValueWithFormat()}));
-										 cell.setValueData(valueData);
-										 }*/
 										cell.setType(CellValueType.String);
 									}
 									newVal = val;
-								} else if (val == "")//если пустая изменяем генерируем имя и добавляем его в TableColumns
+								} else if (val === "")//если пустая изменяем генерируем имя и добавляем его в TableColumns
 								{
 									filter.TableColumns[j - tableRange.c1].Name = "";
 									generateName = this._generateColumnName(filter.TableColumns);
@@ -2923,12 +2924,15 @@
 							worksheet.handlers.trigger("changeColumnTablePart", filter.DisplayName);
 							for (var k = 0; k < toHistory.length; ++k) {
 								this._addHistoryObj.apply(this, toHistory[k]);
+								worksheet.changeTableColName(filter.DisplayName, toHistory[k][0].val, toHistory[k][2].val);
 							}
 						} else {
 							this._changeTotalsRowData(filter, range, props);
 						}
 					}
-					worksheet.workbook.dependencyFormulas.unlockRecal();
+					if (isStartLockRecal) {
+						worksheet.workbook.dependencyFormulas.unlockRecal();
+					}
 				}
 			},
 

@@ -1487,6 +1487,10 @@
 		}
 		s.Seek2(_end_pos);
 	};
+	CT_tabularSlicerCache.prototype.setColumn = function (val) {
+		this.column = val;
+	};
+
 	function CT_slicerCacheOlapLevelName() {
 		this.uniqueName = null;
 		this.count = null;

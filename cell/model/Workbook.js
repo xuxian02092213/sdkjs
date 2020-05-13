@@ -7848,23 +7848,40 @@
 		return res.length ? res : null;
 	};
 
-	Worksheet.prototype.changeSlicerAfterSetTableColName = function (tableName, oldVal, newVal) {
-		//TODO history
-		var slicers = this.getSlicersByTableName(tableName);
+	Worksheet.prototype.getSlicersByTableColName = function (tableName, colName) {
+		var res = [];
+		for (var i = 0; i < this.aSlicers.length; i++) {
+			//пока сделал только для форматированных таблиц
+			var tableSlicerCache = this.aSlicers[i].getTableSlicerCache();
+			if (tableSlicerCache && tableSlicerCache.tableId === val && tableSlicerCache.column === colName) {
+				res.push(this.aSlicers[i]);
+			}
+		}
+		return res.length ? res : null;
+	};
+
+	Worksheet.prototype.changeTableColName = function (tableName, oldVal, newVal) {
+		if (this.worksheet.workbook.bUndoChanges || this.worksheet.workbook.bRedoChanges) {
+			return;
+		}
+
+		var slicers = this.getSlicersByTableColName(tableName, oldVal);
 		if (slicers) {
+			History.Create_NewPoint();
+			History.StartTransaction();
+
 			for (var i = 0; i < slicers.length; i++) {
 				if (slicers[i].caption === oldVal) {
 					slicers[i].setCaption(newVal);
-					slicers[i].cacheDefinition.setSourceName(newVal);
-					//внутри tableSlicerCache ещё прописан id колонки
-					//в нашем редакторе id колонки генерируется на сохранение. нужно их будет связывать
-					//я пока ориентируюсь на имя родителя -> sourceName
-					//или необходимо вводить id колонок и таблиц -> при совместном редактировнии будут проблемы
-					//id форматом допускается только числовые, поэтому m_sUserId не получится добавить
-					//если только далее при сохранении перегенерировать...
-					//TODO если не вводить id, тогда вместо него в поле column записывать имя колонки
 				}
+				slicers[i].cacheDefinition.setSourceName(newVal);
+				var _tableCache = slicers[i].cacheDefinition.getTableSlicerCache();
+				_tableCache.setColumn(newVal);
 			}
+
+			//TODO передать информацию во view о смене caption
+
+			History.EndTransaction();
 		}
 	};
 
