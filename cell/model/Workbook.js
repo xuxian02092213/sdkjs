@@ -7813,6 +7813,20 @@
 		return res.length ? res : null;
 	};
 
+	Worksheet.prototype.getSlicersByCacheName = function (name) {
+		var res = [];
+
+		for (var i = 0; i < this.aSlicers.length; i++) {
+			var cache = this.aSlicers[i].getSlicerCache();
+			if (cache && name === cache.name) {
+				res.push(this.aSlicers[i]);
+			}
+		}
+
+		return res.length ? res : null;
+	};
+
+
 	Worksheet.prototype.getSlicerByName = function (name) {
 		var res = [];
 
@@ -7934,6 +7948,24 @@
 		}
 
 		History.EndTransaction();
+	};
+
+	Worksheet.prototype.changeSlicerCacheName = function (oldVal, newVal) {
+		if (this.workbook.bUndoChanges || this.workbook.bRedoChanges) {
+			return;
+		}
+
+		var slicers = this.getSlicersByCacheName(oldVal);
+		if (slicers) {
+			History.Create_NewPoint();
+			History.StartTransaction();
+
+			for (var i = 0; i < slicers.length; i++) {
+				slicers[i].setCacheName(newVal);
+			}
+
+			History.EndTransaction();
+		}
 	};
 
 //-------------------------------------------------------------------------------------------------

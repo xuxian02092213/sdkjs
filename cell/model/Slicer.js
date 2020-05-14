@@ -565,6 +565,19 @@
 		}
 	};
 
+	CT_slicer.prototype.setCacheName = function (val) {
+		if (!this.cacheDefinition) {
+			return;
+		}
+
+
+		var oldVal = this.cacheDefinition.name;
+		this.cacheDefinition.setName(val);
+		History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCacheName,
+			this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val), true);
+
+	};
+
 
 	function CT_slicerCacheDefinition(ws) {
 		this.pivotTables = [];//SlicerCachePivotTable
@@ -779,6 +792,10 @@
 			}
 		}
 		return res;
+	};
+
+	CT_slicerCacheDefinition.prototype.setName = function (val){
+		this.name = val;
 	};
 
 
