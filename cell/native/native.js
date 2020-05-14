@@ -2904,14 +2904,12 @@ function asc_WriteCCellInfo(c, s) {
         s['WriteLong'](c.asc_getVertAlign());
     }
     
-    if (true) {
-        s['WriteByte'](5);
-        s['WriteBool'](c.asc_getMerge());
-        s['WriteBool'](c.asc_getShrinkToFit());
-        s['WriteBool'](c.asc_getWrapText());
-        s['WriteLong'](c.asc_getSelectionType());
-        s['WriteBool'](c.asc_getLockText());
-    }
+    s['WriteByte'](5);
+    s['WriteBool'](c.asc_getMerge());
+    s['WriteBool'](c.asc_getShrinkToFit());
+    s['WriteBool'](c.asc_getWrapText());
+    s['WriteLong'](c.asc_getSelectionType());
+    s['WriteBool'](c.asc_getLockText());
     
     asc_WriteCFont(6, c.asc_getFont(), s);
     asc_menu_WriteColor(8, c.asc_getFillColor(), s);
@@ -3192,7 +3190,7 @@ function OfflineEditor () {
                 this.frozenPlaces[i].setTransform(shapeCtx, shapeOverlayCtx, autoShapeTrack);
                 
                 // Clip
-                this.frozenPlaces[i].clip(shapeOverlayCtx);
+                this.frozenPlaces[i].clip(shapeOverlayCtx, this.worksheet.rangeToRectRel(this.frozenPlaces[i].range, 0));
                 
                 if (null == drawingDocument.m_oDocumentRenderer) {
                     if (drawingDocument.m_bIsSelection) {
