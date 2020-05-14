@@ -41,35 +41,6 @@
 	var c_oAscBorderStyles = AscCommon.c_oAscBorderStyles;
 
 	/** @constructor */
-	function asc_CCellFlag() {
-		this.merge = Asc.c_oAscMergeOptions.None;
-		this.shrinkToFit = false;
-		this.wrapText = false;
-		this.selectionType = null;
-		this.lockText = false;
-		this.multiselect = false;
-	}
-
-	asc_CCellFlag.prototype.asc_getMerge = function () {
-		return this.merge;
-	};
-	asc_CCellFlag.prototype.asc_getShrinkToFit = function () {
-		return this.shrinkToFit;
-	};
-	asc_CCellFlag.prototype.asc_getWrapText = function () {
-		return this.wrapText;
-	};
-	asc_CCellFlag.prototype.asc_getSelectionType = function () {
-		return this.selectionType;
-	};
-	asc_CCellFlag.prototype.asc_getMultiselect = function () {
-		return this.multiselect;
-	};
-	asc_CCellFlag.prototype.asc_getLockText = function () {
-		return this.lockText;
-	};
-
-	/** @constructor */
 	function CFont() {
 		this.name = null;
 		this.size = null;
@@ -283,12 +254,15 @@
 		this.xfs = null;
 
 		this.text = "";
-		this.flags = null;
+
+		this.merge = Asc.c_oAscMergeOptions.None;
+		this.selectionType = null;
+		this.multiselect = false;
+		this.lockText = false;
+
 		this.font = new CFont();
-		this.fill = null;
 		this.border = null;
 		this.innertext = null;
-		this.numFormat = null;
 		this.hyperlink = null;
 		this.comment = null;
 		this.isLocked = false;
@@ -309,6 +283,18 @@
 	asc_CCellInfo.prototype.asc_getText = function () {
 		return this.text;
 	};
+	asc_CCellInfo.prototype.asc_getMerge = function () {
+		return this.merge;
+	};
+	asc_CCellInfo.prototype.asc_getSelectionType = function () {
+		return this.selectionType;
+	};
+	asc_CCellInfo.prototype.asc_getMultiselect = function () {
+		return this.multiselect;
+	};
+	asc_CCellInfo.prototype.asc_getLockText = function () {
+		return this.lockText;
+	};
 	asc_CCellInfo.prototype.asc_getHorAlign = function () {
 		return this.xfs.getAlign2().getAlignHorizontal();
 	};
@@ -318,17 +304,20 @@
     asc_CCellInfo.prototype.asc_getAngle = function () {
         return this.xfs.getAlign2().getAngle();
     };
-	asc_CCellInfo.prototype.asc_getFlags = function () {
-		return this.flags;
+	asc_CCellInfo.prototype.asc_getWrapText = function () {
+		return this.xfs.getAlign2().getWrap();
+	};
+	asc_CCellInfo.prototype.asc_getShrinkToFit = function () {
+		return this.xfs.getAlign2().getShrinkToFit();
 	};
 	asc_CCellInfo.prototype.asc_getFont = function () {
 		return this.font;
 	};
 	asc_CCellInfo.prototype.asc_getFillColor = function () {
-		return this.fill && Asc.colorObjToAscColor(this.fill.bg());
+		return Asc.colorObjToAscColor(this.asc_getFill().bg());
 	};
 	asc_CCellInfo.prototype.asc_getFill = function () {
-		return this.fill;
+		return this.xfs.getFill2().clone();
 	};
 	asc_CCellInfo.prototype.asc_getBorders = function () {
 		return this.border;
@@ -337,7 +326,10 @@
 		return this.innertext;
 	};
 	asc_CCellInfo.prototype.asc_getNumFormat = function () {
-		return this.numFormat;
+		return this.xfs.getNum2().getNumFormatStr();
+	};
+	asc_CCellInfo.prototype.asc_getNumFormatInfo = function () {
+		return this.numFormatInfo;
 	};
 	asc_CCellInfo.prototype.asc_getHyperlink = function () {
 		return this.hyperlink;
@@ -359,9 +351,6 @@
 	};
 	asc_CCellInfo.prototype.asc_getStyleName = function () {
 		return this.styleName;
-	};
-	asc_CCellInfo.prototype.asc_getNumFormatInfo = function () {
-		return this.numFormatInfo;
 	};
 	asc_CCellInfo.prototype.asc_getAutoFilterInfo = function () {
 		return this.autoFilterInfo;
@@ -444,15 +433,6 @@
 	window['Asc'] = window['Asc'] || {};
 	window['AscCommonExcel'] = window['AscCommonExcel'] || {};
 
-	window["AscCommonExcel"].asc_CCellFlag = asc_CCellFlag;
-	prot = asc_CCellFlag.prototype;
-	prot["asc_getMerge"] = prot.asc_getMerge;
-	prot["asc_getShrinkToFit"] = prot.asc_getShrinkToFit;
-	prot["asc_getWrapText"] = prot.asc_getWrapText;
-	prot["asc_getSelectionType"] = prot.asc_getSelectionType;
-	prot["asc_getMultiselect"] = prot.asc_getMultiselect;
-	prot["asc_getLockText"] = prot.asc_getLockText;
-
 	window["AscCommonExcel"].CFont = CFont;
 	prot = CFont.prototype;
 	prot["asc_getName"] = prot.asc_getName;
@@ -510,17 +490,22 @@
 
 	window["AscCommonExcel"].asc_CCellInfo = asc_CCellInfo;
 	prot = asc_CCellInfo.prototype;
-	prot["asc_getName"] = prot.asc_getName;
 	prot["asc_getText"] = prot.asc_getText;
+	prot["asc_getMerge"] = prot.asc_getMerge;
+	prot["asc_getSelectionType"] = prot.asc_getSelectionType;
+	prot["asc_getMultiselect"] = prot.asc_getMultiselect;
+	prot["asc_getLockText"] = prot.asc_getLockText;
 	prot["asc_getHorAlign"] = prot.asc_getHorAlign;
 	prot["asc_getVertAlign"] = prot.asc_getVertAlign;
-	prot["asc_getFlags"] = prot.asc_getFlags;
+	prot["asc_getWrapText"] = prot.asc_getWrapText;
+	prot["asc_getShrinkToFit"] = prot.asc_getShrinkToFit;
 	prot["asc_getFont"] = prot.asc_getFont;
 	prot["asc_getFillColor"] = prot.asc_getFillColor;
 	prot["asc_getFill"] = prot.asc_getFill;
 	prot["asc_getBorders"] = prot.asc_getBorders;
 	prot["asc_getInnerText"] = prot.asc_getInnerText;
 	prot["asc_getNumFormat"] = prot.asc_getNumFormat;
+	prot["asc_getNumFormatInfo"] = prot.asc_getNumFormatInfo;
 	prot["asc_getHyperlink"] = prot.asc_getHyperlink;
 	prot["asc_getComments"] = prot.asc_getComments;
 	prot["asc_getLocked"] = prot.asc_getLocked;
@@ -528,7 +513,6 @@
 	prot["asc_getLockedSparkline"] = prot.asc_getLockedSparkline;
 	prot["asc_getLockedPivotTable"] = prot.asc_getLockedPivotTable;
 	prot["asc_getStyleName"] = prot.asc_getStyleName;
-	prot["asc_getNumFormatInfo"] = prot.asc_getNumFormatInfo;
 	prot["asc_getAngle"] = prot.asc_getAngle;
 	prot["asc_getAutoFilterInfo"] = prot.asc_getAutoFilterInfo;
 	prot["asc_getFormatTableInfo"] = prot.asc_getFormatTableInfo;

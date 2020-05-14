@@ -2904,13 +2904,13 @@ function asc_WriteCCellInfo(c, s) {
         s['WriteLong'](c.asc_getVertAlign());
     }
     
-    if (null !== c.asc_getFlags()) {
+    if (true) {
         s['WriteByte'](5);
-        s['WriteBool'](c.asc_getFlags().asc_getMerge());
-        s['WriteBool'](c.asc_getFlags().asc_getShrinkToFit());
-        s['WriteBool'](c.asc_getFlags().asc_getWrapText());
-        s['WriteLong'](c.asc_getFlags().asc_getSelectionType());
-        s['WriteBool'](c.asc_getFlags().asc_getLockText());
+        s['WriteBool'](c.asc_getMerge());
+        s['WriteBool'](c.asc_getShrinkToFit());
+        s['WriteBool'](c.asc_getWrapText());
+        s['WriteLong'](c.asc_getSelectionType());
+        s['WriteBool'](c.asc_getLockText());
     }
     
     asc_WriteCFont(6, c.asc_getFont(), s);
@@ -4560,7 +4560,7 @@ function OfflineEditor () {
         var stream = global_memory_stream_menu;
         stream["ClearNoAttack"]();
         
-        var SelectedObjects = [], selectType = info.asc_getFlags().asc_getSelectionType();
+        var SelectedObjects = [], selectType = info.asc_getSelectionType();
         if (selectType == Asc.c_oAscSelectionType.RangeImage || selectType == Asc.c_oAscSelectionType.RangeShape ||
             selectType == Asc.c_oAscSelectionType.RangeChart || selectType == Asc.c_oAscSelectionType.RangeChartText ||
             selectType == Asc.c_oAscSelectionType.RangeShapeText)
@@ -4568,9 +4568,7 @@ function OfflineEditor () {
             SelectedObjects = _api.asc_getGraphicObjectProps();
             
             var count = SelectedObjects.length;
-            var naturalCount = count;
-            
-            stream["WriteLong"](naturalCount);
+            stream["WriteLong"](count);
             
             for (var i = 0; i < count; i++)
             {
@@ -6384,7 +6382,7 @@ window["native"]["offline_apply_event"] = function(type,params) {
             _stream = global_memory_stream_menu;
             _stream["ClearNoAttack"]();
             
-            var merged = _api.asc_getCellInfo().asc_getFlags().asc_getMerge();
+            var merged = _api.asc_getCellInfo().asc_getMerge();
             
             if (!merged && _api.asc_mergeCellsDataLost(params)) {
                 _stream["WriteBool"](true);

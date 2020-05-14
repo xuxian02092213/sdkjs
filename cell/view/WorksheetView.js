@@ -8753,12 +8753,10 @@
         var r1 = mc ? mc.r1 : cell.row;
         var c = this._getVisibleCell(c1, r1);
 		var font = c.getFont(true);
-        var align = c.getAlign();
         var cellType = c.getType();
         var isNumberFormat = (!cellType || CellValueType.Number === cellType);
 
         var cell_info = new asc_CCellInfo();
-
         cell_info.xfs = c.getXfs();
 
 		AscCommonExcel.g_ActiveCell = new Asc.Range(c1, r1, c1, r1);
@@ -8806,20 +8804,15 @@
         cell_info.styleName = c.getStyleName();
 
         cell_info.flags = new AscCommonExcel.asc_CCellFlag();
-        cell_info.flags.shrinkToFit = align.getShrinkToFit();
-        cell_info.flags.wrapText = align.getWrap();
 
         // ToDo activeRange type
-        cell_info.flags.selectionType = selectionRange.getLast().getType();
-        cell_info.flags.multiselect = !selectionRange.isSingleRange();
+        cell_info.selectionType = selectionRange.getLast().getType();
+        cell_info.multiselect = !selectionRange.isSingleRange();
 
-        cell_info.flags.lockText = ("" !== cell_info.text && (isNumberFormat || c.isFormula()));
+        cell_info.lockText = ("" !== cell_info.text && (isNumberFormat || c.isFormula()));
 
         cell_info.font._init(font);
 
-		cell_info.fill = c.getFill().clone();
-
-		cell_info.numFormat = c.getNumFormatStr();
         cell_info.numFormatInfo = c.getNumFormatTypeInfo();
 
         // Получаем гиперссылку (//ToDo)
@@ -8837,7 +8830,7 @@
         }
 
         cell_info.comment = this.cellCommentator.getComment(c1, r1, false);
-		cell_info.flags.merge = range.isOneCell() ? Asc.c_oAscMergeOptions.Disabled :
+		cell_info.merge = range.isOneCell() ? Asc.c_oAscMergeOptions.Disabled :
 			null !== range.hasMerged() ? Asc.c_oAscMergeOptions.Merge : Asc.c_oAscMergeOptions.None;
 
         var sheetId = this.model.getId();
@@ -8905,11 +8898,11 @@
     WorksheetView.prototype._getSelectionInfoObject = function () {
         var objectInfo = new asc_CCellInfo();
         var xfs = new AscCommonExcel.CellXfs();
+        var horAlign = null, vertAlign = null, angle = null;
 
-        objectInfo.flags = new AscCommonExcel.asc_CCellFlag();
         var graphicObjects = this.objectRender.getSelectedGraphicObjects();
         if (graphicObjects.length) {
-            objectInfo.flags.selectionType = this.objectRender.getGraphicSelectionType(graphicObjects[0].Id);
+            objectInfo.selectionType = this.objectRender.getGraphicSelectionType(graphicObjects[0].Id);
         }
 
         var textPr = this.objectRender.controller.getParagraphTextPr();
@@ -8925,10 +8918,9 @@
         if (textPr && paraPr) {
             objectInfo.text = this.objectRender.controller.GetSelectedText(true);
 
-            var horAlign = paraPr.Jc;
-            var vertAlign = Asc.c_oAscVAlign.Center;
+            horAlign = paraPr.Jc;
+            vertAlign = Asc.c_oAscVAlign.Center;
             var shape_props = this.objectRender.controller.getDrawingProps().shapeProps;
-            var angle = null;
             if (shape_props) {
                 switch (shape_props.verticalTextAlign) {
                     case AscFormat.VERTICAL_ANCHOR_TYPE_BOTTOM:
@@ -8946,22 +8938,16 @@
                 }
                 switch (shape_props.vert) {
                     case AscFormat.nVertTTvert:
-                        angle = 90;
+                        angle = -90;
                         break;
                     case AscFormat.nVertTTvert270:
-                        angle = -90;
+                        angle = 90;
                         break;
                     default:
                         angle = 0;
                         break;
                 }
             }
-
-            var align = new AscCommonExcel.Align();
-            align.setAlignHorizontal(horAlign);
-            align.setAlignVertical(vertAlign);
-            align.setAngle(angle);
-            xfs.setAlign(align);
 
             if (textPr.Unifill && theme) {
                 textPr.Unifill.check(theme, this.objectRender.controller.getColorMap());
@@ -8985,6 +8971,12 @@
                 objectInfo.hyperlink.asc_setText(shapeHyperlink.GetSelectedText(true, true));
             }
         }
+
+        var align = new AscCommonExcel.Align();
+        align.setAlignHorizontal(horAlign);
+        align.setAlignVertical(vertAlign);
+        align.setAngle(angle);
+        xfs.setAlign(align);
 
         objectInfo.xfs = xfs;
 

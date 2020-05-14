@@ -2591,6 +2591,10 @@ Num.prototype =
     CellXfs.prototype.getFill = function () {
         return this.fill;
     };
+	CellXfs.prototype.getFill2 = function () {
+		// ToDo check this! Rename to getFill
+		return this.fill || g_oDefaultFormat.Fill;
+	};
     CellXfs.prototype.setFill = function (val) {
         this.fill = val;
     };
@@ -2603,6 +2607,10 @@ Num.prototype =
     CellXfs.prototype.getNum = function () {
         return this.num;
     };
+	CellXfs.prototype.getNum2 = function () {
+		// ToDo check this! Rename to getNum
+		return this.num || g_oDefaultFormat.Num;
+	};
     CellXfs.prototype.setNum = function (val) {
         this.num = val;
     };
@@ -2837,7 +2845,7 @@ Align.prototype =
 		return nRes;
 	},
 	setAngle: function(val) {
-		this.angle = AscCommonExcel.angleInterfaceToFormat(val);
+		this.angle = null !== val ? AscCommonExcel.angleInterfaceToFormat(val) : val;
 	},
 	getWrap: function() {
 		// Для justify wrap всегда true
