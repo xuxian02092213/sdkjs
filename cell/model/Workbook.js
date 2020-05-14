@@ -7769,10 +7769,10 @@
 		var slicer = this.getSlicerByName(name);
 		if (slicer) {
 			this.aSlicers.splice(slicer.index, 1);
+			History.Add(AscCommonExcel.g_oUndoRedoWorksheet, AscCH.historyitem_Worksheet_SlicerDelete, this.getId(), null,
+				new AscCommonExcel.UndoRedoData_FromTo(slicer.obj, null));
 		}
 
-		//History.Add(AscCommonExcel.g_oUndoRedoSortState, AscCH.historyitem_SortState_Add, this.getId(), null,
-		// 			new AscCommonExcel.UndoRedoData_SortState(oldSortState, null));
 
 		//TODO скорее всего придётся переносить удаление именованных диапазонов выше, чтобы делались все необходимые проверки
 		//и посылались все необходимые эвенты
@@ -7901,6 +7901,21 @@
 			bRet = bRet || this.Drawings[i].onSlicerDelete(sName);
 		}
 		return bRet;
+	};
+
+	Worksheet.prototype.deleteSlicersByTable = function (tableName) {
+		History.Create_NewPoint();
+		History.StartTransaction();
+
+		var slicers = this.getSlicersByTableName(tableName);
+		if (slicers) {
+			for (var i = 0; i < slicers.length; i++) {
+				this.deleteSlicer(slicers[i].name);
+				this.onSlicerDelete(slicers[i].name);
+			}
+		}
+
+		History.EndTransaction();
 	};
 
 //-------------------------------------------------------------------------------------------------
