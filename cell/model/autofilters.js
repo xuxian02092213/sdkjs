@@ -2597,8 +2597,9 @@
 				History.StartTransaction();
 
 				worksheet.workbook.dependencyFormulas.changeTableName(tableName, newName);
-
 				tablePart.changeDisplayName(newName);
+				worksheet.changeTableName(oldFilter.DisplayName, newName);
+
 
 				this._addHistoryObj({oldFilter: oldFilter, newFilterRef: tablePart.Ref.clone(), newDisplayName: newName}, AscCH.historyitem_AutoFilter_ChangeTableName, {activeCells: tablePart.Ref.clone(), val: newName, displayName: tableName});
 

@@ -551,6 +551,20 @@
 		}
 	};
 
+	CT_slicer.prototype.setTableName = function (val) {
+		if (!this.cacheDefinition) {
+			return;
+		}
+
+		var _tableCache = this.cacheDefinition.getTableSlicerCache();
+		if (_tableCache) {
+			var oldVal = _tableCache.tableId;
+			_tableCache.setTableName(val);
+			History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetTableName,
+				this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val), true);
+		}
+	};
+
 
 	function CT_slicerCacheDefinition(ws) {
 		this.pivotTables = [];//SlicerCachePivotTable

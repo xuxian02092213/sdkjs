@@ -7771,6 +7771,7 @@
 			this.aSlicers.splice(slicer.index, 1);
 			History.Add(AscCommonExcel.g_oUndoRedoWorksheet, AscCH.historyitem_Worksheet_SlicerDelete, this.getId(), null,
 				new AscCommonExcel.UndoRedoData_FromTo(slicer.obj, null));
+			this.onSlicerDelete(name);
 		}
 
 
@@ -7878,6 +7879,24 @@
 		}
 	};
 
+	Worksheet.prototype.changeTableName = function (oldVal, newVal) {
+		if (this.workbook.bUndoChanges || this.workbook.bRedoChanges) {
+			return;
+		}
+
+		var slicers = this.getSlicersByTableName(oldVal);
+		if (slicers) {
+			History.Create_NewPoint();
+			History.StartTransaction();
+
+			for (var i = 0; i < slicers.length; i++) {
+				slicers[i].setTableName(newVal);
+			}
+
+			History.EndTransaction();
+		}
+	};
+
 	Worksheet.prototype.setSlicerTableName = function (tableName, newTableName) {
 		//TODO history
 		for (var i = 0; i < this.aSlicers.length; i++) {
@@ -7911,7 +7930,6 @@
 		if (slicers) {
 			for (var i = 0; i < slicers.length; i++) {
 				this.deleteSlicer(slicers[i].name);
-				this.onSlicerDelete(slicers[i].name);
 			}
 		}
 

@@ -235,6 +235,7 @@ function (window, undefined) {
 	window['AscCH'].historyitem_Slicer_SetCaption = 1;
 	window['AscCH'].historyitem_Slicer_SetCacheSourceName = 2;
 	window['AscCH'].historyitem_Slicer_SetTableColName = 3;
+	window['AscCH'].historyitem_Slicer_SetTableName = 4;
 
 function CHistory()
 {

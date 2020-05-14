@@ -3325,7 +3325,13 @@ function (window, undefined) {
 				}
 				break;
 			}
-
+			case AscCH.historyitem_Slicer_SetTableName: {
+				slicer = oModel.getSlicerByName(Data.name);
+				if (slicer && slicer.obj) {
+					slicer.obj.setTableName(bUndo ? Data.from : Data.to);
+				}
+				break;
+			}
 		}
 	};
 
