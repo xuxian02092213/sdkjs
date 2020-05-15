@@ -610,6 +610,23 @@ var g_oFontProperties = {
 			this.setRepeat(font.repeat);
 		}
 	};
+    Font.prototype.assignFromTextPr = function (textPr) {
+        if (textPr.FontFamily) {
+            this.setName(textPr.FontFamily.Name);
+        }
+        this.setSize(textPr.FontSize);
+        this.setBold(textPr.Bold);
+        this.setItalic(textPr.Italic);
+        this.setUnderline(textPr.Underline);
+        this.setStrikeout(textPr.Strikeout);
+        this.setVerticalAlign(textPr.VertAlign);
+        if (textPr.Unifill) {
+            var color = textPr.Unifill.getRGBAColor();
+            this.setColor(createRgbColor(color.R, color.G, color.B));
+        } else if (textPr.Color) {
+            this.setColor(createRgbColor(textPr.Color.r, textPr.Color.g, textPr.Color.b));
+        }
+    };
 	Font.prototype.merge = function (font, isTable, isTableColor) {
 		var oRes = new Font();
 		oRes.fn = this.fn || font.fn;
@@ -2531,28 +2548,20 @@ var g_oBorderProperties = {
         switch (nType) {
             case this.Properties.border:
                 return this.border;
-                break;
             case this.Properties.fill:
                 return this.fill;
-                break;
             case this.Properties.font:
                 return this.font;
-                break;
             case this.Properties.num:
                 return this.num;
-                break;
             case this.Properties.align:
                 return this.align;
-                break;
             case this.Properties.QuotePrefix:
                 return this.QuotePrefix;
-                break;
             case this.Properties.PivotButton:
                 return this.PivotButton;
-                break;
             case this.Properties.XfId:
                 return this.XfId;
-                break;
         }
     };
     CellXfs.prototype.setProperty = function (nType, value) {
@@ -2602,6 +2611,10 @@ var g_oBorderProperties = {
     CellXfs.prototype.getFont = function () {
         return this.font;
     };
+	CellXfs.prototype.getFont2 = function () {
+		// ToDo check this! Rename to getFont
+		return this.font || g_oDefaultFormat.Font;
+	};
     CellXfs.prototype.setFont = function (val) {
         this.font = val;
     };
@@ -2659,6 +2672,65 @@ var g_oBorderProperties = {
         }
         valCache[val] = xfs;
     };
+
+	CellXfs.prototype.asc_getFillColor = function () {
+		return Asc.colorObjToAscColor(this.getFill2().bg());
+	};
+	CellXfs.prototype.asc_getFill = function () {
+		return this.getFill2().clone();
+	};
+
+    CellXfs.prototype.asc_getFontName = function () {
+		return this.getFont2().getName();
+	};
+    CellXfs.prototype.asc_getFontSize = function () {
+        return this.getFont2().getSize();
+    };
+    CellXfs.prototype.asc_getFontColor = function () {
+        return Asc.colorObjToAscColor(this.getFont2().getColor());
+    };
+    CellXfs.prototype.asc_getFontBold = function () {
+        return this.getFont2().getBold();
+    };
+    CellXfs.prototype.asc_getFontItalic = function () {
+        return this.getFont2().getItalic();
+    };
+    CellXfs.prototype.asc_getFontUnderline = function () {
+        // ToDo убрать, когда будет реализовано двойное подчеркивание
+        return (Asc.EUnderline.underlineNone !== this.getFont2().getUnderline());
+    };
+    CellXfs.prototype.asc_getFontStrikeout = function () {
+        return this.getFont2().getStrikeout();
+    };
+    CellXfs.prototype.asc_getFontSubscript = function () {
+        return (AscCommon.vertalign_SubScript === this.getFont2().getVerticalAlign());
+    };
+    CellXfs.prototype.asc_getFontSuperscript = function () {
+        return (AscCommon.vertalign_SuperScript === this.getFont2().getVerticalAlign());
+    };
+
+	CellXfs.prototype.asc_getNumFormat = function () {
+		return this.getNum2().getFormat();
+	};
+	CellXfs.prototype.asc_getNumFormatInfo = function () {
+		return this.getNum2().getNumFormat().getTypeInfo();
+	};
+
+	CellXfs.prototype.asc_getHorAlign = function () {
+		return this.getAlign2().getAlignHorizontal();
+	};
+	CellXfs.prototype.asc_getVertAlign = function () {
+		return this.getAlign2().getAlignVertical();
+	};
+	CellXfs.prototype.asc_getAngle = function () {
+		return this.getAlign2().getAngle();
+	};
+	CellXfs.prototype.asc_getWrapText = function () {
+		return this.getAlign2().getWrap();
+	};
+	CellXfs.prototype.asc_getShrinkToFit = function () {
+		return this.getAlign2().getShrinkToFit();
+	};
 
 	function FromXml_ST_HorizontalAlignment(val) {
 		var res = -1;
@@ -9644,6 +9716,25 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 	window['AscCommonExcel'].Border = Border;
 	window['AscCommonExcel'].Num = Num;
 	window['AscCommonExcel'].CellXfs = CellXfs;
+	prot = CellXfs.prototype;
+	prot["asc_getFillColor"] = prot.asc_getFillColor;
+	prot["asc_getFill"] = prot.asc_getFill;
+	prot["asc_getFontName"] = prot.asc_getFontName;
+    prot["asc_getFontSize"] = prot.asc_getFontSize;
+    prot["asc_getFontColor"] = prot.asc_getFontColor;
+    prot["asc_getFontBold"] = prot.asc_getFontBold;
+    prot["asc_getFontItalic"] = prot.asc_getFontItalic;
+    prot["asc_getFontUnderline"] = prot.asc_getFontUnderline;
+    prot["asc_getFontStrikeout"] = prot.asc_getFontStrikeout;
+    prot["asc_getFontSubscript"] = prot.asc_getFontSubscript;
+    prot["asc_getFontSuperscript"] = prot.asc_getFontSuperscript;
+	prot["asc_getNumFormat"] = prot.asc_getNumFormat;
+	prot["asc_getNumFormatInfo"] = prot.asc_getNumFormatInfo;
+	prot["asc_getHorAlign"] = prot.asc_getHorAlign;
+	prot["asc_getVertAlign"] = prot.asc_getVertAlign;
+	prot["asc_getAngle"] = prot.asc_getAngle;
+	prot["asc_getWrapText"] = prot.asc_getWrapText;
+	prot["asc_getShrinkToFit"] = prot.asc_getShrinkToFit;
 	window['AscCommonExcel'].Align = Align;
 	window['AscCommonExcel'].CCellStyles = CCellStyles;
 	window['AscCommonExcel'].CCellStyle = CCellStyle;

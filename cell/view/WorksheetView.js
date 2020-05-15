@@ -8752,7 +8752,6 @@
         var c1 = mc ? mc.c1 : cell.col;
         var r1 = mc ? mc.r1 : cell.row;
         var c = this._getVisibleCell(c1, r1);
-		var font = c.getFont(true);
         var cellType = c.getType();
         var isNumberFormat = (!cellType || CellValueType.Number === cellType);
 
@@ -8808,8 +8807,6 @@
         cell_info.multiselect = !selectionRange.isSingleRange();
 
         cell_info.lockText = ("" !== cell_info.text && (isNumberFormat || c.isFormula()));
-
-        cell_info.font._init(font);
 
         // Получаем гиперссылку (//ToDo)
         var ar = selectionRange.getLast().clone();
@@ -8948,7 +8945,9 @@
             if (textPr.Unifill && theme) {
                 textPr.Unifill.check(theme, this.objectRender.controller.getColorMap());
             }
-            objectInfo.font._initFromTextPr(textPr);
+            var font = new AscCommonExcel.Font();
+            font.assignFromTextPr(textPr);
+            xfs.setFont(font);
 
             var shapeHyperlink = this.objectRender.controller.getHyperlinkInfo();
             if (shapeHyperlink && (shapeHyperlink instanceof ParaHyperlink)) {
