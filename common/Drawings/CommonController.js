@@ -785,7 +785,7 @@ function DrawingObjectsController(drawingObjects)
     this.arrTrackObjects = [];
 
     this.objectsForRecalculate = {};
-    this.eventListeners = {};
+    this.eventListeners = [];
 
     this.chartForProps = null;
 
@@ -6912,13 +6912,7 @@ DrawingObjectsController.prototype =
     },
 
     getEventListeners: function() {
-        var aRet = [];
-        for(var key in this.eventListeners) {
-            if(this.eventListeners.hasOwnProperty(key)) {
-                aRet.push(this.eventListeners[key]);
-            }
-        }
-        return aRet;
+        return this.eventListeners;
     },
     
     onKeyUp: function(e)
@@ -10439,16 +10433,27 @@ DrawingObjectsController.prototype =
     },
     
     addEventListener: function (drawing) {
-        this.eventListeners[drawing.Get_Id()] = drawing;
+        if(!this.isEventListener(drawing)) {
+            this.eventListeners.push(drawing);
+        }
     },
     
     removeEventListener: function (drawing) {
-        var sId = drawing.Get_Id();
-        this.eventListeners[sId] = undefined;
-        delete this.eventListeners[sId];
+        for(var i = 0; i < this.eventListeners.length; ++i) {
+            if(this.eventListeners[i] === drawing) {
+                this.eventListeners.splice(i, 1);
+                break;
+            }
+        }
     },
     isEventListener: function (drawing) {
-        return this.eventListeners[drawing.Get_Id()] === drawing;
+        var i;
+        for(i = 0; i < this.eventListeners.length; ++i) {
+            if(this.eventListeners[i] === drawing) {
+                break;
+            }
+        }
+        return i < this.eventListeners.length;
     }
 };
 
