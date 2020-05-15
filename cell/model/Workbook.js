@@ -7760,6 +7760,7 @@
 		}
 
 		History.EndTransaction();
+		return slicer;
 	};
 
 	Worksheet.prototype.deleteSlicer = function (name) {

@@ -20271,7 +20271,8 @@
 			//добавляем в структуру
 
 			for (var i = 0; i < arr.length; i++) {
-				t.model.insertSlicer(arr[i], name, type);
+				var slicer = t.model.insertSlicer(arr[i], name, type);
+				arr[i] = slicer.name;
 			}
 			t.objectRender.addSlicers(arr);
 		};
