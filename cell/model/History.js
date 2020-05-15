@@ -237,6 +237,7 @@ function (window, undefined) {
 	window['AscCH'].historyitem_Slicer_SetTableColName = 3;
 	window['AscCH'].historyitem_Slicer_SetTableName = 4;
 	window['AscCH'].historyitem_Slicer_SetCacheName = 5;
+	window['AscCH'].historyitem_Slicer_SetName = 6;
 
 function CHistory()
 {

@@ -2497,6 +2497,7 @@
         } else {
           t.model.editDefinesNames(oldName, newName);
         }
+        ws.model.changeSlicerCacheName(oldName.asc_getName(), newName.asc_getName());
         t.handlers.trigger("asc_onEditDefName", oldName, newName);
         //условие исключает второй вызов asc_onRefreshDefNameList(первый в unlockDefName)
         if(!(t.collaborativeEditing.getCollaborativeEditing() && t.collaborativeEditing.getFast()))

@@ -3339,6 +3339,13 @@ function (window, undefined) {
 				}
 				break;
 			}
+			case AscCH.historyitem_Slicer_SetName: {
+				slicer = oModel.getSlicerByName(bUndo ? Data.to : Data.from);
+				if (slicer && slicer.obj) {
+					slicer.obj.setName(bUndo ? Data.from : Data.to);
+				}
+				break;
+			}
 		}
 	};
 

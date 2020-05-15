@@ -471,6 +471,12 @@
 	CT_slicer.prototype.isExt = function () {
 		return !!this.getTableSlicerCache();
 	};
+	CT_slicer.prototype.setName = function (val) {
+		var oldVal = this.name;
+		this.name = val;
+		History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetName,
+			this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(null, oldVal, val), true);
+	};
 	CT_slicer.prototype.setCaption = function (val) {
 		var oldVal = this.caption;
 		this.caption = val;
