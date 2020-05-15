@@ -678,6 +678,16 @@
             if(!e.IsLocked) {
                 return this.onMouseUp(e, x, y);
             }
+            if(e.CtrlKey) {
+                if(!this.isSubscribed()) {
+                    this.subscribeToEvents();
+                }
+            }
+            else {
+                if(this.isSubscribed()) {
+                    this.unsubscribeFromEvents();
+                }
+            }
             this.eventListener.onMouseMove(e, x, y);
             return true;
         }
@@ -804,7 +814,9 @@
     CSlicer.prototype.onKeyUp = function (e) {
         if(e.keyCode === 91 /*meta*/|| e.keyCode === 17/*ctrl*/) {
             this.unsubscribeFromEvents();
-            this.onViewUpdate();
+            if(!this.eventListener) {
+                this.onViewUpdate();
+            }
         }
     }; 
 
