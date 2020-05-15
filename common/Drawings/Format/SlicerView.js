@@ -116,6 +116,8 @@
     var ICON_CLEAR_FILTER = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4NCjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNMTAgMTZMOCAxNFYxMEwzIDVIMTVMMTAgMTBWMTZaTTE2LjE0NjQgMTYuODUzNkwxNC41IDE1LjIwNzFMMTIuODUzNiAxNi44NTM2TDEyLjE0NjQgMTYuMTQ2NUwxMy43OTI5IDE0LjVMMTIuMTQ2NCAxMi44NTM2TDEyLjg1MzYgMTIuMTQ2NUwxNC41IDEzLjc5MjlMMTYuMTQ2NCAxMi4xNDY1TDE2Ljg1MzYgMTIuODUzNkwxNS4yMDcxIDE0LjVMMTYuODUzNiAxNi4xNDY1TDE2LjE0NjQgMTYuODUzNloiIGZpbGw9IiM0NDQ0NDQiLz4NCjwvc3ZnPg0K";
     var ICON_CLEAR_FILTER_DISABLED = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4NCjxnIG9wYWNpdHk9IjAuNCI+DQo8cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTEwIDE2TDggMTRWMTBMMyA1SDE1TDEwIDEwVjE2Wk0xNi4xNDY0IDE2Ljg1MzZMMTQuNSAxNS4yMDcxTDEyLjg1MzYgMTYuODUzNkwxMi4xNDY0IDE2LjE0NjVMMTMuNzkyOSAxNC41TDEyLjE0NjQgMTIuODUzNkwxMi44NTM2IDEyLjE0NjVMMTQuNSAxMy43OTI5TDE2LjE0NjQgMTIuMTQ2NUwxNi44NTM2IDEyLjg1MzZMMTUuMjA3MSAxNC41TDE2Ljg1MzYgMTYuMTQ2NUwxNi4xNDY0IDE2Ljg1MzZaIiBmaWxsPSIjNDQ0NDQ0Ii8+DQo8L2c+DQo8L3N2Zz4NCg==";
     
+  
+    
     function getSlicerIconsForLoad() {
         return [ICON_MULTISELECT, ICON_MULTISELECT_INVERTED, ICON_CLEAR_FILTER, ICON_CLEAR_FILTER_DISABLED];
     }
@@ -141,47 +143,74 @@
         this.transformText = transformText;
     }
     
-    function CSlicerData(slicer) {
-        this.slicer = slicer;
-
-        this.values = null;
+    function CSlicerCache() {
         this.view = null;
+        this.values = null;
     }
-    CSlicerData.prototype.clear = function() {
+    CSlicerCache.prototype.setView = function(oView) {
+        this.view = oView;
+    };
+    CSlicerCache.prototype.setValues = function(oValues) {
+        this.values = oValues;
+    };
+    CSlicerCache.prototype.getView = function() {
+        return this.view;
+    };
+    CSlicerCache.prototype.getValues = function() {
+        if(Array.isArray(this.values)) {
+            return this.values;
+        }
+        return [];
+    };
+    CSlicerCache.prototype.clear = function() {
         this.values = null;
         this.view = null;
     };
-    CSlicerData.prototype.hasData = function() {
+    CSlicerCache.prototype.hasData = function() {
         return this.values !== null && this.view !== null;
     };
+    
+    function CSlicerData(slicer) {
+        CSlicerCache.call(this);
+        this.slicer = slicer;
+    }
+    CSlicerData.prototype = Object.create(CSlicerCache.prototype);
+    CSlicerData.prototype.constructor = CSlicerData;
     CSlicerData.prototype.getWorksheet = function() {
         return this.slicer.worksheet;
     };
-    CSlicerData.prototype.retrieveData = function() {
+    CSlicerData.prototype.updateData = function() {
         this.clear();
+        var oData = this.retrieveData();
+        this.values = oData.getValues();
+        this.view = oData.getView();
+    };
+    CSlicerData.prototype.retrieveData = function() {
+        var oData = new CSlicerCache();
         var oWorksheet = this.getWorksheet();
         if(!oWorksheet) {
-            return;
+            return oData;
         }
         var sName = this.slicer.getName();
         var oView = oWorksheet.getSlicerByName(sName);
         if(!oView || !oView.obj) {
-            return;
+            return oData;
         }
         var oCache = oView.obj.getCacheDefinition();
         if(!oCache) {
-            return;
+            return oData;
         }
         var oValues = oCache.getFilterValues();
         if(!oValues || !Array.isArray(oValues.values)) {
-            return;
+            return oData
         }
-        this.values = oValues.values;
-        this.view = oView.obj;
+        oData.setValues(oValues.values);
+        oData.setView(oView.obj);
+        return oData;
     };
     CSlicerData.prototype.checkData = function() {
         if(!this.hasData()) {
-            this.retrieveData();
+            this.updateData();
         }
     };
     CSlicerData.prototype.getValues = function() {
@@ -283,11 +312,13 @@
             this.slicer.removeAllButtonsTmpState();
             return;
         }
-        var nValuesCount = this.getValuesCount(), nValue, oValue, oApplyValue, nButtonState;
+        var oData = this.retrieveData();
+        var aValues = oData.getValues();
+        var nValuesCount = aValues.length, nValue, oValue, oApplyValue, nButtonState;
         var aValuesToApply = [];
-        var bNeedUpdate = false;
+        var bNeedUpdate = false, bVisible;
         for(nValue = 0; nValue < nValuesCount; ++nValue) {
-            oValue = this.getValue(nValue);
+            oValue = aValues[nValue];
             if(!oValue) {
                 break;
             }
@@ -296,21 +327,28 @@
                 break;
             }
             oApplyValue = oValue.clone();
-            var bVisible = (nButtonState & STATE_FLAG_SELECTED) !== 0;
+            bVisible = (nButtonState & STATE_FLAG_SELECTED) !== 0;
             if(this.getVisible(oValue) !== bVisible) {
                 oApplyValue.asc_setVisible(bVisible);
                 bNeedUpdate = true;
             }
             aValuesToApply.push(oApplyValue);
         }
+       
         if(bNeedUpdate) {
-            oWSView.setFilterValuesFromSlicer(this.slicer.getName(), aValuesToApply);
+            if(this.slicer.isSubscribed()) {
+                this.values = aValuesToApply;
+            }
+            else {
+                oWSView.setFilterValuesFromSlicer(this.slicer.getName(), aValuesToApply);
+            }
         }
         else {
             this.slicer.removeAllButtonsTmpState();
         }
+        
     };
-
+    
     function CSlicer() {
         AscFormat.CShape.call(this);
         this.name = null;
@@ -624,6 +662,7 @@
         this.handleUpdateExtents();
         this.recalculate();
         this.onUpdate(this.bounds);
+        this.unsubscribeFromEvents();
     };
     CSlicer.prototype.removeAllButtonsTmpState = function() {
         if(this.buttonsContainer) {
@@ -666,6 +705,9 @@
         if(this.buttonsContainer) {
             bRes = this.buttonsContainer.onMouseDown(e, x, y);
             bRet = bRet || bRes;
+            if(bRes && e.CtrlKey) {
+                this.subscribeToEvents();
+            }
         }
         return bRet;
     };  
@@ -739,6 +781,32 @@
         }
         return bRet;
     };
+    CSlicer.prototype.subscribeToEvents = function () {
+        var drawingObjects = this.getDrawingObjectsController();
+        if(drawingObjects) {
+            drawingObjects.addEventListener(this);
+        }
+    };  
+    CSlicer.prototype.unsubscribeFromEvents = function () {
+        var drawingObjects = this.getDrawingObjectsController();
+        if(drawingObjects) {
+            drawingObjects.removeEventListener(this);
+        }
+    };   
+    CSlicer.prototype.isSubscribed = function () {
+        var drawingObjects = this.getDrawingObjectsController();
+        if(drawingObjects) {
+            return drawingObjects.isEventListener(this);
+        }
+        return false;
+    }; 
+    
+    CSlicer.prototype.onKeyUp = function (e) {
+        if(e.keyCode === 91 /*meta*/|| e.keyCode === 17/*ctrl*/) {
+            this.unsubscribeFromEvents();
+            this.onViewUpdate();
+        }
+    }; 
 
     function CHeader(slicer) {
         AscFormat.CShape.call(this);
@@ -1737,7 +1805,24 @@
                     var oButton = this.getButton(this.startButton);
                     if(oButton) {
                         nFindButton = this.findButtonIndex(x, y);
-                        if(!this.slicer.isMultiSelect()) {
+                        if(this.slicer.isMultiSelect() || e.CtrlKey) {
+
+                            this.removeAllButtonsTmpState();
+                            oButton.setHoverState();
+                            if(nFindButton < this.startButton) {
+                                for(nButton = Math.max(0, nFindButton); nButton <= this.startButton; ++nButton) {
+                                    this.buttons[nButton].setInvertSelectTmpState();
+                                }
+                            }
+                            else {
+                                nLast = Math.min(nFindButton, this.buttons.length - 1);
+                                for(nButton = this.startButton; nButton <= nLast; ++nButton) {
+                                    this.buttons[nButton].setInvertSelectTmpState();
+                                }
+                            }
+                            
+                        }
+                        else {
                             for(nButton = 0; nButton < this.buttons.length; ++nButton) {
                                 this.buttons[nButton].setUnselectTmpState();
                             }
@@ -1751,21 +1836,6 @@
                                 nLast = Math.min(nFindButton, this.buttons.length - 1);
                                 for(nButton = this.startButton; nButton <= nLast; ++nButton) {
                                     this.buttons[nButton].setSelectTmpState();
-                                }
-                            }
-                        }
-                        else {
-                            this.removeAllButtonsTmpState();
-                            oButton.setHoverState();
-                            if(nFindButton < this.startButton) {
-                                for(nButton = Math.max(0, nFindButton); nButton <= this.startButton; ++nButton) {
-                                    this.buttons[nButton].setInvertSelectTmpState();
-                                }
-                            }
-                            else {
-                                nLast = Math.min(nFindButton, this.buttons.length - 1);
-                                for(nButton = this.startButton; nButton <= nLast; ++nButton) {
-                                    this.buttons[nButton].setInvertSelectTmpState();
                                 }
                             }
                         }
