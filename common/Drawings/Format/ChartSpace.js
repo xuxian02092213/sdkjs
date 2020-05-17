@@ -15352,11 +15352,6 @@ CChartSpace.prototype.recalculateGridLines = function()
     }
 };
 
-CChartSpace.prototype.hitToAdjustment = function()
-{
-    return {hit: false};
-};
-
 CChartSpace.prototype.recalculateAxisLabels = function()
 {
     if(this.chart && this.chart.title)
