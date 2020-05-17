@@ -1757,6 +1757,12 @@ GraphicOption.prototype.union = function(oGraphicOption) {
         }
         return this.graphicObject.onSlicerDelete(sName);
     };
+    DrawingBase.prototype.onSlicerLock = function (sName, bLock) {
+        if(!this.graphicObject) {
+            return;
+        }
+        this.graphicObject.onSlicerLock(sName, bLock);
+    };
     //}
 
     //-----------------------------------------------------------------------------------

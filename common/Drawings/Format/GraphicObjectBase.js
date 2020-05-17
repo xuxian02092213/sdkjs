@@ -1913,6 +1913,9 @@
         return false;
     };
 
+    CGraphicObjectBase.prototype.onSlicerLock = function(sName, bLock){
+    };
+
     CGraphicObjectBase.prototype.onSlicerDelete = function(sName){
         return false;
     };

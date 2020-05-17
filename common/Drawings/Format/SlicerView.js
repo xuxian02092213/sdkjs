@@ -58,6 +58,8 @@
 
     var SCROLL_TIMER_INTERVAL = 200;
 
+    var LOCKED_ALPHA = 51;
+    
     var STYLE_TYPE = {};
     STYLE_TYPE.WHOLE = STATE_FLAG_WHOLE;
     STYLE_TYPE.HEADER = STATE_FLAG_HEADER;
@@ -146,12 +148,16 @@
     function CSlicerCache() {
         this.view = null;
         this.values = null;
+        this.locked = false;
     }
     CSlicerCache.prototype.setView = function(oView) {
         this.view = oView;
     };
     CSlicerCache.prototype.setValues = function(oValues) {
         this.values = oValues;
+    };
+    CSlicerCache.prototype.setLocked = function(bVal) {
+        this.locked = bVal;
     };
     CSlicerCache.prototype.getView = function() {
         return this.view;
@@ -161,6 +167,9 @@
             return this.values;
         }
         return [];
+    };
+    CSlicerCache.prototype.getLocked = function() {
+        return this.locked;
     };
     CSlicerCache.prototype.clear = function() {
         this.values = null;
@@ -309,6 +318,10 @@
         }
         oWSView = Asc.editor.wb.getWorksheetById(oWorksheet.Id, true);//
         if(!oWSView) {
+            this.slicer.removeAllButtonsTmpState();
+            return;
+        }
+        if(this.slicer.getLocked()) {
             this.slicer.removeAllButtonsTmpState();
             return;
         }
@@ -633,6 +646,14 @@
             }
             graphics.RestoreGrState();
         }
+        if(!AscCommon.IsShapeToImageConverter && !graphics.RENDERER_PDF_FLAG) {
+            if(this.getLocked()) {
+                var oOldBrush = this.brush;
+                this.brush = AscFormat.CreateSolidFillRGBA(0, 0, 0, LOCKED_ALPHA);
+                AscFormat.CShape.prototype.draw.call(this, graphics);
+                this.brush = oOldBrush;
+            }
+        }
     };
     CSlicer.prototype.draw = function (graphics, transform, transformText, pageIndex) {
         AscFormat.ExecuteNoHistory(this.internalDraw, this, [graphics, transform, transformText, pageIndex]);
@@ -678,6 +699,9 @@
             if(!e.IsLocked) {
                 return this.onMouseUp(e, x, y);
             }
+            if(this.getLocked()) {
+                return this.onMouseUp(e, x, y);
+            }
             if(e.CtrlKey) {
                 if(!this.isSubscribed()) {
                     this.subscribeToEvents();
@@ -691,6 +715,9 @@
             this.eventListener.onMouseMove(e, x, y);
             return true;
         }
+        if(this.getLocked()) {
+            return false;
+        }
         if(this.header) {
             bRet = bRet || this.header.onMouseMove(e, x, y);
         }
@@ -703,6 +730,9 @@
         return bRet;
     };
     CSlicer.prototype.onMouseDown = function (e, x, y) {
+        if(this.getLocked()) {
+            return false;
+        }
         var bRet = false, bRes;
         e.IsLocked = true;
         if(this.eventListener) {
@@ -722,7 +752,7 @@
         return bRet;
     };  
     CSlicer.prototype.getCursorType = function (e, x, y) {
-        if(!this.hit(x, y)) {
+        if(this.getLocked() || !this.hit(x, y)) {
             return null;
         }
         var sRet = (this.header && this.header.getCursorType(e, x, y)) || (this.buttonsContainer && this.buttonsContainer.getCursorType(e, x, y));
@@ -761,11 +791,21 @@
         return this.invertTransform;
     };
     CSlicer.prototype.onWheel = function (deltaX, deltaY) {
+        if(this.getLocked()) {
+            return;
+        }
         return this.buttonsContainer.onWheel(deltaX, deltaY);
     };
     CSlicer.prototype.onSlicerUpdate = function (sName) {
         if(this.name === sName) {
             this.onDataUpdate();
+        }
+    };  
+    CSlicer.prototype.onSlicerLock = function (sName, bLock) {
+        if(this.name === sName) {
+            this.data.setLocked(bLock);
+            this.onUpdate(this.bounds);
+            this.unsubscribeFromEvents();
         }
     };
     CSlicer.prototype.onSlicerDelete = function (sName) {
@@ -809,8 +849,7 @@
             return drawingObjects.isEventListener(this);
         }
         return false;
-    }; 
-    
+    };
     CSlicer.prototype.onKeyUp = function (e) {
         if(e.keyCode === 91 /*meta*/|| e.keyCode === 17/*ctrl*/) {
             this.unsubscribeFromEvents();
@@ -818,6 +857,9 @@
                 this.onViewUpdate();
             }
         }
+    };
+    CSlicer.prototype.getLocked = function (e) {
+        return this.data.getLocked();
     }; 
 
     function CHeader(slicer) {

@@ -1888,6 +1888,14 @@ function CGroupShape()
         }
         return bRet;
     };
+    CGroupShape.prototype.onSlicerLock = function(sName, bLock)
+    {
+        for(var i = 0; i < this.spTree.length; ++i)
+        {
+            this.spTree[i].onSlicerLock(sName, bLock);
+        }
+    };
+
     //--------------------------------------------------------export----------------------------------------------------
     window['AscFormat'] = window['AscFormat'] || {};
     window['AscFormat'].CGroupShape = CGroupShape;
