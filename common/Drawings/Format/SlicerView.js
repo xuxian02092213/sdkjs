@@ -831,6 +831,9 @@
         }
         return bRet;
     };
+    CSlicer.prototype.deleteSlicer = function () {
+        //TODO
+    };
     CSlicer.prototype.subscribeToEvents = function () {
         var drawingObjects = this.getDrawingObjectsController();
         if(drawingObjects) {

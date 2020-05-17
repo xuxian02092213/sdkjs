@@ -6316,6 +6316,7 @@ DrawingObjectsController.prototype =
         }
         else if(this.selectedObjects.length > 0)
         {
+            var aSO, oSp;
             var worksheet = this.drawingObjects.getWorksheet();
             if(worksheet)
             {
@@ -6330,14 +6331,21 @@ DrawingObjectsController.prototype =
                 }
                 else
                 {
-                    this.resetConnectors(this.selection.groupSelection.selectedObjects);
+                    aSO = this.selection.groupSelection.selectedObjects;
+                    this.resetConnectors(aSO);
                     var group_map = {}, group_arr = [], i, cur_group, sp, xc, yc, hc, vc, rel_xc, rel_yc, j;
-                    for(i = 0; i < this.selection.groupSelection.selectedObjects.length; ++i)
+                    for(i = 0; i < aSO.length; ++i)
                     {
-                        this.selection.groupSelection.selectedObjects[i].group.removeFromSpTree(this.selection.groupSelection.selectedObjects[i].Get_Id());
-                        group_map[this.selection.groupSelection.selectedObjects[i].group.Get_Id()+""] = this.selection.groupSelection.selectedObjects[i].group;
-                        if(this.selection.groupSelection.selectedObjects[i].setBDeleted){
-                            this.selection.groupSelection.selectedObjects[i].setBDeleted(true);
+                        oSp = aSO[i];
+                        if(oSp.getObjectType() === AscDFH.historyitem_type_SlicerView)
+                        {
+                            oSp.deleteSlicer();
+                        }
+                        else
+                        {
+                            oSp.group.removeFromSpTree(oSp.Get_Id());
+                            group_map[oSp.group.Get_Id()] = oSp.group;
+                            oSp.setBDeleted(true);
                         }
                     }
                     group_map[this.selection.groupSelection.Get_Id()+""] = this.selection.groupSelection;
@@ -6422,19 +6430,25 @@ DrawingObjectsController.prototype =
             }
             else
             {
-                this.resetConnectors(this.selectedObjects);
-                for(var i = 0; i < this.selectedObjects.length; ++i)
+                aSO = this.selectedObjects;
+                this.resetConnectors(aSO);
+                for(var i = 0; i < aSO.length; ++i)
                 {
-
-                    this.selectedObjects[i].deleteDrawingBase(true);
-                    if(this.selectedObjects[i].signatureLine){
-                        var oApi = this.getEditorApi();
-                        if(oApi){
-                            oApi.sendEvent("asc_onRemoveSignature", this.selectedObjects[i].signatureLine.id);
-                        }
+                    oSp = aSO[i];
+                    if(oSp.getObjectType() === AscDFH.historyitem_type_SlicerView)
+                    {
+                        oSp.deleteSlicer();
                     }
-                    if(this.selectedObjects[i].setBDeleted){
-                        this.selectedObjects[i].setBDeleted(true);
+                    else
+                    {
+                        oSp.deleteDrawingBase(true);
+                        if(oSp.signatureLine){
+                            var oApi = this.getEditorApi();
+                            if(oApi){
+                                oApi.sendEvent("asc_onRemoveSignature", this.selectedObjects[i].signatureLine.id);
+                            }
+                        }
+                        oSp.setBDeleted(true);
                     }
 
                 }

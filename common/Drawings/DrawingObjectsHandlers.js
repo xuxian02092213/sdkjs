@@ -525,7 +525,7 @@ function handleGroup(drawing, drawingObjectsController, e, x, y, group, pageInde
         {
             case AscDFH.historyitem_type_SlicerView:
             {
-                ret = handleSlicer(drawing, drawingObjectsController, e, x, y, group, pageIndex, bWord);
+                ret = handleSlicer(cur_grouped_object, drawingObjectsController, e, x, y, group, pageIndex, bWord);
                 break;
             }
             case AscDFH.historyitem_type_Shape:
