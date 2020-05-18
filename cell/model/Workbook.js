@@ -3187,9 +3187,9 @@
 	};
 	Workbook.prototype.getSlicerByName = function (name) {
 		for (var i = 0, l = this.aWorksheets.length; i < l; ++i) {
-			var cache = this.aWorksheets[i].getSlicerByName(name);
-			if (cache) {
-				return cache;
+			var slicer = this.aWorksheets[i].getSlicerByName(name);
+			if (slicer) {
+				return slicer;
 			}
 		}
 		return null;

@@ -311,14 +311,8 @@
         return "";
     };
     CSlicerData.prototype.onViewUpdate = function () {
-        var oWSView;//Why we need wsView?!!
         var oWorksheet = this.getWorksheet();
         if(!oWorksheet) {
-            this.slicer.removeAllButtonsTmpState();
-            return;
-        }
-        oWSView = Asc.editor.wb.getWorksheetById(oWorksheet.Id, true);//
-        if(!oWSView) {
             this.slicer.removeAllButtonsTmpState();
             return;
         }
@@ -354,7 +348,7 @@
                 this.values = aValuesToApply;
             }
             else {
-                oWSView.setFilterValuesFromSlicer(this.slicer.getName(), aValuesToApply);
+                Asc.editor.wb.setFilterValuesFromSlicer(this.slicer.getName(), aValuesToApply);
             }
         }
         else {

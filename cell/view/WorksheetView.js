@@ -20305,12 +20305,7 @@
 	};
 
 	WorksheetView.prototype.setFilterValuesFromSlicer = function (slicer, val) {
-		//применяем данные от шейпа
-		//залоченность здесь не проверяем
-		//предполагается, что лок будет проверен на этапе взаимодествия с шейпом
-		//залочена таблица - залочена работа с контентом шейпа
 		var ws = this.model;
-		var slicer = this.model.getSlicerByName(name);
 		var obj;
 		if (slicer && slicer.cacheDefinition) {
 			var slicerCache = slicer.cacheDefinition;
