@@ -3335,6 +3335,11 @@
 		return this.getWorksheet().insertSlicers(arr);
 	};
 
+	WorkbookView.prototype.setFilterValuesFromSlicer = function (name, val) {
+		var slicer = this.model.getSlicerByName(name);
+		this.getWorksheet().setFilterValuesFromSlicer(slicer, val);
+	};
+
   //------------------------------------------------------------export---------------------------------------------------
   window['AscCommonExcel'] = window['AscCommonExcel'] || {};
   window["AscCommonExcel"].WorkbookView = WorkbookView;

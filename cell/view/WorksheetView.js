@@ -20304,7 +20304,7 @@
 		callback();
 	};
 
-	WorksheetView.prototype.setFilterValuesFromSlicer = function (name, val) {
+	WorksheetView.prototype.setFilterValuesFromSlicer = function (slicer, val) {
 		//применяем данные от шейпа
 		//залоченность здесь не проверяем
 		//предполагается, что лок будет проверен на этапе взаимодествия с шейпом
