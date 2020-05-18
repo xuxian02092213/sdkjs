@@ -7782,7 +7782,7 @@
 		History.StartTransaction();
 
 		var slicerObj = this.getSlicerIndexByName(name);
-		if (null !== index) {
+		if (null !== slicerObj) {
 			this.aSlicers.splice(slicerObj.index, 1);
 			History.Add(AscCommonExcel.g_oUndoRedoWorksheet, AscCH.historyitem_Worksheet_SlicerDelete, this.getId(), null,
 				new AscCommonExcel.UndoRedoData_FromTo(slicerObj.obj, null));
