@@ -1427,6 +1427,9 @@
         }
         return AscFormat.hitToHandles(x, y, this);
     };
+    CGraphicObjectBase.prototype.onMouseMove = function (e, x, y) {
+        return this.hit(x, y);
+    };
     CGraphicObjectBase.prototype.drawLocks = function(transform, graphics){
         var bNotes = !!(this.parent && this.parent.kind === AscFormat.TYPE_KIND.NOTES);
         if(!this.group && !bNotes)

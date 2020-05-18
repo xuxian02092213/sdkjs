@@ -437,6 +437,17 @@ function CGroupShape()
         }
         return false;
     };
+
+    CGroupShape.prototype.onMouseMove = function (e, x, y) {
+        for(var i = this.spTree.length - 1; i > -1; --i)
+        {
+            if(this.spTree[i].onMouseMove(e, x, y))
+            {
+                return true;
+            }
+        }
+        return false;
+    };
     
     CGroupShape.prototype.draw = function(graphics)
     {

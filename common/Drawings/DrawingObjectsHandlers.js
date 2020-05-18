@@ -359,6 +359,7 @@ function handleFloatObjects(drawingObjectsController, drawingArr, e, x, y, group
             if(!bRet)
             {
                 return handleShapeImage(drawing, drawingObjectsController, e, x, y, group, pageIndex, bWord);
+
             }
             else
             {
@@ -374,6 +375,33 @@ function handleFloatObjects(drawingObjectsController, drawingArr, e, x, y, group
                 return {objectId: drawing.Get_Id(), cursorType: sCursor, bMarker: false};
             }
             return handleShapeImage(drawing, drawingObjectsController, e, x, y, group, pageIndex, bWord);
+        }
+    }
+    
+    function handleSlicerInGroup(drawingObjectsController, drawing, shape, e, x, y, pageIndex, bWord)
+    {
+        if(drawingObjectsController.handleEventMode === HANDLE_EVENT_MODE_HANDLE)
+        {
+            var bRet = shape.onMouseDown(e, x, y);
+            if(!bRet)
+            {
+                return handleShapeImageInGroup(drawingObjectsController, drawing, shape, e, x, y, pageIndex, bWord);
+
+            }
+            else
+            {
+                drawingObjectsController.changeCurrentState(new AscFormat.SlicerState(drawingObjectsController, shape));
+            }
+            return bRet;
+        }
+        else
+        {
+            var sCursor = shape.getCursorType(e, x, y);
+            if(sCursor)
+            {
+                return {objectId: shape.Get_Id(), cursorType: sCursor, bMarker: false};
+            }
+            return handleShapeImageInGroup(drawingObjectsController, drawing, shape, e, x, y, pageIndex, bWord);
         }
     }
 
@@ -525,7 +553,11 @@ function handleGroup(drawing, drawingObjectsController, e, x, y, group, pageInde
         {
             case AscDFH.historyitem_type_SlicerView:
             {
-                ret = handleSlicer(cur_grouped_object, drawingObjectsController, e, x, y, group, pageIndex, bWord);
+                ret = handleSlicerInGroup(drawingObjectsController, drawing, cur_grouped_object, e, x, y, pageIndex, bWord);
+                if(ret)
+                {
+                    return ret;
+                }
                 break;
             }
             case AscDFH.historyitem_type_Shape:

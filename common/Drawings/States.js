@@ -377,14 +377,7 @@ NullState.prototype =
         var aDrawings = this.drawingObjects.getDrawingArray();
         var _x = x, _y = y;
         for(var nDrawing = aDrawings.length - 1; nDrawing > -1; --nDrawing) {
-            var oDrawing = aDrawings[nDrawing];
-
-            if(oDrawing.getObjectType() === AscDFH.historyitem_type_SlicerView) {
-                if(oDrawing.onMouseMove(e, _x, _y)) {
-                    _x = -1000;
-                }
-            }
-            if(oDrawing.hit(x, y)) {
+            if(aDrawings[nDrawing].onMouseMove(e, _x, _y)) {
                 _x = -1000;
             }
         }
