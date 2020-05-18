@@ -215,7 +215,7 @@
             return oData
         }
         oData.setValues(oValues.values);
-        oData.setView(oView.obj);
+        oData.setView(oView);
         return oData;
     };
     CSlicerData.prototype.checkData = function() {
