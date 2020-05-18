@@ -737,7 +737,8 @@
 
 	CT_slicerCacheDefinition.prototype.getFilterValues = function () {
 		var res = null;
-		switch (this._type) {
+		var type = this.getType();
+		switch (type) {
 			case insertSlicerType.table: {
 				//пока беру первый элемент, поскольку не очень понятно в каких случаях их вообще может быть несколько
 				var tableCache = this.tableSlicerCache;
@@ -759,7 +760,8 @@
 
 	CT_slicerCacheDefinition.prototype.getFilterObj = function () {
 		var res = null;
-		switch (this._type) {
+		var type = this.getType();
+		switch (type) {
 			case insertSlicerType.table: {
 				//пока беру первый элемент, поскольку не очень понятно в каких случаях их вообще может быть несколько
 				var tableCache = this.tableSlicerCache;
@@ -803,6 +805,20 @@
 	CT_slicerCacheDefinition.prototype.setName = function (val){
 		this.name = val;
 	};
+
+	CT_slicerCacheDefinition.prototype.getType = function () {
+		if (this._type !== null) {
+			return this._type;
+		}
+
+		var tableCache = this.getTableSlicerCache();
+		if (tableCache) {
+			this._type = insertSlicerType.table;
+		}
+
+		return this._type;
+	};
+
 
 
 	function CT_slicerCacheData() {

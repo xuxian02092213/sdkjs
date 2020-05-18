@@ -20337,7 +20337,8 @@
 		};
 
 		if (obj) {
-			switch (slicerCache._type) {
+			var type = slicerCache.getType();
+			switch (type) {
 				case window['AscCommonExcel'].insertSlicerType.table: {
 					//TODO сформировать объект autoFiltersObject
 					this.applyAutoFilter(createSimpleFilterOptions());

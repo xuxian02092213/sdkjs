@@ -2798,10 +2798,12 @@ function (window, undefined) {
 				ws.deleteSlicer(Data.to.name);
 			} else {
 				ws.aSlicers.push(Data.to);
+				wb.onSlicerUpdate(Data.to.name);
 			}
 		} else if (AscCH.historyitem_Worksheet_SlicerDelete === Type) {
 			if (bUndo) {
-				ws.aSlicers.push(Data.from)
+				ws.aSlicers.push(Data.from);
+				wb.onSlicerUpdate(Data.from.name);
 			} else {
 				ws.deleteSlicer(Data.from.name);
 			}
