@@ -3216,6 +3216,14 @@
 			this.aWorksheets[i].onSlicerLock(sName, bLock);
 		}
 	};
+	Workbook.prototype.deleteSlicer = function(sName) {
+		var bRet = false;
+		for(var i = 0; i < this.aWorksheets.length; ++i) {
+			bRet = bRet || this.aWorksheets[i].deleteSlicer(sName);
+		}
+		return bRet;
+	};
+
 //-------------------------------------------------------------------------------------------------
 	var tempHelp = new ArrayBuffer(8);
 	var tempHelpUnit = new Uint8Array(tempHelp);
@@ -7778,6 +7786,8 @@
 	};
 
 	Worksheet.prototype.deleteSlicer = function (name) {
+		var res = false;
+
 		History.Create_NewPoint();
 		History.StartTransaction();
 
@@ -7787,6 +7797,7 @@
 			History.Add(AscCommonExcel.g_oUndoRedoWorksheet, AscCH.historyitem_Worksheet_SlicerDelete, this.getId(), null,
 				new AscCommonExcel.UndoRedoData_FromTo(slicerObj.obj, null));
 			this.workbook.onSlicerDelete(name);
+			res = true;
 		}
 
 
@@ -7799,6 +7810,7 @@
 		}*/
 
 		History.EndTransaction();
+		return res;
 	};
 
 	Worksheet.prototype.getSlicerCachesBySourceName = function (name) {
