@@ -3005,10 +3005,11 @@ var editor;
   spreadsheet_api.prototype.asc_setGraphicObjectProps = function(props) {
 
     var ws = this.wb.getWorksheet();
-    var fReplaceCallback = null, sImageUrl = null;
+    var fReplaceCallback = null, sImageUrl = null, sToken = undefined;
     if(!AscCommon.isNullOrEmptyString(props.ImageUrl)){
       if(!g_oDocumentUrls.getImageLocal(props.ImageUrl)){
         sImageUrl = props.ImageUrl;
+        sToken = props.Token;
         fReplaceCallback = function(sLocalUrl){
           props.ImageUrl = sLocalUrl;
         }
@@ -3018,6 +3019,7 @@ var editor;
     !AscCommon.isNullOrEmptyString(props.ShapeProperties.fill.fill.url)){
       if(!g_oDocumentUrls.getImageLocal(props.ShapeProperties.fill.fill.url)){
         sImageUrl = props.ShapeProperties.fill.fill.url;
+        sToken = props.ShapeProperties.fill.fill.token;
         fReplaceCallback = function(sLocalUrl){
           props.ShapeProperties.fill.fill.url = sLocalUrl;
         }
@@ -3028,6 +3030,7 @@ var editor;
         !AscCommon.isNullOrEmptyString(props.ShapeProperties.textArtProperties.Fill.fill.url)){
       if(!g_oDocumentUrls.getImageLocal(props.ShapeProperties.textArtProperties.Fill.fill.url)){
         sImageUrl = props.ShapeProperties.textArtProperties.Fill.fill.url;
+        sToken = props.ShapeProperties.textArtProperties.Fill.fill.token;
         fReplaceCallback = function(sLocalUrl){
           props.ShapeProperties.textArtProperties.Fill.fill.url = sLocalUrl;
         }
@@ -3042,7 +3045,6 @@ var editor;
         ws.objectRender.setGraphicObjectProps(props);
         return;
       }
-
       AscCommon.sendImgUrls(this, [sImageUrl], function (data) {
 
         if (data && data[0] && data[0].url !== "error") {
@@ -3050,7 +3052,7 @@ var editor;
           ws.objectRender.setGraphicObjectProps(props);
         }
 
-      }, true);
+      }, true, undefined, sToken);
     }
     else{
       if(undefined != props.BulletSymbol && undefined != props.BulletFont) {
