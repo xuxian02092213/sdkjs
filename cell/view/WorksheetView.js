@@ -20312,8 +20312,8 @@
 		var ws = this.model;
 		var slicer = this.model.getSlicerByName(name);
 		var obj;
-		if (slicer && slicer.obj && slicer.obj.cacheDefinition) {
-			var slicerCache = slicer.obj.cacheDefinition;
+		if (slicer && slicer.cacheDefinition) {
+			var slicerCache = slicer.cacheDefinition;
 			obj = slicerCache.getFilterObj();
 		}
 

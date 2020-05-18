@@ -3185,6 +3185,15 @@
 		}
 		return null;
 	};
+	Workbook.prototype.getSlicerByName = function (name) {
+		for (var i = 0, l = this.aWorksheets.length; i < l; ++i) {
+			var cache = this.aWorksheets[i].getSlicerByName(name);
+			if (cache) {
+				return cache;
+			}
+		}
+		return null;
+	};
 	Workbook.prototype.getDrawingDocument = function() {
 		return this.DrawingDocument;
 	};
@@ -7772,12 +7781,12 @@
 		History.Create_NewPoint();
 		History.StartTransaction();
 
-		var slicer = this.getSlicerByName(name);
-		if (slicer) {
-			this.aSlicers.splice(slicer.index, 1);
+		var slicerObj = this.getSlicerIndexByName(name);
+		if (null !== index) {
+			this.aSlicers.splice(slicerObj.index, 1);
 			History.Add(AscCommonExcel.g_oUndoRedoWorksheet, AscCH.historyitem_Worksheet_SlicerDelete, this.getId(), null,
-				new AscCommonExcel.UndoRedoData_FromTo(slicer.obj, null));
-			this.onSlicerDelete(name);
+				new AscCommonExcel.UndoRedoData_FromTo(slicerObj.obj, null));
+			this.workbook.onSlicerDelete(name);
 		}
 
 
@@ -7832,9 +7841,21 @@
 		return res.length ? res : null;
 	};
 
-
 	Worksheet.prototype.getSlicerByName = function (name) {
-		var res = [];
+		var res = null;
+
+		for (var i = 0; i < this.aSlicers.length; i++) {
+			if (name === this.aSlicers[i].name) {
+				res = this.aSlicers[i];
+				break;
+			}
+		}
+
+		return res;
+	};
+
+	Worksheet.prototype.getSlicerIndexByName = function (name) {
+		var res = null;
 
 		for (var i = 0; i < this.aSlicers.length; i++) {
 			if (name === this.aSlicers[i].name) {

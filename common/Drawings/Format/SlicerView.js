@@ -201,11 +201,12 @@
             return oData;
         }
         var sName = this.slicer.getName();
-        var oView = oWorksheet.getSlicerByName(sName);
-        if(!oView || !oView.obj) {
+
+        var oView = oWorksheet.workbook.getSlicerByName(sName);
+        if(!oView) {
             return oData;
         }
-        var oCache = oView.obj.getCacheDefinition();
+        var oCache = oView.getCacheDefinition();
         if(!oCache) {
             return oData;
         }

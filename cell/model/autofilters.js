@@ -4309,7 +4309,7 @@
 				var _slicers = worksheet.getSlicersByTableName(tableName);
 				if (_slicers) {
 					for (var i = 0; i < _slicers.length; i++) {
-						worksheet.onSlicerUpdate(_slicers[i].name);
+						worksheet.workbook.onSlicerUpdate(_slicers[i].name);
 					}
 				}
 			},
@@ -4319,7 +4319,7 @@
 				var _slicers = worksheet.getSlicersByTableName(tableName);
 				if (_slicers) {
 					for (var i = 0; i < _slicers.length; i++) {
-						worksheet.onSlicerDelete(_slicers[i].name);
+						worksheet.workbook.onSlicerDelete(_slicers[i].name);
 					}
 				}
 			},

@@ -3306,43 +3306,43 @@ function (window, undefined) {
 		switch (Type) {
 			case AscCH.historyitem_Slicer_SetCaption: {
 				slicer = oModel.getSlicerByName(Data.name);
-				if (slicer && slicer.obj) {
-					slicer.obj.setCaption(bUndo ? Data.from : Data.to);
+				if (slicer) {
+					slicer.setCaption(bUndo ? Data.from : Data.to);
 				}
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetCacheSourceName: {
 				slicer = oModel.getSlicerByName(Data.name);
-				if (slicer && slicer.obj) {
-					slicer.obj.setSourceName(bUndo ? Data.from : Data.to);
+				if (slicer) {
+					slicer.setSourceName(bUndo ? Data.from : Data.to);
 				}
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetTableColName: {
 				slicer = oModel.getSlicerByName(Data.name);
-				if (slicer && slicer.obj) {
-					slicer.obj.setTableCacheColName(bUndo ? Data.from : Data.to);
+				if (slicer) {
+					slicer.setTableCacheColName(bUndo ? Data.from : Data.to);
 				}
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetTableName: {
 				slicer = oModel.getSlicerByName(Data.name);
-				if (slicer && slicer.obj) {
-					slicer.obj.setTableName(bUndo ? Data.from : Data.to);
+				if (slicer) {
+					slicer.setTableName(bUndo ? Data.from : Data.to);
 				}
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetCacheName: {
 				slicer = oModel.getSlicerByName(Data.name);
-				if (slicer && slicer.obj) {
+				if (slicer) {
 					slicer.obj.setCacheName(bUndo ? Data.from : Data.to);
 				}
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetName: {
 				slicer = oModel.getSlicerByName(bUndo ? Data.to : Data.from);
-				if (slicer && slicer.obj) {
-					slicer.obj.setName(bUndo ? Data.from : Data.to);
+				if (slicer) {
+					slicer.setName(bUndo ? Data.from : Data.to);
 				}
 				break;
 			}
