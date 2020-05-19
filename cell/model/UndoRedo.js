@@ -2798,11 +2798,13 @@ function (window, undefined) {
 				ws.deleteSlicer(Data.to.name);
 			} else {
 				ws.aSlicers.push(Data.to);
+				Data.to.init(null, null, null, ws);
 				wb.onSlicerUpdate(Data.to.name);
 			}
 		} else if (AscCH.historyitem_Worksheet_SlicerDelete === Type) {
 			if (bUndo) {
 				ws.aSlicers.push(Data.from);
+				Data.from.init(null, null, null, ws);
 				wb.onSlicerUpdate(Data.from.name);
 			} else {
 				ws.deleteSlicer(Data.from.name);

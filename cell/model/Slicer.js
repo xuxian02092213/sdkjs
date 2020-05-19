@@ -330,28 +330,42 @@
 	CT_slicer.prototype.getType = function() {
 		return AscCommonExcel.UndoRedoDataTypes.Slicer;
 	};
-	CT_slicer.prototype.init = function (name, obj_name, type) {
-		this.name = this.generateName(name);
-		this.caption = name;
-		this.rowHeight = 241300;
+	CT_slicer.prototype.init = function (name, obj_name, type, ws) {
+		if (name) {
+			this.name = this.generateName(name);
+			this.caption = name;
+		}
+		if (!this.rowHeight) {
+			this.rowHeight = 241300;
+		}
 
-		//необходимо проверить, возможно данный кэш уже существует
-		var cache;
-		var caches = this.ws.getSlicerCachesBySourceName(name);
-		if (caches) {
-			for (var i = 0; i < caches.length; i++) {
-				if (caches[i].checkObjApply(name, obj_name, type)) {
-					cache = caches[i];
-					break;
+		if (!this.cacheDefinition) {
+			//необходимо проверить, возможно данный кэш уже существует
+			var cache;
+			var caches = this.ws.getSlicerCachesBySourceName(name);
+			if (caches) {
+				for (var i = 0; i < caches.length; i++) {
+					if (caches[i].checkObjApply(name, obj_name, type)) {
+						cache = caches[i];
+						break;
+					}
 				}
 			}
-		}
-		if (!cache) {
-			cache = new CT_slicerCacheDefinition(this.ws);
-			cache.init(name, obj_name, type);
+			if (!cache) {
+				cache = new CT_slicerCacheDefinition(this.ws);
+				cache.init(name, obj_name, type);
+			}
+
+			this.cacheDefinition = cache;
 		}
 
-		this.cacheDefinition = cache;
+		if (ws && !this.ws) {
+			this.ws = ws;
+			if (!this.cacheDefinition.ws) {
+				this.cacheDefinition.ws = ws;
+			}
+		}
+
 	};
 	CT_slicer.prototype.initPostOpen = function (tableIds) {
 		if (this.cacheDefinition) {
