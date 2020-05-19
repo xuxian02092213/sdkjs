@@ -469,7 +469,7 @@
 				case 0:
 				{
 					this.cacheDefinition = new CT_slicerCacheDefinition();
-					this.cacheDefinition.fromStream(s);
+					this.cacheDefinition.fromStream(s, historySerialize);
 					break;
 				}
 				default:
@@ -675,7 +675,7 @@
 			s.WriteRecord4(4, hideNoData);
 		}
 	};
-	CT_slicerCacheDefinition.prototype.fromStream = function (s) {
+	CT_slicerCacheDefinition.prototype.fromStream = function (s, historySerialize) {
 		var _type;
 		var _len = s.GetULong();
 		var _start_pos = s.cur;
@@ -729,7 +729,7 @@
 				case 3:
 				{
 					this.tableSlicerCache = new CT_tableSlicerCache();
-					this.tableSlicerCache.fromStream(s);
+					this.tableSlicerCache.fromStream(s, historySerialize);
 					break;
 				}
 				case 4:
@@ -1482,14 +1482,19 @@
 		}
 
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
-		s._WriteUInt2(0, tableIdOpen);
-		s._WriteUInt2(1, columnOpen);
+		if (historySerialize) {
+			s._WriteString2(0, tableIdOpen);
+			s._WriteString2(1, columnOpen);
+		} else {
+			s._WriteUInt2(0, tableIdOpen);
+			s._WriteUInt2(1, columnOpen);
+		}
 		s._WriteUChar2(2, this.sortOrder);
 		s._WriteBool2(3, this.customListSort);
 		s._WriteUChar2(4, this.crossFilter);
 		s.WriteUChar(AscCommon.g_nodeAttributeEnd);
 	};
-	CT_tableSlicerCache.prototype.fromStream = function (s) {
+	CT_tableSlicerCache.prototype.fromStream = function (s, historySerialize) {
 		var _len = s.GetULong();
 		var _start_pos = s.cur;
 		var _end_pos = _len + _start_pos;
@@ -1503,8 +1508,22 @@
 				break;
 			switch (_at)
 			{
-				case 0: { this.tableIdOpen = s.GetULong(); break; }
-				case 1: { this.columnOpen = s.GetULong(); break; }
+				case 0: {
+					if (historySerialize) {
+						this.tableId = s.GetString2();
+					} else {
+						this.tableIdOpen = s.GetULong();
+					}
+					break;
+				}
+				case 1: {
+					if (historySerialize) {
+						this.column = s.GetString2();
+					} else {
+						this.columnOpen = s.GetULong();
+					}
+					break;
+				}
 				case 2: { this.sortOrder = s.GetUChar(); break; }
 				case 3: { this.customListSort = s.GetBool(); break; }
 				case 4: { this.crossFilter = s.GetUChar(); break; }
