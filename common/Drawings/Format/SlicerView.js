@@ -185,9 +185,6 @@
     }
     CSlicerData.prototype = Object.create(CSlicerCache.prototype);
     CSlicerData.prototype.constructor = CSlicerData;
-    CSlicerData.prototype.getWorksheet = function() {
-        return this.slicer.worksheet;
-    };
     CSlicerData.prototype.updateData = function() {
         this.clear();
         var oData = this.retrieveData();
@@ -196,13 +193,12 @@
     };
     CSlicerData.prototype.retrieveData = function() {
         var oData = new CSlicerCache();
-        var oWorksheet = this.getWorksheet();
-        if(!oWorksheet) {
+        var oWorkbook = this.slicer.getWorkbook();
+        if(!oWorkbook) {
             return oData;
         }
         var sName = this.slicer.getName();
-
-        var oView = oWorksheet.workbook.getSlicerByName(sName);
+        var oView = oWorkbook.getSlicerByName(sName);
         if(!oView) {
             return oData;
         }
@@ -311,7 +307,7 @@
         return "";
     };
     CSlicerData.prototype.onViewUpdate = function () {
-        var oWorksheet = this.getWorksheet();
+        var oWorksheet = this.slicer.getWorksheet();
         if(!oWorksheet) {
             this.slicer.removeAllButtonsTmpState();
             return;
@@ -354,7 +350,6 @@
         else {
             this.slicer.removeAllButtonsTmpState();
         }
-        
     };
     
     function CSlicer() {
@@ -827,7 +822,11 @@
         return bRet;
     };
     CSlicer.prototype.deleteSlicer = function () {
-        //TODO
+        var oWorkbook = this.getWorkbook();
+        if(!oWorkbook) {
+            return;
+        }
+        oWorkbook.deleteSlicer(this.name);
     };
     CSlicer.prototype.subscribeToEvents = function () {
         var drawingObjects = this.getDrawingObjectsController();
@@ -858,10 +857,18 @@
             }
         }
     };
-    CSlicer.prototype.getLocked = function (e) {
+    CSlicer.prototype.getLocked = function () {
         return this.data.getLocked();
-    }; 
-
+    };
+    CSlicer.prototype.copy = function (oPr) {
+        var copy = new CSlicer();
+        this.fillObject(copy, oPr);
+        if(this.name !== null) {
+            copy.setName(this.name);
+        }
+        return copy;
+    };
+    
     function CHeader(slicer) {
         AscFormat.CShape.call(this);
         this.slicer = slicer;
