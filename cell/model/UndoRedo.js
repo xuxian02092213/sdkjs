@@ -3351,6 +3351,7 @@ function (window, undefined) {
 				break;
 			}
 		}
+		//this.wb.onSlicerUpdate(bUndo ? Data.from.name : Data.to.name);
 	};
 
 	//----------------------------------------------------------export----------------------------------------------------
@@ -3410,4 +3411,5 @@ function (window, undefined) {
 	window['AscCommonExcel'].g_oUndoRedoLayout = null;
 	window['AscCommonExcel'].g_UndoRedoArrayFormula = null;
 	window['AscCommonExcel'].g_oUndoRedoHeaderFooter = null;
+	window['AscCommonExcel'].g_oUndoRedoSlicer = null;
 })(window);

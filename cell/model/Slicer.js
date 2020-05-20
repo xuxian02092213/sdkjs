@@ -489,13 +489,13 @@
 		var oldVal = this.name;
 		this.name = val;
 		History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetName,
-			this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(null, oldVal, val), true);
+			this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(null, oldVal, val));
 	};
 	CT_slicer.prototype.setCaption = function (val) {
 		var oldVal = this.caption;
 		this.caption = val;
 		History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCaption,
-			this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val), true);
+			this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val));
 	};
 	CT_slicer.prototype.getSlicerCache = function () {
 		return this.cacheDefinition;
@@ -553,7 +553,7 @@
 			var oldVal = this.cacheDefinition.sourceName;
 			this.cacheDefinition.setSourceName(val);
 			History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCacheSourceName,
-				this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val), true);
+				this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val));
 		}
 	};
 
@@ -567,7 +567,7 @@
 			var oldVal = _tableCache.column;
 			_tableCache.setColName(val);
 			History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetTableColName,
-				this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val), true);
+				this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val));
 		}
 	};
 
@@ -581,7 +581,7 @@
 			var oldVal = _tableCache.tableId;
 			_tableCache.setTableName(val);
 			History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetTableName,
-				this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val), true);
+				this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val));
 		}
 	};
 
@@ -594,7 +594,7 @@
 		var oldVal = this.cacheDefinition.name;
 		this.cacheDefinition.setName(val);
 		History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCacheName,
-			this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val), true);
+			this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val));
 
 	};
 
@@ -1620,7 +1620,7 @@
 		var oldVal = this.column;
 		this.column = val;
 		History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCacheSourceName,
-			null, null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, this.column), true);
+			null, null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, this.column));
 	};
 
 	function CT_slicerCacheOlapLevelName() {
