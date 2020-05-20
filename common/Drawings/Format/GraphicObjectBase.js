@@ -1023,7 +1023,7 @@
                 this.drawingBase.ext.cy = extY;
     
             this.handleUpdateExtents();
-    }
+        }
     };
 
 
@@ -1037,6 +1037,25 @@
                 this.spTree[i].setWorksheet(worksheet);
             }
         }
+    };
+    
+    CGraphicObjectBase.prototype.getWorksheet = function()
+    {
+        return this.worksheet;
+    };
+    
+    CGraphicObjectBase.prototype.getWorkbook = function()
+    {
+        var oWorksheet = this.getWorksheet();
+        if(!oWorksheet)
+        {
+            return null;
+        }
+        if(oWorksheet.workbook)
+        {
+            return oWorksheet.workbook;
+        }
+        return null;
     };
 
     CGraphicObjectBase.prototype.getUniNvProps = function(){
