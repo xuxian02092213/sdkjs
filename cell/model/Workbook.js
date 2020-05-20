@@ -8017,11 +8017,15 @@
 		var tables = this.autoFilters.getTablesIntersectionRange(arn);
 		if (tables) {
 			for (var i = 0; i < tables.length; i++) {
-				var slicers = this.getSlicersByTableName(tables[i].DisplayName);
-				for (var j = 0; j < slicers.length; j++) {
-					this.workbook.onSlicerUpdate(slicers[j].name);
-				}
+				this.slicersUpdateAfterChangeTable(tables[i].DisplayName);
 			}
+		}
+	};
+
+	Worksheet.prototype.slicersUpdateAfterChangeTable = function (name) {
+		var slicers = this.getSlicersByTableName(name);
+		for (var j = 0; j < slicers.length; j++) {
+			this.workbook.onSlicerUpdate(slicers[j].name);
 		}
 	};
 

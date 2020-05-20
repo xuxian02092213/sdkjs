@@ -14976,6 +14976,7 @@
         var ar = this.model.selectionRange.getLast().clone();
         var onChangeAutoFilterCallback = function (isSuccess) {
             if (false === isSuccess) {
+                t.model.slicersUpdateAfterChangeTable(autoFilterObject.displayName);
                 return;
             }
 
