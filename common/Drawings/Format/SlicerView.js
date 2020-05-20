@@ -850,9 +850,11 @@
     };
     CSlicer.prototype.onKeyUp = function (e) {
         if(e.keyCode === 91 /*meta*/|| e.keyCode === 17/*ctrl*/) {
-            this.unsubscribeFromEvents();
-            if(!this.eventListener) {
-                this.onViewUpdate();
+            if(this.isSubscribed()) {
+                this.unsubscribeFromEvents();
+                if(!this.eventListener) {
+                    this.onViewUpdate();
+                }
             }
         }
     };

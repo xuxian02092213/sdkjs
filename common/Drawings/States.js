@@ -391,12 +391,12 @@ NullState.prototype =
 
     function SlicerState(drawingObjects, oSlicer) {
         this.drawingObjects = drawingObjects;
-        this.slicier = oSlicer;
+        this.slicer = oSlicer;
     }
     SlicerState.prototype.onMouseDown = function (e, x, y, pageIndex) {
         if(this.drawingObjects.handleEventMode === HANDLE_EVENT_MODE_CURSOR)
         {
-            return {cursorType: "default", objectId: "1"};
+            return {cursorType: "default", objectId: this.slicer.Get_Id()};
         }
         return null;
     };
@@ -404,14 +404,14 @@ NullState.prototype =
         if(!e.IsLocked) {
             return this.onMouseUp(e, x, y, pageIndex);
         }
-        this.slicier.onMouseMove(e, x, y, pageIndex);
+        this.slicer.onMouseMove(e, x, y, pageIndex);
     };
     SlicerState.prototype.onMouseUp = function (e, x, y, pageIndex) {
         if(this.drawingObjects.handleEventMode === HANDLE_EVENT_MODE_CURSOR)
         {
-            return {cursorType: "default", objectId: "1"};
+            return {cursorType: "default", objectId: this.slicer.Get_Id()};
         }
-        var bRet = this.slicier.onMouseUp(e, x, y, pageIndex);
+        var bRet = this.slicer.onMouseUp(e, x, y, pageIndex);
         this.drawingObjects.changeCurrentState(new NullState(this.drawingObjects));
         return bRet;
     };
