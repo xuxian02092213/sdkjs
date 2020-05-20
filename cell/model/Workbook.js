@@ -8024,8 +8024,10 @@
 
 	Worksheet.prototype.slicersUpdateAfterChangeTable = function (name) {
 		var slicers = this.getSlicersByTableName(name);
-		for (var j = 0; j < slicers.length; j++) {
-			this.workbook.onSlicerUpdate(slicers[j].name);
+		if (slicers) {
+			for (var j = 0; j < slicers.length; j++) {
+				this.workbook.onSlicerUpdate(slicers[j].name);
+			}
 		}
 	};
 
