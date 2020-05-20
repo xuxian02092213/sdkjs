@@ -423,8 +423,94 @@
         }
         return this.buttonsContainer.getViewButtonState(nIndex);
     };
+    CSlicer.prototype.getDXF = function(nType) {
+        var oWorkbook = this.getWorkbook();
+        if(!oWorkbook) {
+            return null;
+        }
+        var oSlicerStyles = oWorkbook.SlicerStyles;
+        var oTableStyles = oWorkbook.TableStyles;
+        var sStyleName = oWorkbook.getSlicerStyle(this.name);
+        if(!sStyleName) {
+            sStyleName = oSlicerStyles.DefaultStyle;
+        }
+        if(!sStyleName) {
+            return null;
+        }
+        var oStyle;
+        var oDXF = null;
+        if(nType === STYLE_TYPE.WHOLE || nType === STYLE_TYPE.HEADER) {
+            oStyle = oTableStyles.AllStyles[sStyleName];
+            if(!oStyle) {
+                oStyle = oTableStyles.AllStyles[oTableStyles.DefaultTableStyle];
+            }
+            if(oStyle) {
+                if(nType === STYLE_TYPE.WHOLE) {
+                    if(oStyle.wholeTable) {
+                        oDXF = oStyle.wholeTable.dxf;
+                    }
+                }
+                else {
+                    if(oStyle.headerRow) {
+                        oDXF = oStyle.headerRow.dxf;
+                    }
+                }
+            }
+        }
+        else {
+            oStyle = oSlicerStyles.AllStyles[sStyleName];
+            if(!oStyle) {
+                oStyle = oSlicerStyles.AllStyles[oSlicerStyles.DefaultStyle];
+            }
+            if(oStyle) {
+                switch (nType) {
+                    case STYLE_TYPE.HOVERED_SELECTED_NO_DATA: {
+                        oDXF = oStyle[Asc.ST_slicerStyleType.hoveredSelectedItemWithNoData];
+                        break;
+                    }
+                    case STYLE_TYPE.HOVERED_UNSELECTED_NO_DATA: {
+                        oDXF = oStyle[Asc.ST_slicerStyleType.hoveredUnselectedItemWithNoData];
+                        break;
+                    }
+                    case STYLE_TYPE.HOVERED_SELECTED_DATA: {
+                        oDXF = oStyle[Asc.ST_slicerStyleType.hoveredSelectedItemWithData];
+                        break;
+                    }
+                    case STYLE_TYPE.HOVERED_UNSELECTED_DATA: {
+                        oDXF = oStyle[Asc.ST_slicerStyleType.hoveredUnselectedItemWithData];
+                        break;
+                    }
+                    case STYLE_TYPE.SELECTED_NO_DATA: {
+                        oDXF = oStyle[Asc.ST_slicerStyleType.selectedItemWithNoData];
+                        break;
+                    }
+                    case STYLE_TYPE.SELECTED_DATA: {
+                        oDXF = oStyle[Asc.ST_slicerStyleType.selectedItemWithData];
+                        break;
+                    }
+                    case STYLE_TYPE.UNSELECTED_NO_DATA: {
+                        oDXF = oStyle[Asc.ST_slicerStyleType.unselectedItemWithNoData];
+                        break;
+                    }
+                    case STYLE_TYPE.UNSELECTED_DATA: {
+                        oDXF = oStyle[Asc.ST_slicerStyleType.unselectedItemWithData];
+                        break;
+                    }
+                }
+            }
+        }
+        return oDXF;
+    };
     CSlicer.prototype.getFont = function(nType) {
-        var oFont = new AscCommonExcel.Font();//TODO: Take font from slicerStyle when it will be implemented.
+        var oFont;
+        var oDXF = this.getDXF(nType);
+        if(oDXF) {
+            oFont = oDXF.getFont();
+            if(oFont) {
+                return oFont;
+            }
+        }
+        oFont = new AscCommonExcel.Font();
         oFont.setSize(11);
         if(nType === STYLE_TYPE.HEADER) {
             oFont.setBold(true);
@@ -432,13 +518,20 @@
         return oFont;
     };
     CSlicer.prototype.getFill = function(nType) {
-        var oFill;//TODO: Take background from styles when it will be implemented
+        var oFill;
+        var oDXF = this.getDXF(nType);
+        if(oDXF) {
+            oFill = oDXF.getFill();
+            if(oFill) {
+                return oFill;
+            }
+        }
         var nColor = 0xFFFFFF;
         if(nType & STATE_FLAG_HOVERED) {
             oFill = CreateButtonHoverGradient();
         }
         else {
-            oFill = new AscCommonExcel.Fill();//TODO: Take background from styles when it will be implemented
+            oFill = new AscCommonExcel.Fill();
             if(nType & STATE_FLAG_SELECTED) {
                 oFill.fromColor(new AscCommonExcel.RgbColor(0xBDD7EE));
             }
@@ -449,13 +542,21 @@
         return oFill;
     };
     CSlicer.prototype.getBorder = function(nType) {
+        var oBorder;
+        var oDXF = this.getDXF(nType);
+        if(oDXF) {
+            oBorder = oDXF.getBorder();
+            if(oBorder) {
+                return oBorder;
+            }
+        }
         var r = 91, g = 155, b = 213;
         if(nType !== STYLE_TYPE.HEADER && nType !== STYLE_TYPE.WHOLE) {
             r = 204;
             g = 204;
             b = 204;
         }
-        var oBorder = new AscCommonExcel.Border(null);
+        oBorder = new AscCommonExcel.Border(null);
         if(nType !== STYLE_TYPE.HEADER) {
             oBorder.l = new AscCommonExcel.BorderProp();
             oBorder.l.setStyle(AscCommon.c_oAscBorderStyles.Thin);
