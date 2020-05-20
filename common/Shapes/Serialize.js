@@ -153,7 +153,6 @@ function BinaryPPTYLoader()
     this.Api = null;
 
     this.map_table_styles = {};
-    this.NextTableStyleId = 0;
 
     this.ImageMapChecker = null;
 
@@ -161,12 +160,12 @@ function BinaryPPTYLoader()
 	this.insertDocumentUrlsData = null;
     this.RebuildImages = [];
 
-    this.textBodyTextFit = [];
     this.aSlideLayouts = [];
     this.aThemes = [];
 
 	this.arr_connectors = [];
 	this.map_shapes_by_id = {};
+	this.fields = [];
 
 
 
@@ -216,15 +215,6 @@ function BinaryPPTYLoader()
         this.RebuildImages = [];
 
         return _result;
-    };
-
-    this.Check_TextFit = function()
-    {
-        for(var i = 0; i < this.textBodyTextFit.length; ++i)
-        {
-            this.textBodyTextFit[i].checkTextFit();
-        }
-        this.textBodyTextFit.length = 0;
     };
 
     this.Load = function(base64_ppty, presentation)
@@ -375,12 +365,19 @@ function BinaryPPTYLoader()
 
         this.presentation.ImageMap = {};
         this.presentation.Fonts = [];
-
-        if (presentation.globalTableStyles)
-            this.NextTableStyleId = this.presentation.globalTableStyles.length;
+        this.fields.length = 0;
 
         this.LoadDocument();
-
+        for(var nField = 0; nField < this.fields.length; ++nField)
+        {
+            var oField = this.fields[nField];
+            var sValue = oField.private_GetString();
+            if(typeof sValue === "string" && sValue.length > 0)
+            {
+                AscFonts.FontPickerByCharacter.getFontsByString(sValue);
+            }
+        }
+        this.fields.length = 0;
         AscFormat.checkPlaceholdersText();
 
         this.ImageMapChecker = null;
@@ -9664,10 +9661,6 @@ function BinaryPPTYLoader()
                 case 0:
                 {
                     txbody.setBodyPr(this.ReadBodyPr());
-                    if(txbody.bodyPr && txbody.bodyPr.textFit)
-                    {
-                        this.textBodyTextFit.push(txbody);
-                    }
                     break;
                 }
                 case 1:
@@ -10050,6 +10043,7 @@ function BinaryPPTYLoader()
                                 par.Internal_Content_Add(EndPos++, Fld);
                                 par.Internal_Content_Add(EndPos++, new ParaRun(par, false));
                                 s.Seek2(_end);
+                                this.fields.push(Fld);
                                 break;
                             }
                             case AscFormat.PARRUN_TYPE_BR:
