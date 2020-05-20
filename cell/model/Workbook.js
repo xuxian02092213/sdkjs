@@ -3185,6 +3185,13 @@
 		}
 		return null;
 	};
+	Workbook.prototype.getSlicerStyle = function (name) {
+		var slicer = this.getSlicerByName(name);
+		if (slicer) {
+			return slicer.style;
+		}
+		return null;
+	};
 	Workbook.prototype.getSlicerByName = function (name) {
 		for (var i = 0, l = this.aWorksheets.length; i < l; ++i) {
 			var slicer = this.aWorksheets[i].getSlicerByName(name);
