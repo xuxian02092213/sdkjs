@@ -1107,7 +1107,6 @@
     CHeader.prototype.getInvFullTransformMatrix = function () {
         return this.invertTransform;
     };
-
     CHeader.prototype.recalculateTransform = function() {
         AscFormat.CShape.prototype.recalculateTransform.call(this);
         var oMT = AscCommon.global_MatrixTransformer;
@@ -1139,8 +1138,6 @@
         var oMT = AscCommon.global_MatrixTransformer;
         return oMT.Invert(this.getFullTransform());
     };
-    
-    
     CHeader.prototype.isEventListener = function (child) {
         return this.eventListener === child;
     };
@@ -1492,6 +1489,9 @@
         }
     };
     CButtonBase.prototype.hit = function(x, y) {
+        if(!this.parent.hit(x, y)) {
+            return false;
+        }
         var oInv = this.invertTransform;
         var tx = oInv.TransformPointX(x, y);
         var ty = oInv.TransformPointY(x, y);
