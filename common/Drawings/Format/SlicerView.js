@@ -2219,6 +2219,12 @@
         if(!this.bVisible) {
             return;
         }
+        var oUR = graphics.updatedRect;
+        if(oUR) {
+            if(!oUR.isIntersectOther(this.getBounds())) {
+                return;
+            }
+        }
         var x, y, extX, extY, oButton;
         oButton = this.buttons[0];
         x = this.getButtonPosX(0);
