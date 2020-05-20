@@ -1763,6 +1763,12 @@ GraphicOption.prototype.union = function(oGraphicOption) {
         }
         this.graphicObject.onSlicerLock(sName, bLock);
     };
+    DrawingBase.prototype.onSlicerChangeName = function (sName, sNewName) {
+        if(!this.graphicObject) {
+            return;
+        }
+        this.graphicObject.onSlicerChangeName(sName, sNewName);
+    };
     //}
 
     //-----------------------------------------------------------------------------------

@@ -34,7 +34,12 @@
 
 (function() {
 
-    AscDFH.drawingsChangesMap[AscDFH.historyitem_SlicerViewName] = function(oClass, value){oClass.name = value;};
+    AscDFH.drawingsChangesMap[AscDFH.historyitem_SlicerViewName] = function(oClass, value){
+        oClass.name = value;
+        oClass.data.clear();
+        oClass.removeAllButtonsTmpState();
+        oClass.handleUpdateExtents();
+    };
     AscDFH.changesFactory[AscDFH.historyitem_SlicerViewName] = window['AscDFH'].CChangesDrawingsString;
 
     var LEFT_PADDING = 2.54;
@@ -897,6 +902,12 @@
             this.data.setLocked(bLock);
             this.onUpdate(this.bounds);
             this.unsubscribeFromEvents();
+        }
+    };
+    CSlicer.prototype.onSlicerChangeName = function (sName, sNewName) {
+        if(this.name === sName) {
+            this.setName(sNewName);
+            this.onDataUpdate();
         }
     };
     CSlicer.prototype.onSlicerDelete = function (sName) {

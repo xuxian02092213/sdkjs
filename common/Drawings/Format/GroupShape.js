@@ -1913,6 +1913,13 @@ function CGroupShape()
             this.spTree[i].onSlicerLock(sName, bLock);
         }
     };
+    CGroupShape.prototype.onSlicerChangeName = function(sName, sNewName)
+    {
+        for(var i = 0; i < this.spTree.length; ++i)
+        {
+            this.spTree[i].onSlicerChangeName(sName, sNewName);
+        }
+    };
 
     //--------------------------------------------------------export----------------------------------------------------
     window['AscFormat'] = window['AscFormat'] || {};

@@ -3223,6 +3223,11 @@
 			this.aWorksheets[i].onSlicerLock(sName, bLock);
 		}
 	};
+	Workbook.prototype.onSlicerChangeName = function(sName, sNewName) {
+		for(var i = 0; i < this.aWorksheets.length; ++i) {
+			this.aWorksheets[i].onSlicerChangeName(sName, sNewName);
+		}
+	};
 	Workbook.prototype.deleteSlicer = function(sName) {
 		var bRet = false;
 		for(var i = 0; i < this.aWorksheets.length; ++i) {
@@ -7984,6 +7989,11 @@
 	Worksheet.prototype.onSlicerLock = function (sName, bLock) {
 		for(var i = 0; i < this.Drawings.length; ++i) {
 			this.Drawings[i].onSlicerLock(sName, bLock);
+		}
+	};
+	Worksheet.prototype.onSlicerChangeName = function (sName, sNewName) {
+		for(var i = 0; i < this.Drawings.length; ++i) {
+			this.Drawings[i].onSlicerChangeName(sName, sNewName);
 		}
 	};
 

@@ -1943,6 +1943,9 @@
     CGraphicObjectBase.prototype.onSlicerDelete = function(sName){
         return false;
     };
+    CGraphicObjectBase.prototype.onSlicerChangeName = function(sName, sNewName){
+        return false;
+    };
 
     CGraphicObjectBase.prototype.onUpdate = function (oRect) {
         if(this.drawingBase) {
