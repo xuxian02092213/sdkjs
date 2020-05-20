@@ -9861,7 +9861,7 @@
 							range.promote(/*bCtrl*/ctrlPress, /*bVertical*/(1 === t.fillHandleDirection), nIndex,
 								oCanPromote);
 							// Вызываем функцию пересчета для заголовков форматированной таблицы
-							t.model.autoFilters.renameTableColumn(arn);
+							t.model.checkChangeTablesContent(arn);
 						});
 
                         // Сбрасываем параметры автозаполнения
@@ -10575,8 +10575,8 @@
                 t.objectRender.moveRangeDrawingObject(arnFrom, arnTo);
 
                 // Вызываем функцию пересчета для заголовков форматированной таблицы
-                t.model.autoFilters.renameTableColumn(arnFrom);
-                wsTo.model.autoFilters.renameTableColumn(arnTo);
+                t.model.checkChangeTablesContent(arnFrom);
+                wsTo.model.checkChangeTablesContent(arnTo);
                 t.model.autoFilters.reDrawFilter(arnFrom);
 
                 t.model.autoFilters.afterMoveAutoFilters(arnFrom, arnTo, opt_wsTo);
@@ -10895,7 +10895,7 @@
 
                         // Вызываем функцию пересчета для заголовков форматированной таблицы
                         if (val === c_oAscCleanOptions.All || val === c_oAscCleanOptions.Text) {
-                            t.model.autoFilters.renameTableColumn(range.bbox);
+                            t.model.checkChangeTablesContent(range.bbox);
                         }
 
                         /* возвращаем отрисовку. и перерисовываем ячейки с предварительным пересчетом */
@@ -10952,7 +10952,7 @@
 								r = mc ? mc.r1 : activeCell.row;
 								t.model.getRange3(r, c, r, c).setValue(val.asc_getText());
 								// Вызываем функцию пересчета для заголовков форматированной таблицы
-								t.model.autoFilters.renameTableColumn(range.bbox);
+								t.model.checkChangeTablesContent(range.bbox);
 							}
 
                             val.hyperlinkModel.Ref = range;
@@ -11018,7 +11018,7 @@
 					return false;
 				}
 				if (val.data && val.data.pivotTables && val.data.pivotTables.length > 0) {
-					var intersectionTableParts = this.model.autoFilters.getTableIntersectionRange(newRange);
+					var intersectionTableParts = this.model.autoFilters.getTablesIntersectionRange(newRange);
 					for (var i = 0; i < intersectionTableParts.length; i++) {
 						if(intersectionTableParts[i] && intersectionTableParts[i].Ref && !newRange.containsRange(intersectionTableParts[i].Ref)) {
 							t.handlers.trigger("onErrorEvent", c_oAscError.ID.PivotOverlap, c_oAscError.Level.NoCritical);
@@ -11289,7 +11289,7 @@
 			selectData = t._pasteFromHTML(val, null, specialPasteProps);
 		}
 
-		t.model.autoFilters.renameTableColumn(t.model.selectionRange.getLast());
+		t.model.checkChangeTablesContent(t.model.selectionRange.getLast());
 
 		if (!selectData) {
 			bIsUpdate = false;
@@ -11332,7 +11332,7 @@
 		t.model.workbook.dependencyFormulas.unlockRecal();
 		//добавил для случая, когда вставка формулы проиходит в заголовок таблицы
 		if (arrFormula && arrFormula.length) {
-			t.model.autoFilters.renameTableColumn(t.model.selectionRange.getLast());
+			t.model.checkChangeTablesContent(t.model.selectionRange.getLast());
 		}
 
 		//for special paste
@@ -14257,14 +14257,14 @@
 			}
 
 			isFormula = c.isFormula();
-			this.model.autoFilters.renameTableColumn(bbox);
+			this.model.checkChangeTablesContent(bbox);
 		} else {
 			//***array-formula***
 			changeRangesIfArrayFormula();
 			c.setValue2(val);
 
 			// Вызываем функцию пересчета для заголовков форматированной таблицы
-			this.model.autoFilters.renameTableColumn(bbox);
+			this.model.checkChangeTablesContent(bbox);
 		}
 
 		if (!isFormula) {
@@ -16733,7 +16733,7 @@
 			}
 		}
 
-        var intersectionTableParts = ws.autoFilters.getTableIntersectionRange(activeRange);
+        var intersectionTableParts = ws.autoFilters.getTablesIntersectionRange(activeRange);
         var isPartTablePartsUnderRange = ws.autoFilters._isPartTablePartsUnderRange(activeRange);
         var isPartTablePartsRightRange = ws.autoFilters.isPartTablePartsRightRange(activeRange);
         var isOneTableIntersection = intersectionTableParts && intersectionTableParts.length === 1 ? intersectionTableParts[0] : null;
@@ -17039,7 +17039,7 @@
 
     WorksheetView.prototype.af_checkChangeRange = function (range) {
         var res = null;
-        var intersectionTables = this.model.autoFilters.getTableIntersectionRange(range);
+        var intersectionTables = this.model.autoFilters.getTablesIntersectionRange(range);
 		var merged;
         if (intersectionTables.length > 0) {
             var tablePart = intersectionTables[0];
@@ -19537,7 +19537,7 @@
 
 		var autoFilter = t.model.AutoFilter;
 		var modelSort, dataHasHeaders, columnSort;
-		var tables = t.model.autoFilters.getTableIntersectionRange(selection);
+		var tables = t.model.autoFilters.getTablesIntersectionRange(selection);
 		var lockChangeHeaders, lockChangeOrientation, caseSensitive;
 		//проверяем, возможно находится рядом а/ф
 		var tryExpandRange = t.model.autoFilters.expandRange(selection, true);
@@ -19839,7 +19839,7 @@
 		};
 
 		//TODO lock
-		var tables = t.model.autoFilters.getTableIntersectionRange(selection);
+		var tables = t.model.autoFilters.getTablesIntersectionRange(selection);
 		var obj;
 		if(tables && tables.length) {
 			obj = tables[0];
@@ -19959,7 +19959,7 @@
 
 		var autoFilter = t.model.AutoFilter;
 		var dataHasHeaders;
-		var tables = t.model.autoFilters.getTableIntersectionRange(selection);
+		var tables = t.model.autoFilters.getTablesIntersectionRange(selection);
 		var lockChangeHeaders, lockChangeOrientation, caseSensitive;
 		//проверяем, возможно находится рядом а/ф
 		var tryExpandRange = t.model.autoFilters.expandRange(selection, true);
@@ -20181,7 +20181,7 @@
 					c_oAscError.Level.NoCritical);
 				return;
 			}
-			var tableContains = this.model.autoFilters.getTableIntersectionRange(selection);
+			var tableContains = this.model.autoFilters.getTablesIntersectionRange(selection);
 			var isStartTransaction = false;
 			if (tableContains && tableContains.length) {
 				if (tableContains.length === 1) {

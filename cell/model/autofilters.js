@@ -2395,7 +2395,7 @@
 				return result;
 			},
 
-			getTableIntersectionRange: function (range) {
+			getTablesIntersectionRange: function (range) {
 				var worksheet = this.worksheet;
 				var res = [];
 

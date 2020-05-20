@@ -7180,7 +7180,7 @@
 	};
 	Worksheet.prototype.checkMovePivotTable = function(arnFrom, arnTo, ctrlKey) {
 		if (this.inPivotTable(arnFrom)) {
-			var intersectionTableParts = this.autoFilters.getTableIntersectionRange(arnTo);
+			var intersectionTableParts = this.autoFilters.getTablesIntersectionRange(arnTo);
 			for (var i = 0; i < intersectionTableParts.length; i++) {
 				if(intersectionTableParts[i] && intersectionTableParts[i].Ref && !arnTo.containsRange(intersectionTableParts[i].Ref)) {
 					return c_oAscError.ID.PivotOverlap;
@@ -8011,6 +8011,20 @@
 			History.EndTransaction();
 		}
 	};
+
+	Worksheet.prototype.checkChangeTablesContent = function (arn) {
+		this.autoFilters.renameTableColumn(arn);
+		var tables = this.autoFilters.getTablesIntersectionRange(arn);
+		if (tables) {
+			for (var i = 0; i < tables.length; i++) {
+				var slicers = this.getSlicersByTableName(tables[i].DisplayName);
+				for (var j = 0; j < slicers.length; j++) {
+					this.workbook.onSlicerUpdate(slicers[j].name);
+				}
+			}
+		}
+	};
+
 
 //-------------------------------------------------------------------------------------------------
 	var g_nCellOffsetFlag = 0;
