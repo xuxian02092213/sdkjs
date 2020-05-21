@@ -145,11 +145,6 @@
         return oFill;
     }
     
-    function CTextBox(txBody, transformText) {
-        this.txBody = txBody;
-        this.transformText = transformText;
-    }
-    
     function CSlicerCache() {
         this.view = null;
         this.values = null;
@@ -658,7 +653,6 @@
         var oFont = this.getFont(nType);
         var oTextPr =  this.txStyles.Default.TextPr;
         oTextPr.InitDefault();
-        oTextPr.FillFromExcelFont(oFont);
         oTextPr.FillFromExcelFont(oFont);
         var oParaPr = this.txStyles.Default.ParaPr;
         oParaPr.SetSpacing(1, undefined, 0, 0, undefined, undefined);
@@ -1652,7 +1646,7 @@
             for(var key in STYLE_TYPE) {
                 if(STYLE_TYPE.hasOwnProperty(key)) {
                     this.createTextBody();
-                    this.textBoxes[STYLE_TYPE[key]] = new CTextBox(this.txBody, new AscCommon.CMatrix());
+                    this.textBoxes[STYLE_TYPE[key]] = this.txBody;
                 }
             }
             this.bodyPr = new AscFormat.CBodyPr();
@@ -1671,8 +1665,8 @@
         var nRet = null;
         for(var key in this.textBoxes) {
             if(this.textBoxes.hasOwnProperty(key)) {
-                if(this.textBoxes[key].txBody === this.txBody) {
-                    nRet = key;
+                if(this.textBoxes[key] === this.txBody) {
+                    nRet = parseInt(key);
                     break;
                 }
             }
@@ -1686,12 +1680,16 @@
         var sText = this.getString();
         for(var key in this.textBoxes) {
             if(this.textBoxes.hasOwnProperty(key)) {
-                this.txBody = this.textBoxes[key].txBody;
+                this.txBody = this.textBoxes[key];
                 this.txBody.recalculateOneString(sText);
             }
         }
     };
     CButton.prototype.clipTextRect = function (graphics, transform, transformText, pageIndex) {
+    };
+    CButton.prototype.draw = function (graphics) {
+        this.txBody = this.textBoxes[this.getState()];
+        CButtonBase.prototype.draw.call(this, graphics);
     };
 
     function CInterfaceButton(parent) {
