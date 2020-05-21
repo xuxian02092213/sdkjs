@@ -808,6 +808,9 @@
         if(this.getLocked()) {
             return false;
         }
+        if(!this.data.hasData()) {
+            return false;
+        }
         if(this.header) {
             bRet = bRet || this.header.onMouseMove(e, x, y);
         }
@@ -821,6 +824,9 @@
     };
     CSlicer.prototype.onMouseDown = function (e, x, y) {
         if(this.getLocked()) {
+            return false;
+        }
+        if(!this.data.hasData()) {
             return false;
         }
         var bRet = false, bRes;
@@ -842,7 +848,7 @@
         return bRet;
     };  
     CSlicer.prototype.getCursorType = function (e, x, y) {
-        if(this.getLocked() || !this.hit(x, y)) {
+        if(this.getLocked() || !this.hit(x, y) || !this.data.hasData()) {
             return null;
         }
         var sRet = (this.header && this.header.getCursorType(e, x, y)) || (this.buttonsContainer && this.buttonsContainer.getCursorType(e, x, y));
@@ -881,8 +887,8 @@
         return this.invertTransform;
     };
     CSlicer.prototype.onWheel = function (deltaX, deltaY) {
-        if(this.getLocked()) {
-            return;
+        if(this.getLocked() || !this.data.hasData()) {
+            return false;
         }
         return this.buttonsContainer.onWheel(deltaX, deltaY);
     };
@@ -2302,6 +2308,9 @@
         return this.state;
     };
     CScroll.prototype.hit = function(x, y) {
+        if(!this.bVisible) {
+            return false;
+        }
         var oInv = this.parent.getInvFullTransformMatrix();
         var tx = oInv.TransformPointX(x, y);
         var ty = oInv.TransformPointY(x, y);
@@ -2312,6 +2321,9 @@
         return tx >= l && tx <= r && ty >= t && ty <= b;
     };
     CScroll.prototype.hitInScroller = function(x, y) {
+        if(!this.bVisible) {
+            return false;
+        }
         var oInv = this.parent.getInvFullTransformMatrix();
         var tx = oInv.TransformPointX(x, y);
         var ty = oInv.TransformPointY(x, y);
@@ -2368,6 +2380,9 @@
         graphics.RestoreGrState();
     };
     CScroll.prototype.onMouseMove = function (e, x, y) {
+        if(!this.bVisible) {
+            return false;
+        }
         var bRet = false;
         if(this.eventListener) {
             this.eventListener.onMouseMove(e, x, y);
@@ -2543,7 +2558,7 @@
     };
     CScroll.prototype.onWheel = function (deltaX, deltaY) {
         if(!this.bVisible) {
-            return true;
+            return false;
         }
         var delta = deltaY;
         if(Math.abs(deltaX) > Math.abs(deltaY)) {
