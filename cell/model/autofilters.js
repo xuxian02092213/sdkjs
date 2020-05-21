@@ -1294,7 +1294,6 @@
 				if (worksheet.TableParts) {
 					for (var i = worksheet.TableParts.length - 1; i >= 0; i--) {
 						var tablePart = worksheet.TableParts[i];
-						this.deleteSlicer(tablePart.DisplayName);
 						changeFilter(tablePart, true, i);
 					}
 				}
@@ -4138,8 +4137,7 @@
 				}
 			},
 
-			getOpenAndClosedValues: function (filter, colId, doOpenHide, fullValues) {
-				//fullValues = true;
+			getOpenAndClosedValues: function (filter, colId, doOpenHide, fullValues, isAscending) {
 				var isTablePart = !filter.isAutoFilter(), autoFilter = filter.getAutoFilter(), ref = filter.Ref;
 				var worksheet = this.worksheet, textIndexMap = {}, isDateTimeFormat, dataValue, values = [];
 				//для срезов необходимо отображать все значения, в тч скрытые другими фильтрами в данной таблице
@@ -4297,9 +4295,9 @@
 				if (doOpenHide) {
 					worksheet.workbook.dependencyFormulas.unlockRecal();
 				}
-				var _values = this._sortArrayMinMax(values);
+				var _values = this._sortArrayMinMax(values, isAscending);
 				if(fullValues) {
-					_values = _values.concat(_hideValues);
+					_values = _values.concat(this._sortArrayMinMax(_hideValues, isAscending));
 				}
 				return {values: _values, automaticRowCount: automaticRowCount, ignoreCustomFilter: ignoreCustomFilter};
 			},
@@ -4310,16 +4308,6 @@
 				if (_slicers) {
 					for (var i = 0; i < _slicers.length; i++) {
 						worksheet.workbook.onSlicerUpdate(_slicers[i].name);
-					}
-				}
-			},
-
-			deleteSlicer: function(tableName) {
-				var worksheet = this.worksheet;
-				var _slicers = worksheet.getSlicersByTableName(tableName);
-				if (_slicers) {
-					for (var i = 0; i < _slicers.length; i++) {
-						worksheet.workbook.onSlicerDelete(_slicers[i].name);
 					}
 				}
 			},
@@ -4376,11 +4364,26 @@
 				return res;
 			},
 			
-			_sortArrayMinMax: function(elements)
+			_sortArrayMinMax: function(elements, isAscending)
 			{
-				elements.sort (function sortArr(a, b)
-				{
-					return a.val - b.val;
+				function isNumeric(value) {
+					return !isNaN(parseFloat(value)) && isFinite(value);
+				}
+
+				elements.sort (function sortArr(a, b) {
+					var isNumericA = isNumeric(a.val);
+					var isNumericB = isNumeric(b.val);
+					if (a.val === "") {
+						return (isAscending || isAscending === undefined) ? 1 : -1;
+					} else if (b.val === "") {
+						return (isAscending || isAscending === undefined) ? -1 : 1;
+					} else if ((isNumericA && isNumericB) || (!isNumericA && !isNumericB)) {
+						return (isAscending || isAscending === undefined) ? (a.val - b.val) : (b.val - a.val);
+					} else if (!isNumericA) {
+						return (isAscending || isAscending === undefined) ? 1 : -1;
+					} else {
+						return (isAscending || isAscending === undefined) ? -1 : 1;
+					}
 				});
 				
 				return elements;

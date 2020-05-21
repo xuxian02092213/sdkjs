@@ -760,7 +760,8 @@
 				if (table) {
 					var colId = table.getColIdByName(tableCache.column);
 					if (colId !== null) {
-						res = this.ws.autoFilters.getOpenAndClosedValues(table, colId);
+						var sortOrder = this.tableSlicerCache.sortOrder === ST_tabularSlicerCacheSortOrder.Ascending;
+						res = this.ws.autoFilters.getOpenAndClosedValues(table, colId, null, true, sortOrder);
 					}
 				}
 				break;
