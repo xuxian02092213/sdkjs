@@ -2531,13 +2531,16 @@
       {
         tableRange = table.Ref;
       }
+    } else {
+      var slicerCache = ws.model.getSlicerCacheByCacheName(oldName.Name);
+      if (slicerCache) {
+        tableRange = slicerCache.getRange();
+      }
     }
-    if(tableRange)
-    {
+
+    if (tableRange) {
       ws._isLockedCells( tableRange, null, callback );
-    }
-    else
-    {
+    } else {
       callback();
     }
   };
@@ -2569,7 +2572,6 @@
       ws._isLockedDefNames(delDefinedNamesCallback, defNameId);
 
     }
-
   };
 
   WorkbookView.prototype.getDefaultDefinedName = function() {

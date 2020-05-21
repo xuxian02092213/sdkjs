@@ -834,6 +834,27 @@
 		return this._type;
 	};
 
+	CT_slicerCacheDefinition.prototype.getRange = function () {
+		var res = null;
+		var type = this.getType();
+		switch (type) {
+			case insertSlicerType.table: {
+				//пока беру первый элемент, поскольку не очень понятно в каких случаях их вообще может быть несколько
+				var tableCache = this.tableSlicerCache;
+				var table = this.ws.getTableByName(tableCache.tableId);
+				if (table) {
+					var colId = table.getColIdByName(tableCache.column);
+					res = new Asc.Range(table.Ref.c1 + colId, table.Ref.r1, table.Ref.c1 + colId, table.Ref.r2);
+				}
+				break;
+			}
+			case insertSlicerType.pivotTable: {
+				break;
+			}
+		}
+		return res;
+	};
+
 
 
 	function CT_slicerCacheData() {

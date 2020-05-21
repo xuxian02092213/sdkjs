@@ -7865,6 +7865,17 @@
 		return res.length ? res : null;
 	};
 
+	Worksheet.prototype.getSlicerCacheByCacheName = function (name) {
+		for (var i = 0; i < this.aSlicers.length; i++) {
+			var cache = this.aSlicers[i].getSlicerCache();
+			if (cache && name === cache.name) {
+				return cache;
+			}
+		}
+
+		return null;
+	};
+
 	Worksheet.prototype.getSlicerByName = function (name) {
 		var res = null;
 
