@@ -4363,14 +4363,13 @@
 				
 				return res;
 			},
-			
-			_sortArrayMinMax: function(elements, isAscending)
-			{
+
+			_sortArrayMinMax: function (elements, isAscending) {
 				function isNumeric(value) {
 					return !isNaN(parseFloat(value)) && isFinite(value);
 				}
 
-				elements.sort (function sortArr(a, b) {
+				elements.sort(function sortArr(a, b) {
 					var isNumericA = isNumeric(a.val);
 					var isNumericB = isNumeric(b.val);
 					if (a.val === "") {
@@ -4385,61 +4384,55 @@
 						return (isAscending || isAscending === undefined) ? -1 : 1;
 					}
 				});
-				
+
 				return elements;
 			},
-			
-			_rangeToId: function(range)
-			{
+
+			_rangeToId: function (range) {
 				var cell = new CellAddress(range.r1, range.c1, 0);
 				return cell.getID();
 			},
-			
-			_idToRange: function(id)
-			{
+
+			_idToRange: function (id) {
 				var cell = new CellAddress(id);
 				return new Asc.Range(cell.col - 1, cell.row - 1, cell.col - 1, cell.row - 1);
 			},
 
-            _resetTablePartStyle: function(exceptionRange)
-			{
+			_resetTablePartStyle: function (exceptionRange) {
 				var worksheet = this.worksheet;
-				if(worksheet.TableParts && worksheet.TableParts.length > 0)
-				{
-					for(var tP = 0; tP < worksheet.TableParts.length; tP++)
-					{
+				if (worksheet.TableParts && worksheet.TableParts.length > 0) {
+					for (var tP = 0; tP < worksheet.TableParts.length; tP++) {
 						var ref = worksheet.TableParts[tP].Ref;
-						
-						if(exceptionRange && !exceptionRange.isEqual(ref) && ((ref.r1 >= exceptionRange.r1 && ref.r1 <= exceptionRange.r2) || (ref.r2 >= exceptionRange.r1 && ref.r2 <= exceptionRange.r2)))
+
+						if (exceptionRange && !exceptionRange.isEqual(ref) && ((ref.r1 >= exceptionRange.r1 && ref.r1 <= exceptionRange.r2) || (ref.r2 >= exceptionRange.r1 && ref.r2 <= exceptionRange.r2))) {
 							this._setColorStyleTable(ref, worksheet.TableParts[tP]);
-						else if(!exceptionRange)
+						} else if (!exceptionRange) {
 							this._setColorStyleTable(ref, worksheet.TableParts[tP]);
+						}
 					}
 				}
 			},
-			
-			_isFilterColumnsContainFilter: function(filterColumns)
-			{
-				if(!filterColumns || !filterColumns.length)
+
+			_isFilterColumnsContainFilter: function (filterColumns) {
+				if (!filterColumns || !filterColumns.length) {
 					return false;
-				
+				}
+
 				var filterColumn;
-				for(var k = 0; k < filterColumns.length; k++)
-				{
+				for (var k = 0; k < filterColumns.length; k++) {
 					filterColumn = filterColumns[k];
-					if(filterColumn && (filterColumn.ColorFilter || filterColumn.ColorFilter || filterColumn.CustomFiltersObj || filterColumn.DynamicFilter || filterColumn.Filters || filterColumn.Top10))
+					if (filterColumn && (filterColumn.ColorFilter || filterColumn.ColorFilter || filterColumn.CustomFiltersObj || filterColumn.DynamicFilter || filterColumn.Filters || filterColumn.Top10)) {
 						return true;
+					}
 				}
 			},
-			
-			_openHiddenRows: function(filter)
-			{
+
+			_openHiddenRows: function (filter) {
 				var worksheet = this.worksheet;
 				var autoFilter = filter.isAutoFilter() ? filter : filter.AutoFilter;
 				var isApplyFilter = autoFilter && autoFilter.FilterColumns && autoFilter.FilterColumns.length;
-				
-				if(filter && filter.Ref && isApplyFilter)
-				{
+
+				if (filter && filter.Ref && isApplyFilter) {
 					worksheet.setRowHidden(false, filter.Ref.r1, filter.Ref.r2);
 				}
 			},
@@ -4468,25 +4461,19 @@
 				}
 				worksheet.workbook.dependencyFormulas.unlockRecal();
 			},
-			
-			_isAddNameColumn: function(range)
-			{
+
+			_isAddNameColumn: function (range) {
 				//если в трёх первых строчках любых столбцов содержится текстовые данные
 				var result = false;
 				var worksheet = this.worksheet;
-				if(range.r1 != range.r2)
-				{
-					for(var col = range.c1; col <= range.c2; col++)
-					{	
-						var valFirst = worksheet.getCell3(range.r1,col);
-						if(valFirst != '')
-						{
-							for(var row = range.r1; row <= range.r1 + 2; row++)
-							{
-								var cell = worksheet.getCell3(row,col);
+				if (range.r1 !== range.r2) {
+					for (var col = range.c1; col <= range.c2; col++) {
+						var valFirst = worksheet.getCell3(range.r1, col);
+						if (valFirst !== '') {
+							for (var row = range.r1; row <= range.r1 + 2; row++) {
+								var cell = worksheet.getCell3(row, col);
 								var type = cell.getType();
-								if(type == CellValueType.String)
-								{
+								if (type === CellValueType.String) {
 									result = true;
 									break;
 								}
@@ -4496,9 +4483,8 @@
 				}
 				return result;
 			},
-			
-			_generateColumnNameWithoutTitle: function(ref)
-			{
+
+			_generateColumnNameWithoutTitle: function (ref) {
 				var tableColumns = [], newTableColumn;
 				var range = this.worksheet.getRange3(ref.r1, ref.c1, ref.r1, ref.c2);
 				var defaultName = 'Column';
@@ -4519,7 +4505,7 @@
 						++index;
 					}
 
-					while(true) {
+					while (true) {
 						if (isDuplicate) {
 							val = valTemplate + (++index);
 						}
@@ -4543,53 +4529,52 @@
 				}
 				return tableColumns;
 			},
-			
-			_generateColumnName: function(tableColumns, indexInsertColumn)
-			{
+
+			_generateColumnName: function (tableColumns, indexInsertColumn) {
 				var index = 1;
 				var isSequence = false;
-				if(indexInsertColumn != undefined)
-				{
-					if(indexInsertColumn < 0)
+				if (indexInsertColumn != undefined) {
+					if (indexInsertColumn < 0) {
 						indexInsertColumn = 0;
+					}
 					var nameStart;
 					var nameEnd;
-					if(tableColumns[indexInsertColumn] && tableColumns[indexInsertColumn].Name)
+					if (tableColumns[indexInsertColumn] && tableColumns[indexInsertColumn].Name) {
 						nameStart = tableColumns[indexInsertColumn].Name.split("Column");
-					if(tableColumns[indexInsertColumn + 1] && tableColumns[indexInsertColumn + 1].Name)
+					}
+					if (tableColumns[indexInsertColumn + 1] && tableColumns[indexInsertColumn + 1].Name) {
 						nameEnd = tableColumns[indexInsertColumn + 1].Name.split("Column");
-					if(nameStart && nameStart[1] && nameEnd && nameEnd[1] && !isNaN(parseInt(nameStart[1])) && !isNaN(parseInt(nameEnd[1])) && ((parseInt(nameStart[1]) + 1) == parseInt(nameEnd[1])))
+					}
+					if (nameStart && nameStart[1] && nameEnd && nameEnd[1] && !isNaN(parseInt(nameStart[1])) && !isNaN(parseInt(nameEnd[1])) && ((parseInt(nameStart[1]) + 1) == parseInt(nameEnd[1]))) {
 						isSequence = true;
+					}
 				}
 
 				var name, i;
-				if(indexInsertColumn == undefined || !isSequence)
-				{
-					for(i = 0; i < tableColumns.length; i++)
-					{
-						if(tableColumns[i].Name)
+				if (indexInsertColumn == undefined || !isSequence) {
+					for (i = 0; i < tableColumns.length; i++) {
+						if (tableColumns[i].Name) {
 							name = tableColumns[i].Name.split("Column");
-						if(name && name[1] && !isNaN(parseFloat(name[1])) && index == parseFloat(name[1]))
-						{
+						}
+						if (name && name[1] && !isNaN(parseFloat(name[1])) && index == parseFloat(name[1])) {
 							index++;
 							i = -1;
 						}
 					}
 					return "Column" + index;
-				}
-				else
-				{
-					if(tableColumns[indexInsertColumn] && tableColumns[indexInsertColumn].Name)
+				} else {
+					if (tableColumns[indexInsertColumn] && tableColumns[indexInsertColumn].Name) {
 						name = tableColumns[indexInsertColumn].Name.split("Column");
-					if(name && name[1] && !isNaN(parseFloat(name[1])))
+					}
+					if (name && name[1] && !isNaN(parseFloat(name[1]))) {
 						index = parseFloat(name[1]) + 1;
-					
-					for(i = 0; i < tableColumns.length; i++)
-					{
-						if(tableColumns[i].Name)
+					}
+
+					for (i = 0; i < tableColumns.length; i++) {
+						if (tableColumns[i].Name) {
 							name = tableColumns[i].Name.split("Column");
-						if(name && name[1] && !isNaN(parseFloat(name[1])) && index == parseFloat(name[1]))
-						{
+						}
+						if (name && name[1] && !isNaN(parseFloat(name[1])) && index == parseFloat(name[1])) {
 							index = parseInt((index - 1) + "2");
 							i = -1;
 						}
@@ -4598,16 +4583,15 @@
 				}
 			},
 
-			_generateNextColumnName: function(tableColumns, val)
-			{
+			_generateNextColumnName: function (tableColumns, val) {
 				var tableColumnMap = [];
-				for(var i = 0 ; i < tableColumns.length; i++) {
+				for (var i = 0; i < tableColumns.length; i++) {
 					tableColumnMap[tableColumns[i].Name] = 1;
 				}
 				var res = val;
 				var index = 2;
-				while(true) {
-					if(tableColumnMap[res]) {
+				while (true) {
+					if (tableColumnMap[res]) {
 						res = val + index;
 					} else {
 						break;
@@ -4616,62 +4600,53 @@
 				}
 				return res;
 			},
-			
+
 			//TODO убрать начеркивание
-			_setColorStyleTable: function(range, options, isOpenFilter, isSetVal, isSetTotalRowType)
-			{
+			_setColorStyleTable: function (range, options, isOpenFilter, isSetVal, isSetTotalRowType) {
 				var worksheet = this.worksheet;
 				var bRedoChanges = worksheet.workbook.bRedoChanges;
-				
+
 				var bbox = range;
-				
+
 				var style = options.TableStyleInfo ? options.TableStyleInfo.clone() : null;
 				var styleForCurTable;
 				//todo из файла
 				var headerRowCount = 1;
 				var totalsRowCount = 0;
-				if(null != options.HeaderRowCount)
+				if (null != options.HeaderRowCount) {
 					headerRowCount = options.HeaderRowCount;
-				if(null != options.TotalsRowCount)
+				}
+				if (null != options.TotalsRowCount) {
 					totalsRowCount = options.TotalsRowCount;
+				}
 
-				if(style && worksheet.workbook.TableStyles && worksheet.workbook.TableStyles.AllStyles)
-				{
+				if (style && worksheet.workbook.TableStyles && worksheet.workbook.TableStyles.AllStyles) {
 					//заполняем названия столбцов
-					if(true != isOpenFilter && isSetVal && !bRedoChanges)
-					{
-						if((headerRowCount > 0 || totalsRowCount > 0)  && options.TableColumns)
-						{
-							for(var ncol = bbox.c1; ncol <= bbox.c2; ncol++)
-							{
+					if (true != isOpenFilter && isSetVal && !bRedoChanges) {
+						if ((headerRowCount > 0 || totalsRowCount > 0) && options.TableColumns) {
+							for (var ncol = bbox.c1; ncol <= bbox.c2; ncol++) {
 								range = worksheet.getCell3(bbox.r1, ncol);
 								var num = ncol - bbox.c1;
 								var tableColumn = options.TableColumns[num];
-								if(null != tableColumn && null != tableColumn.Name && headerRowCount > 0)
-								{
+								if (null != tableColumn && null != tableColumn.Name && headerRowCount > 0) {
 									range.setValue(tableColumn.Name);
 									range.setType(CellValueType.String);
 								}
-								
-								if(tableColumn !== null && totalsRowCount > 0)
-								{
+
+								if (tableColumn !== null && totalsRowCount > 0) {
 									range = worksheet.getCell3(bbox.r2, ncol);
-									
-									if(null !== tableColumn.TotalsRowLabel)
-									{
+
+									if (null !== tableColumn.TotalsRowLabel) {
 										range.setValue(tableColumn.TotalsRowLabel);
 										range.setType(CellValueType.String);
 									}
-									
+
 									var formula = tableColumn.getTotalRowFormula(options);
-									if(null !== formula)
-									{
+									if (null !== formula) {
 										range.setValue("=" + formula, null, true);
-										if(isSetTotalRowType)
-										{
+										if (isSetTotalRowType) {
 											var numFormatType = this._getFormatTableColumnRange(options, tableColumn.Name);
-											if(null !== numFormatType)
-											{
+											if (null !== numFormatType) {
 												range.setNumFormat(numFormatType);
 											}
 										}
@@ -4685,77 +4660,68 @@
 					if (!styleForCurTable) {
 						return;
 					}
-					
+
 					//заполняем стили
 					styleForCurTable.initStyle(worksheet.sheetMergedStyles, bbox, style, headerRowCount, totalsRowCount);
 					//expand init rows
-					if(bbox.r2 > worksheet.nRowsCount) {
+					if (bbox.r2 > worksheet.nRowsCount) {
 						worksheet.setRowsCount(bbox.r2);
 					}
 				}
 			},
 
-			_getFormatTableColumnRange: function(table, columnName)
-			{
+			_getFormatTableColumnRange: function (table, columnName) {
 				var worksheet = this.worksheet;
 				var arrFormat = [];
 				var res = null;
-				
-				var tableRange = table.getTableRangeForFormula({param: AscCommon.FormulaTablePartInfo.columns, startCol: columnName, endCol: columnName});
-				if(null !== tableRange)
-				{
-					for(var i = tableRange.r1; i <= tableRange.r2; i++)
-					{
+
+				var tableRange = table.getTableRangeForFormula({
+					param: AscCommon.FormulaTablePartInfo.columns, startCol: columnName, endCol: columnName
+				});
+				if (null !== tableRange) {
+					for (var i = tableRange.r1; i <= tableRange.r2; i++) {
 						var cell = worksheet.getCell3(i, tableRange.c1);
 						var format = cell.getNumFormat();
 						var sFromatString = format.sFormat;
 						var type = format ? format.getType : null;
-						
-						if(null !== type)
-						{	
+
+						if (null !== type) {
 							res = true;
-							if(!arrFormat[sFromatString])
-							{
+							if (!arrFormat[sFromatString]) {
 								arrFormat[sFromatString] = 0;
 							}
 							arrFormat[sFromatString]++;
 						}
 					}
 				}
-				
-				if(res)
-				{
+
+				if (res) {
 					var maxCount = 0;
-					for(var i in arrFormat)
-					{
-						if(arrFormat[i] > maxCount)
-						{
+					for (var i in arrFormat) {
+						if (arrFormat[i] > maxCount) {
 							maxCount = arrFormat[i];
 							res = i;
 						}
 					}
 				}
-				
+
 				return res;
 			},
-			
-			_cleanStyleTable : function(sRef)
-			{
+
+			_cleanStyleTable: function (sRef) {
 				var oRange = new AscCommonExcel.Range(this.worksheet, sRef.r1, sRef.c1, sRef.r2, sRef.c2);
 				oRange.clearTableStyle();
 			},
-					
+
 			//TODO CHANGE!!!
-			_reDrawCurrentFilter: function(fColumns, tableParts)
-			{
+			_reDrawCurrentFilter: function (fColumns, tableParts) {
 				//TODO сделать открытие и закрытие строк
 				//перерисовываем таблицу со стилем 
-				if(tableParts)
-				{
+				if (tableParts) {
 					var ref = tableParts.Ref;
 					this._cleanStyleTable(ref);
 					this._setColorStyleTable(ref, tableParts);
-				}		
+				}
 			},
 
 			_preMoveAutoFilters: function (arnFrom, arnTo, copyRange, opt_wsTo) {
@@ -4779,8 +4745,7 @@
 							//в данном случае, если вставлять в MS ф/т в а/ф с одного листа ну другой
 							//excel не убирает а/ф и в результате делает файл битым
 							//мы сделаем аналогично тому, как происходит в пределах одного листа
-							if (ws.AutoFilter && ws.AutoFilter.Ref && moveRangeTo.intersection(ws.AutoFilter.Ref) &&
-								ws.AutoFilter !== findFilters[i]) {
+							if (ws.AutoFilter && ws.AutoFilter.Ref && moveRangeTo.intersection(ws.AutoFilter.Ref) && ws.AutoFilter !== findFilters[i]) {
 								ws.autoFilters.deleteAutoFilter(ws.AutoFilter.Ref);
 							}
 
@@ -4811,89 +4776,76 @@
 					}
 				}
 			},
-			
-			_searchHiddenRowsByFilter: function(filter, range)
-			{
+
+			_searchHiddenRowsByFilter: function (filter, range) {
 				var ref = filter.Ref;
 				var worksheet = this.worksheet;
 				var intersection = filter.Ref.intersection(range);
-				
-				if(intersection && filter.isApplyAutoFilter())
-				{
-					for(var i = intersection.r1; i <= intersection.r2; i++)
-					{
-						if(worksheet.getRowHidden(i) === true)
-						{
+
+				if (intersection && filter.isApplyAutoFilter()) {
+					for (var i = intersection.r1; i <= intersection.r2; i++) {
+						if (worksheet.getRowHidden(i) === true) {
 							return true;
 						}
 					}
 				}
-				
+
 				return false;
 			},
-			
-			_searchFiltersInRange: function(range, bFindOnlyTableParts)//find filters in this range
+
+			_searchFiltersInRange: function (range, bFindOnlyTableParts)//find filters in this range
 			{
 				var result = [];
 				var worksheet = this.worksheet;
 				range = new Asc.Range(range.c1, range.r1, range.c2, range.r2);
-				
-				if(worksheet.AutoFilter && !bFindOnlyTableParts)
-				{
-					if(range.containsRange(worksheet.AutoFilter.Ref))
+
+				if (worksheet.AutoFilter && !bFindOnlyTableParts) {
+					if (range.containsRange(worksheet.AutoFilter.Ref)) {
 						result[result.length] = worksheet.AutoFilter;
+					}
 				}
-				
-				if(worksheet.TableParts)
-				{
-					for(var i = 0; i < worksheet.TableParts.length; i++)
-					{
-						if(worksheet.TableParts[i])
-						{
-							if(range.containsRange(worksheet.TableParts[i].Ref))
+
+				if (worksheet.TableParts) {
+					for (var i = 0; i < worksheet.TableParts.length; i++) {
+						if (worksheet.TableParts[i]) {
+							if (range.containsRange(worksheet.TableParts[i].Ref)) {
 								result[result.length] = worksheet.TableParts[i];
+							}
 						}
 					}
 				}
-				
-				if(!result.length)
+
+				if (!result.length) {
 					result = false;
-				
+				}
+
 				return result;
 			},
-			
-			_searchRangeInFilters: function(range)//find filters in this range
+
+			_searchRangeInFilters: function (range)//find filters in this range
 			{
 				var result = null;
 				var worksheet = this.worksheet;
-				
-				if(worksheet.AutoFilter)
-				{
-					if(worksheet.AutoFilter.Ref.containsRange(range))
-					{
+
+				if (worksheet.AutoFilter) {
+					if (worksheet.AutoFilter.Ref.containsRange(range)) {
 						result = worksheet.AutoFilter;
-					}
-					else if(worksheet.AutoFilter.Ref.intersection(range))
-					{
+					} else if (worksheet.AutoFilter.Ref.intersection(range)) {
 						result = false;
 					}
 				}
-				
-				if(worksheet.TableParts && null === result)
-				{
-					for(var i = 0; i < worksheet.TableParts.length; i++)
-					{
-						if(worksheet.TableParts[i])
-						{
-							if(worksheet.TableParts[i].Ref.containsRange(range))
-							{
+
+				if (worksheet.TableParts && null === result) {
+					for (var i = 0; i < worksheet.TableParts.length; i++) {
+						if (worksheet.TableParts[i]) {
+							if (worksheet.TableParts[i].Ref.containsRange(range)) {
 								result = worksheet.TableParts[i];
 								break;
 							}
 						}
 					}
 				}
-				
+
 				return result;
 			},
 
