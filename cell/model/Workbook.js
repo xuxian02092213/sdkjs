@@ -7810,16 +7810,11 @@
 				new AscCommonExcel.UndoRedoData_FromTo(slicerObj.obj, null));
 			this.workbook.onSlicerDelete(name);
 			res = true;
+			var cache = slicerObj.obj.getCacheDefinition();
+			if (cache && null === this.getSlicersByCacheName(cache.name)) {
+				this.workbook.delDefinesNames(cache.name);
+			}
 		}
-
-
-		//TODO скорее всего придётся переносить удаление именованных диапазонов выше, чтобы делались все необходимые проверки
-		//и посылались все необходимые эвенты
-		/*if (slicer && slicer.cacheDefinition) {
-			var _name = slicer.cacheDefinition.name;
-			var newDefName = new Asc.asc_CDefName(_name, null, null, false, null, null, true);
-			this.workbook.editDefinesNames(null, newDefName);
-		}*/
 
 		History.EndTransaction();
 		return res;

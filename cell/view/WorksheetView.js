@@ -20295,14 +20295,17 @@
 	WorksheetView.prototype.deleteSlicer = function (name) {
 		var t = this;
 
-		var callback = function () {
-			//добавляем в структуру
+		var callback = function (success) {
+			if (!success) {
+				return;
+			}
 			t.model.deleteSlicer(name);
 		};
 
-		//TODO lock
-		//+ lock def names
-		callback();
+		var slicer = this.model.getSlicerByName(name);
+		if (slicer) {
+			this.checkLockSlicer([slicer], true, callback);
+		}
 	};
 
 	WorksheetView.prototype.setFilterValuesFromSlicer = function (slicer, val) {
@@ -20386,10 +20389,12 @@
 		}*/
 	};
 
-	WorksheetView.prototype.checkLockSlicer = function (slicers, callback) {
+	WorksheetView.prototype.checkLockSlicer = function (slicers, doLockRange, callback) {
+		var t = this;
 		var _lockMap = [];
 		var lockInfoArr = [];
-		var cache, defNameId, lockInfo;
+		var lockRanges = [];
+		var cache, defNameId, lockInfo, lockRange;
 		for (var i = 0; i < slicers.length; i++) {
 			cache = slicers[i].getCacheDefinition();
 			if (!_lockMap[cache.name]) {
@@ -20398,13 +20403,31 @@
 				defNameId = defNameId ? defNameId.getNodeId() : null;
 				lockInfo = this.collaborativeEditing.getLockInfo(c_oAscLockTypeElem.Object, null, -1, defNameId);
 				lockInfoArr.push(lockInfo);
+				if (doLockRange) {
+					lockRange = cache.getRange();
+					if (lockRange) {
+						lockRanges.push(lockRange);
+					}
+				}
 			}
 		}
 
+		var _callback = function (success) {
+			if (!success && callback) {
+				callback(false);
+			}
+
+			if (lockRanges && lockRanges.length) {
+				t._isLockedCells(lockRanges, /*subType*/null, callback);
+			} else {
+				callback(true);
+			}
+		};
+
 		if (lockInfoArr && lockInfoArr.length) {
-			this.collaborativeEditing.lock(lockInfoArr, callback);
-		} else if (callback) {
-			callback(true);
+			this.collaborativeEditing.lock(lockInfoArr, _callback);
+		} else {
+			_callback(true);
 		}
 	};
 

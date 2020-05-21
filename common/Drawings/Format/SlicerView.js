@@ -928,11 +928,7 @@
         return bRet;
     };
     CSlicer.prototype.deleteSlicer = function () {
-        var oWorkbook = this.getWorkbook();
-        if(!oWorkbook) {
-            return;
-        }
-        oWorkbook.deleteSlicer(this.name);
+        Asc.editor.wb.deleteSlicer(this.name);
     };
     CSlicer.prototype.subscribeToEvents = function () {
         var drawingObjects = this.getDrawingObjectsController();

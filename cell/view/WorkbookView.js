@@ -3344,6 +3344,12 @@
 		this.getWorksheet().setFilterValuesFromSlicer(slicer, val);
 	};
 
+	WorkbookView.prototype.deleteSlicer = function (name) {
+		for(var i in this.wsViews) {
+			this.wsViews[i].deleteSlicer(name);
+		}
+	};
+
   //------------------------------------------------------------export---------------------------------------------------
   window['AscCommonExcel'] = window['AscCommonExcel'] || {};
   window["AscCommonExcel"].WorkbookView = WorkbookView;
