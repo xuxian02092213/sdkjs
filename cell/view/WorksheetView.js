@@ -20386,6 +20386,28 @@
 		}*/
 	};
 
+	WorksheetView.prototype.checkLockSlicer = function (slicers, callback) {
+		var _lockMap = [];
+		var lockInfoArr = [];
+		var cache, defNameId, lockInfo;
+		for (var i = 0; i < slicers.length; i++) {
+			cache = slicers[i].getCacheDefinition();
+			if (!_lockMap[cache.name]) {
+				_lockMap[cache.name] = 1;
+				defNameId = this.model.workbook.dependencyFormulas.getDefNameByName(cache.name, this.model.getId());
+				defNameId = defNameId ? defNameId.getNodeId() : null;
+				lockInfo = this.collaborativeEditing.getLockInfo(c_oAscLockTypeElem.Object, null, -1, defNameId);
+				lockInfoArr.push(lockInfo);
+			}
+		}
+
+		if (lockInfoArr && lockInfoArr.length) {
+			this.collaborativeEditing.lock(lockInfoArr, callback);
+		} else if (callback) {
+			callback(true);
+		}
+	};
+
 	//------------------------------------------------------------export---------------------------------------------------
     window['AscCommonExcel'] = window['AscCommonExcel'] || {};
 	window["AscCommonExcel"].CellFlags = CellFlags;
