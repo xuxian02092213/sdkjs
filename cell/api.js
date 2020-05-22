@@ -4599,6 +4599,10 @@ var editor;
     return this.wb.insertSlicers(arr);
   };
 
+  spreadsheet_api.prototype.asc_setSlicer = function (name, obj) {
+    return this.wb.setSlicer(name, obj);
+  };
+
   /*
    * Export
    * -----------------------------------------------------------------------------

@@ -20308,6 +20308,24 @@
 		}
 	};
 
+	WorksheetView.prototype.setSlicer = function (slicer, obj) {
+		var t = this;
+
+		var callback = function (success) {
+			if (!success) {
+				return;
+			}
+			History.Create_NewPoint();
+			History.StartTransaction();
+			slicer.setSlicer(obj);
+			History.EndTransaction();
+		};
+
+		if (slicer) {
+			this.checkLockSlicer([slicer], true, callback);
+		}
+	};
+
 	WorksheetView.prototype.setFilterValuesFromSlicer = function (slicer, val) {
 		var ws = this.model;
 		var obj;

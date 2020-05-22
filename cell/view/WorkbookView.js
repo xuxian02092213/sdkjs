@@ -3350,6 +3350,17 @@
 		}
 	};
 
+	WorkbookView.prototype.setSlicer = function (name, obj) {
+		for(var i in this.wsViews) {
+			var slicer = this.wsViews.model.getSlicerByName(name);
+			if (slicer) {
+				this.wsViews[i].setSlicer(slicer, obj);
+				break;
+			}
+		}
+	};
+
+
   //------------------------------------------------------------export---------------------------------------------------
   window['AscCommonExcel'] = window['AscCommonExcel'] || {};
   window["AscCommonExcel"].WorkbookView = WorkbookView;
