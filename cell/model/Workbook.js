@@ -2022,6 +2022,10 @@
 			},
 			"deleteColumnTablePart": function(tableName, deleted) {
 				self.dependencyFormulas.delColumnTable(tableName, deleted);
+				var wsActive = self.getActiveWs();
+				if (wsActive) {
+					wsActive.deleteSlicersByTableCol(tableName, deleted);
+				}
 			}, 'onFilterInfo' : function () {
 				self.handlers.trigger("asc_onFilterInfo");
 			}
@@ -7812,7 +7816,7 @@
 			res = true;
 			var cache = slicerObj.obj.getCacheDefinition();
 			if (cache && null === this.getSlicersByCacheName(cache.name)) {
-				this.workbook.dependencyFormulas.removeDefName(null, cache.name);
+				this.workbook.dependencyFormulas.delTableName(cache.name);
 			}
 		}
 
@@ -8011,6 +8015,22 @@
 		if (slicers) {
 			for (var i = 0; i < slicers.length; i++) {
 				this.deleteSlicer(slicers[i].name);
+			}
+		}
+
+		History.EndTransaction();
+	};
+
+	Worksheet.prototype.deleteSlicersByTableCol = function (tableName, colMap) {
+		History.Create_NewPoint();
+		History.StartTransaction();
+
+		for (var j in colMap) {
+			var slicers = this.getSlicersByTableColName(tableName, j);
+			if (slicers) {
+				for (var i = 0; i < slicers.length; i++) {
+					this.deleteSlicer(slicers[i].name);
+				}
 			}
 		}
 

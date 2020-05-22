@@ -2206,13 +2206,13 @@
 			
 			//if active range intersect even a part tablePart(for insert(delete) cells)
 			isActiveCellsCrossHalfFTable: function (activeCells, val, prop) {
-				var InsertCellsAndShiftDown = val == c_oAscInsertOptions.InsertCellsAndShiftDown && prop == 'insCell';
-				var InsertCellsAndShiftRight = val == c_oAscInsertOptions.InsertCellsAndShiftRight && prop == 'insCell';
-				var DeleteCellsAndShiftLeft = val == c_oAscDeleteOptions.DeleteCellsAndShiftLeft && prop == 'delCell';
-				var DeleteCellsAndShiftTop = val == c_oAscDeleteOptions.DeleteCellsAndShiftTop && prop == 'delCell';
+				var InsertCellsAndShiftDown = val === c_oAscInsertOptions.InsertCellsAndShiftDown && prop === 'insCell';
+				var InsertCellsAndShiftRight = val === c_oAscInsertOptions.InsertCellsAndShiftRight && prop === 'insCell';
+				var DeleteCellsAndShiftLeft = val === c_oAscDeleteOptions.DeleteCellsAndShiftLeft && prop === 'delCell';
+				var DeleteCellsAndShiftTop = val === c_oAscDeleteOptions.DeleteCellsAndShiftTop && prop === 'delCell';
 
-				var DeleteColumns = val == c_oAscDeleteOptions.DeleteColumns && prop == 'delCell';
-				var DeleteRows = val == c_oAscDeleteOptions.DeleteRows && prop == 'delCell';
+				var DeleteColumns = val === c_oAscDeleteOptions.DeleteColumns && prop === 'delCell';
+				var DeleteRows = val === c_oAscDeleteOptions.DeleteRows && prop === 'delCell';
 
 				var worksheet = this.worksheet;
 				var tableParts = worksheet.TableParts;
