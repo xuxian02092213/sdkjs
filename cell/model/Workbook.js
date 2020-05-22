@@ -7812,7 +7812,7 @@
 			res = true;
 			var cache = slicerObj.obj.getCacheDefinition();
 			if (cache && null === this.getSlicersByCacheName(cache.name)) {
-				this.workbook.dependencyFormulas.removeDefName(this.getId(), cache.name);
+				this.workbook.dependencyFormulas.removeDefName(null, cache.name);
 			}
 		}
 
