@@ -976,6 +976,12 @@
         }
         return copy;
     };
+    CSlicer.prototype.invertMultiSelect = function () {
+        if(this.header) {
+            return this.header.invertMultiSelect();
+        }
+        return false;
+    };
     
     function CHeader(slicer) {
         AscFormat.CShape.call(this);
@@ -1014,6 +1020,10 @@
     };
     CHeader.prototype.isMultiSelect = function() {
         return this.buttons[0].isSelected();
+    };
+    CHeader.prototype.invertMultiSelect = function () {
+        this.buttons[0].setInvertSelectTmpState();
+        return true;
     };
     CHeader.prototype.recalculateBrush = function () {
         var oFill = this.slicer.getFill(STYLE_TYPE.HEADER);

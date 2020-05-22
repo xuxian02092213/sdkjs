@@ -7202,9 +7202,18 @@ DrawingObjectsController.prototype =
                 bRetValue = true;
             }
         }
-        else if ( e.keyCode == 67 && true === ctrlKey ) // Ctrl + C + ...
+        else if ( e.keyCode == 67) // C 
         {
-            //TODO
+            if(e.altKey)
+            {
+                var oSelector = this.selection.groupSelection || this;
+                var aSelected = oSelector.selectedObjects;
+                if(aSelected.length === 1 && aSelected[0].getObjectType() === AscDFH.historyitem_type_SlicerView)
+                {
+                    aSelected[0].handleClearButtonClick();
+                    bRetValue = true;
+                }
+            }
         }
         else if ( e.keyCode == 69 && canEdit && true === ctrlKey ) // Ctrl + E - переключение прилегания параграфа между center и left
         {
@@ -7269,9 +7278,18 @@ DrawingObjectsController.prototype =
                 bRetValue = true;
             }
         }
-        else if ( e.keyCode == 83 && canEdit && true === ctrlKey ) // Ctrl + S - save
+        else if ( e.keyCode == 83) //  S - save
         {
-            bRetValue = false;
+            if(e.altKey)
+            {
+                var oSelector = this.selection.groupSelection || this;
+                var aSelected = oSelector.selectedObjects;
+                if(aSelected.length === 1 && aSelected[0].getObjectType() === AscDFH.historyitem_type_SlicerView)
+                {
+                    aSelected[0].invertMultiSelect();
+                    bRetValue = true;
+                }
+            }
         }
         else if ( e.keyCode == 85 && canEdit && true === ctrlKey ) // Ctrl + U - делаем текст подчеркнутым
         {
