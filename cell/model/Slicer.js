@@ -590,13 +590,85 @@
 			return;
 		}
 
-
 		var oldVal = this.cacheDefinition.name;
 		this.cacheDefinition.setName(val);
 		History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCacheName,
 			this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val));
 
 	};
+
+	CT_slicer.prototype.asc_setName = function (val) {
+		this.name = val;
+	};
+
+	CT_slicer.prototype.asc_setCaption = function (val) {
+		this.caption = val;
+	};
+
+	CT_slicer.prototype.asc_setStartItem = function (val) {
+		this.startItem = val;
+	};
+
+	CT_slicer.prototype.asc_setColumnCount = function (val) {
+		this.columnCount = val;
+	};
+
+	CT_slicer.prototype.asc_setShowCaption = function (val) {
+		this.showCaption = val;
+	};
+
+	CT_slicer.prototype.asc_setLevel = function (val) {
+		this.level = val;
+	};
+
+	CT_slicer.prototype.asc_setStyle = function (val) {
+		this.style = val;
+	};
+
+	CT_slicer.prototype.asc_setLockedPosition = function (val) {
+		this.lockedPosition = val;
+	};
+
+	CT_slicer.prototype.asc_setRowHeight = function (val) {
+		this.rowHeight = val;
+	};
+
+	CT_slicer.prototype.asc_getName = function () {
+		return this.name;
+	};
+
+	CT_slicer.prototype.asc_setCaption = function () {
+		return this.caption;
+	};
+
+	CT_slicer.prototype.asc_setStartItem = function () {
+		return this.startItem;
+	};
+
+	CT_slicer.prototype.asc_setColumnCount = function () {
+		return this.columnCount;
+	};
+
+	CT_slicer.prototype.asc_setShowCaption = function () {
+		return this.showCaption;
+	};
+
+	CT_slicer.prototype.asc_setLevel = function () {
+		return this.level;
+	};
+
+	CT_slicer.prototype.asc_setStyle = function () {
+		return this.style;
+	};
+
+	CT_slicer.prototype.asc_setLockedPosition = function () {
+		return this.lockedPosition;
+	};
+
+	CT_slicer.prototype.asc_setRowHeight = function () {
+		return this.rowHeight;
+	};
+
 
 
 	function CT_slicerCacheDefinition(ws) {
@@ -1849,7 +1921,26 @@
 	var prot;
 	window['Asc'] = window['Asc'] || {};
 	window['AscCommonExcel'] = window['AscCommonExcel'] || {};
+	
 	window['Asc']['CT_slicer'] = window['Asc'].CT_slicer = CT_slicer;
+	prot = CT_slicer.prototype;
+	prot["asc_setName"] = prot.asc_setName;
+	prot["asc_setCaption"] = prot.asc_setCaption;
+	prot["asc_setStartItem"] = prot.asc_setStartItem;
+	prot["asc_setColumnCount"] = prot.asc_setColumnCount;
+	prot["asc_setShowCaption"] = prot.asc_setShowCaption;
+	prot["asc_setStyle"] = prot.asc_setStyle;
+	prot["asc_setLockedPosition"] = prot.asc_setLockedPosition;
+	prot["asc_setRowHeight"] = prot.asc_setRowHeight;
+	prot["asc_getName"] = prot.asc_getName;
+	prot["asc_getCaption"] = prot.asc_getCaption;
+	prot["asc_getStartItem"] = prot.asc_getStartItem;
+	prot["asc_getColumnCount"] = prot.asc_getColumnCount;
+	prot["asc_getShowCaption"] = prot.asc_getShowCaption;
+	prot["asc_getStyle"] = prot.asc_getStyle;
+	prot["asc_getLockedPosition"] = prot.asc_getLockedPosition;
+	prot["asc_getRowHeight"] = prot.asc_getRowHeight;
+
 	window['Asc']['CT_slicers'] = window['Asc'].CT_slicers = CT_slicers;
 	window['Asc']['CT_slicerCacheDefinition'] = window['Asc'].CT_slicerCacheDefinition = CT_slicerCacheDefinition;
 	window['Asc']['CT_slicerCacheData'] = window['Asc'].CT_slicerCacheData = CT_slicerCacheData;
