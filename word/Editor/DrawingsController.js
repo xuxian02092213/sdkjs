@@ -137,7 +137,7 @@ CDrawingsController.prototype.ClearParagraphFormatting = function(isClearParaPr,
 };
 CDrawingsController.prototype.AddToParagraph = function(oItem, bRecalculate)
 {
-	if (para_NewLine === oItem.Type && true === oItem.IsPageOrColumnBreak())
+	if (para_NewLine === oItem.Type && true === oItem.IsPageBreak())
 		return;
 
 	this.DrawingObjects.paragraphAdd(oItem, bRecalculate);
@@ -446,13 +446,13 @@ CDrawingsController.prototype.GetSelectedElementsInfo = function(oInfo)
 
 	this.DrawingObjects.getSelectedElementsInfo(oInfo);
 };
-CDrawingsController.prototype.AddTableRow = function(bBefore)
+CDrawingsController.prototype.AddTableRow = function(bBefore, nCount)
 {
-	this.DrawingObjects.tableAddRow(bBefore);
+	this.DrawingObjects.tableAddRow(bBefore, nCount);
 };
-CDrawingsController.prototype.AddTableColumn = function(bBefore)
+CDrawingsController.prototype.AddTableColumn = function(bBefore, nCount)
 {
-	this.DrawingObjects.tableAddCol(bBefore);
+	this.DrawingObjects.tableAddCol(bBefore, nCount);
 };
 CDrawingsController.prototype.RemoveTableRow = function()
 {

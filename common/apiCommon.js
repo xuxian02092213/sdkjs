@@ -103,6 +103,29 @@
 		return ret;
 	}
 
+	var uuid = [];
+	for (var i = 0; i < 256; i++)
+	{
+		uuid[i] = (i < 16 ? "0" : "") + (i).toString(16);
+	}
+	function CreateUUID(isNoDashes)
+	{
+		var d0 = Math.random() * 0xffffffff | 0;
+		var d1 = Math.random() * 0xffffffff | 0;
+		var d2 = Math.random() * 0xffffffff | 0;
+		var d3 = Math.random() * 0xffffffff | 0;
+
+		if (isNoDashes)
+			return uuid[d0 & 0xff] + uuid[d0 >> 8 & 0xff] + uuid[d0 >> 16 & 0xff] + uuid[d0 >> 24 & 0xff] +
+			uuid[d1 & 0xff] + uuid[d1 >> 8 & 0xff] + uuid[d1 >> 16 & 0x0f | 0x40] + uuid[d1 >> 24 & 0xff] +
+			uuid[d2 & 0x3f | 0x80] + uuid[d2 >> 8 & 0xff] + uuid[d2 >> 16 & 0xff] + uuid[d2 >> 24 & 0xff] +
+			uuid[d3 & 0xff] + uuid[d3 >> 8 & 0xff] + uuid[d3 >> 16 & 0xff] + uuid[d3 >> 24 & 0xff];
+		else
+			return uuid[d0 & 0xff] + uuid[d0 >> 8 & 0xff] + uuid[d0 >> 16 & 0xff] + uuid[d0 >> 24 & 0xff] + "-" +
+			uuid[d1 & 0xff] + uuid[d1 >> 8 & 0xff] + "-" + uuid[d1 >> 16 & 0x0f | 0x40] + uuid[d1 >> 24 & 0xff] + "-" +
+			uuid[d2 & 0x3f | 0x80] + uuid[d2 >> 8 & 0xff] + "-" + uuid[d2 >> 16 & 0xff] + uuid[d2 >> 24 & 0xff] +
+			uuid[d3 & 0xff] + uuid[d3 >> 8 & 0xff] + uuid[d3 >> 16 & 0xff] + uuid[d3 >> 24 & 0xff];
+	}
 	function CreateGUID()
 	{
 		function s4() { return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);	}
@@ -124,6 +147,13 @@
 	function CreateDurableId()
 	{
 		return FixDurableId(CreateUInt32());
+	}
+	function ExtendPrototype(dst, src)
+	{
+		for (var k in src.prototype)
+		{
+			dst.prototype[k] = src.prototype[k];
+		}
 	}
 
 	var c_oLicenseResult = {
@@ -2287,6 +2317,8 @@
 
         this.columnNumber = null;
         this.columnSpace = null;
+        this.textFitType = null;
+		this.vertOverflowType = null;
         this.signatureId = null;
 
 		this.rot = null;
@@ -2380,9 +2412,23 @@
 		asc_getColumnSpace: function(){
 			return this.columnSpace;
 		},
+		asc_getTextFitType: function(){
+			return this.textFitType;
+		},
+
+		asc_getVertOverflowType: function(){
+			return this.vertOverflowType;
+		},
 
 		asc_putColumnSpace: function(v){
 			this.columnSpace = v;
+		},
+
+		asc_putTextFitType: function(v){
+			this.textFitType = v;
+		},
+		asc_putVertOverflowType: function(v){
+			this.vertOverflowType = v;
 		},
 
 		asc_getSignatureId: function(){
@@ -2641,6 +2687,7 @@
 			this.Internal_Position = (undefined != obj.Internal_Position) ? obj.Internal_Position : null;
 
 			this.ImageUrl = (undefined != obj.ImageUrl) ? obj.ImageUrl : null;
+			this.Token = obj.Token;
 			this.Locked = (undefined != obj.Locked) ? obj.Locked : false;
 			this.lockAspect = (undefined != obj.lockAspect) ? obj.lockAspect : false;
 
@@ -2669,6 +2716,8 @@
 
             this.columnNumber =  obj.columnNumber != undefined ? obj.columnNumber : undefined;
             this.columnSpace =  obj.columnSpace != undefined ? obj.columnSpace : undefined;
+            this.textFitType =  obj.textFitType != undefined ? obj.textFitType : undefined;
+            this.vertOverflowType =  obj.vertOverflowType != undefined ? obj.vertOverflowType : undefined;
             this.shadow =  obj.shadow != undefined ? obj.shadow : undefined;
 
 			this.rot = obj.rot != undefined ? obj.rot : undefined;
@@ -2692,6 +2741,7 @@
 
 			this.Internal_Position = null;
 			this.ImageUrl = null;
+			this.Token = undefined;
 			this.Locked = false;
 
 			this.ChartProperties = null;
@@ -2717,6 +2767,8 @@
 
             this.columnNumber = undefined;
             this.columnSpace =  undefined;
+            this.textFitType =  undefined;
+            this.vertOverflowType =  undefined;
 
 
 			this.rot = undefined;
@@ -2808,8 +2860,9 @@
 
 		asc_getImageUrl: function () {
 			return this.ImageUrl;
-		}, asc_putImageUrl: function (v) {
+		}, asc_putImageUrl: function (v, sToken) {
 			this.ImageUrl = v;
+			this.Token = sToken;
 		}, asc_getGroup: function () {
 			return this.Group;
 		}, asc_putGroup: function (v) {
@@ -2952,8 +3005,21 @@
 			return this.columnSpace;
 		},
 
+		asc_getTextFitType: function(){
+			return this.textFitType;
+		},
+		asc_getVertOverflowType: function(){
+			return this.vertOverflowType;
+		},
+
 		asc_putColumnSpace: function(v){
 			this.columnSpace = v;
+		},
+		asc_putTextFitType: function(v){
+			this.textFitType = v;
+		},
+		asc_putVertOverflowType: function(v){
+			this.vertOverflowType = v;
 		},
 
 		asc_getSignatureId : function() {
@@ -3031,12 +3097,11 @@
 		this.Value = (undefined != val) ? val : null;
 	}
 
-	asc_CSelectedObject.prototype = {
-		asc_getObjectType: function () {
-			return this.Type;
-		}, asc_getObjectValue: function () {
-			return this.Value;
-		}
+	asc_CSelectedObject.prototype.asc_getObjectType = function () {
+		return this.Type;
+	};
+	asc_CSelectedObject.prototype.asc_getObjectValue = function () {
+		return this.Value;
 	};
 
 	/** @constructor */
@@ -3074,6 +3139,7 @@
 	function asc_CFillBlip() {
 		this.type = c_oAscFillBlipType.STRETCH;
 		this.url = "";
+		this.token = undefined;
 		this.texture_id = null;
 	}
 
@@ -3084,8 +3150,9 @@
 			this.type = v;
 		}, asc_getUrl: function () {
 			return this.url;
-		}, asc_putUrl: function (v) {
+		}, asc_putUrl: function (v, sToken) {
 			this.url = v;
+			this.token = sToken;
 		}, asc_getTextureId: function () {
 			return this.texture_id;
 		}, asc_putTextureId: function (v) {
@@ -3547,6 +3614,9 @@
 		this.Lang = null;
 		this.OfflineApp = false;
 		this.Encrypted;
+		this.EncryptedInfo;
+		this.IsEnabledPlugins = true;
+        this.IsEnabledMacroses = true;
 	}
 
 	prot = asc_CDocInfo.prototype;
@@ -3652,6 +3722,24 @@
 	prot.put_Encrypted = prot.asc_putEncrypted = function (v) {
 		this.Encrypted = v;
 	};
+	prot.get_EncryptedInfo = prot.asc_getEncryptedInfo = function () {
+		return this.EncryptedInfo;
+	};
+	prot.put_EncryptedInfo = prot.asc_putEncryptedInfo = function (v) {
+		this.EncryptedInfo = v;
+	};
+    prot.get_IsEnabledPlugins = prot.asc_getIsEnabledPlugins = function () {
+        return this.IsEnabledPlugins;
+    };
+    prot.put_IsEnabledPlugins = prot.asc_putIsEnabledPlugins = function (v) {
+        this.IsEnabledPlugins = v;
+    };
+    prot.get_IsEnabledMacroses = prot.asc_getIsEnabledMacroses = function () {
+        return this.IsEnabledMacroses;
+    };
+    prot.put_IsEnabledMacroses = prot.asc_putIsEnabledMacroses = function (v) {
+        this.IsEnabledMacroses = v;
+    };
 
 	function COpenProgress() {
 		this.Type = Asc.c_oAscAsyncAction.Open;
@@ -4544,9 +4632,11 @@
 	window["AscCommon"].CreateAscColorCustom = CreateAscColorCustom;
 	window["AscCommon"].CreateAscColor = CreateAscColor;
 	window["AscCommon"].CreateGUID = CreateGUID;
+	window["AscCommon"].CreateUUID = CreateUUID;
 	window["AscCommon"].CreateUInt32 = CreateUInt32;
 	window["AscCommon"].CreateDurableId = CreateDurableId;
 	window["AscCommon"].FixDurableId = FixDurableId;
+	window["AscCommon"].ExtendPrototype = ExtendPrototype;
 
 	window['Asc']['c_oLicenseResult'] = window['Asc'].c_oLicenseResult = c_oLicenseResult;
 	prot = c_oLicenseResult;
@@ -5033,7 +5123,11 @@
 	prot["get_ColumnNumber"] = prot["asc_getColumnNumber"] = prot.asc_getColumnNumber;
 	prot["put_ColumnNumber"] = prot["asc_putColumnNumber"] = prot.asc_putColumnNumber;
 	prot["get_ColumnSpace"] = prot["asc_getColumnSpace"] = prot.asc_getColumnSpace;
+	prot["get_TextFitType"] = prot["asc_getTextFitType"] = prot.asc_getTextFitType;
+	prot["get_VertOverflowType"] = prot["asc_getVertOverflowType"] = prot.asc_getVertOverflowType;
 	prot["put_ColumnSpace"] = prot["asc_putColumnSpace"] = prot.asc_putColumnSpace;
+	prot["put_TextFitType"] = prot["asc_putTextFitType"] = prot.asc_putTextFitType;
+	prot["put_VertOverflowType"] = prot["asc_putVertOverflowType"] = prot.asc_putVertOverflowType;
 	prot["get_SignatureId"] = prot["asc_getSignatureId"] = prot.asc_getSignatureId;
 	prot["put_SignatureId"] = prot["asc_putSignatureId"] = prot.asc_putSignatureId;
 	prot["get_FromImage"] = prot["asc_getFromImage"] = prot.asc_getFromImage;
@@ -5177,7 +5271,11 @@
 	prot["get_ColumnNumber"] = prot["asc_getColumnNumber"] = prot.asc_getColumnNumber;
 	prot["put_ColumnNumber"] = prot["asc_putColumnNumber"] = prot.asc_putColumnNumber;
 	prot["get_ColumnSpace"] = prot["asc_getColumnSpace"] = prot.asc_getColumnSpace;
+	prot["get_TextFitType"] = prot["asc_getTextFitType"] = prot.asc_getTextFitType;
+	prot["get_VertOverflowType"] = prot["asc_getVertOverflowType"] = prot.asc_getVertOverflowType;
 	prot["put_ColumnSpace"] = prot["asc_putColumnSpace"] = prot.asc_putColumnSpace;
+	prot["put_TextFitType"] = prot["asc_putTextFitType"] = prot.asc_putTextFitType;
+	prot["put_VertOverflowType"] = prot["asc_putVertOverflowType"] = prot.asc_putVertOverflowType;
 	prot["asc_getSignatureId"] = prot["asc_getSignatureId"] = prot.asc_getSignatureId;
 
 	prot["put_Shadow"] = prot.put_Shadow = prot["put_shadow"] = prot.put_shadow = prot["asc_putShadow"] = prot.asc_putShadow;
@@ -5326,6 +5424,12 @@
 	prot["put_Lang"] = prot["asc_putLang"] = prot.asc_putLang;
 	prot["get_Encrypted"] = prot["asc_getEncrypted"] = prot.asc_getEncrypted;
 	prot["put_Encrypted"] = prot["asc_putEncrypted"] = prot.asc_putEncrypted;
+	prot["get_EncryptedInfo"] = prot["asc_getEncryptedInfo"] = prot.asc_getEncryptedInfo;
+	prot["put_EncryptedInfo"] = prot["asc_putEncryptedInfo"] = prot.asc_putEncryptedInfo;
+	prot["get_IsEnabledPlugins"] = prot["asc_getIsEnabledPlugins"] = prot.asc_getIsEnabledPlugins;
+    prot["put_IsEnabledPlugins"] = prot["asc_putIsEnabledPlugins"] = prot.asc_putIsEnabledPlugins;
+    prot["get_IsEnabledMacroses"] = prot["asc_getIsEnabledMacroses"] = prot.asc_getIsEnabledMacroses;
+    prot["put_IsEnabledMacroses"] = prot["asc_putIsEnabledMacroses"] = prot.asc_putIsEnabledMacroses;
 
 	window["AscCommon"].COpenProgress = COpenProgress;
 	prot = COpenProgress.prototype;

@@ -1038,15 +1038,15 @@ CHeaderFooter.prototype =
 //-----------------------------------------------------------------------------------
 // Функции для работы с таблицами
 //-----------------------------------------------------------------------------------
-	AddTableRow : function(bBefore)
+	AddTableRow : function(bBefore, nCount)
 	{
-		this.Content.AddTableRow(bBefore);
+		this.Content.AddTableRow(bBefore, nCount);
 	},
 
-	AddTableColumn : function(bBefore)
-    {
-        this.Content.AddTableColumn( bBefore );
-    },
+	AddTableColumn : function(bBefore, nCount)
+	{
+		this.Content.AddTableColumn(bBefore, nCount);
+	},
 
 	RemoveTableRow : function()
 	{
@@ -1958,7 +1958,7 @@ CHeaderFooterController.prototype =
 
 	AddToParagraph : function(ParaItem, bRecalculate)
 	{
-		if (para_NewLine === ParaItem.Type && true === ParaItem.IsPageOrColumnBreak())
+		if (para_NewLine === ParaItem.Type && true === ParaItem.IsPageBreak())
 			return;
 
 		if (null != this.CurHdrFtr)
@@ -2290,16 +2290,11 @@ CHeaderFooterController.prototype =
                 HdrFtr = this.Pages[PageIndex].Footer;
         }
 
-        if ( null === HdrFtr )
+        if (!HdrFtr)
         {
             // Ничего не делаем и отключаем дальнейшую обработку MouseUp и MouseMove
             this.WaitMouseDown = true;
-
             return true;
-        }
-        else
-        {
-            this.WaitMouseDown = false;
         }
 
         // В зависимости от страницы и позиции на странице мы активируем(делаем текущим)
@@ -2313,7 +2308,6 @@ CHeaderFooterController.prototype =
 		}
 
 		this.CurHdrFtr = HdrFtr;
-
 		if ( null != this.CurHdrFtr )
         {
             this.CurHdrFtr.Selection_SetStart( X, Y, PageIndex, MouseEvent );
@@ -2327,6 +2321,7 @@ CHeaderFooterController.prototype =
             }
         }
 
+		this.WaitMouseDown = false;
         return true;
     },
 
@@ -2441,16 +2436,16 @@ CHeaderFooterController.prototype =
 //-----------------------------------------------------------------------------------
 // Функции для работы с таблицами
 //-----------------------------------------------------------------------------------
-	AddTableRow : function(bBefore)
+	AddTableRow : function(bBefore, nCount)
 	{
 		if (null != this.CurHdrFtr)
-			this.CurHdrFtr.AddTableRow(bBefore);
+			this.CurHdrFtr.AddTableRow(bBefore, nCount);
 	},
 
-	AddTableColumn : function(bBefore)
+	AddTableColumn : function(bBefore, nCount)
 	{
 		if (null != this.CurHdrFtr)
-			this.CurHdrFtr.AddTableColumn(bBefore);
+			this.CurHdrFtr.AddTableColumn(bBefore, nCount);
 	},
 
 	RemoveTableRow : function()
@@ -2668,7 +2663,7 @@ CHeaderFooterController.prototype.RecalculatePageCountUpdate = function(nPageAbs
 		bNeedRecalc = true;
 	}
 
-	if (false === bNeedRecalc && oFooter && oFooter.Have_PageCountElement())
+	if (oFooter && oFooter.Have_PageCountElement())
 	{
 		oFooter.Update_PageCountElements(nPageCount);
 		bNeedRecalc = true;
@@ -2678,6 +2673,22 @@ CHeaderFooterController.prototype.RecalculatePageCountUpdate = function(nPageAbs
 		return this.Recalculate(nPageAbs);
 
 	return null;
+};
+CHeaderFooterController.prototype.UpdatePagesCount = function(nPageAbs, nPageCount)
+{
+	var oPage = this.Pages[nPageAbs];
+	if (!oPage)
+		return false;
+
+	var oHeader = oPage.Header;
+	var oFooter = oPage.Footer;
+
+	if (oHeader && oHeader.Have_PageCountElement())
+		oHeader.Update_PageCountElements(nPageCount);
+
+	if (oFooter && oFooter.Have_PageCountElement())
+		oFooter.Update_PageCountElements(nPageCount);
+
 };
 CHeaderFooterController.prototype.HavePageCountElement = function()
 {

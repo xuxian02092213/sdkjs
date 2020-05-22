@@ -5050,13 +5050,13 @@ CUniFill.prototype =
         {
             return false;
         }
-		
+
 		if(isRealNumber(this.transparent) !== isRealNumber(unifill.transparent)
 		|| isRealNumber(this.transparent) && this.transparent !== unifill.transparent)
 		{
 			return false;
 		}
-		
+
         if(this.fill == null && unifill.fill == null)
         {
             return true;
@@ -5420,6 +5420,13 @@ function CompareShapeProperties(shapeProp1, shapeProp2)
     }
     if(shapeProp1.columnSpace === shapeProp2.columnSpace){
         _result_shape_prop.columnSpace = shapeProp1.columnSpace;
+    }
+    if(shapeProp1.textFitType === shapeProp2.textFitType){
+        _result_shape_prop.textFitType = shapeProp1.textFitType;
+    }
+
+    if(shapeProp1.vertOverflowType === shapeProp2.vertOverflowType){
+        _result_shape_prop.vertOverflowType = shapeProp1.vertOverflowType;
     }
 
     if(!shapeProp1.shadow && !shapeProp2.shadow){
@@ -9242,15 +9249,15 @@ CTextFit.prototype =
     Write_ToBinary: function(w)
     {
         writeLong(w, this.type);
-        writeDouble(w, this.fontScale);
-        writeDouble(w, this.lnSpcReduction);
+        writeLong(w, this.fontScale);
+        writeLong(w, this.lnSpcReduction);
     },
 
     Read_FromBinary: function(r)
     {
         this.type = readLong(r);
-        this.fontScale = readDouble(r);
-        this.lnSpcReduction = readDouble(r);
+        this.fontScale = readLong(r);
+        this.lnSpcReduction = readLong(r);
     },
 
     Get_Id: function()
@@ -9315,6 +9322,26 @@ CBodyPr.prototype =
     Refresh_RecalcData: function()
     {},
 
+    getLnSpcReduction: function()
+    {
+        if(this.textFit
+            && this.textFit.type === AscFormat.text_fit_NormAuto
+            && AscFormat.isRealNumber(this.textFit.lnSpcReduction))
+        {
+            return this.textFit.lnSpcReduction / 100000.0;
+        }
+        return undefined;
+    },
+    getFontScale: function()
+    {
+        if(this.textFit
+            && this.textFit.type === AscFormat.text_fit_NormAuto
+            && AscFormat.isRealNumber(this.textFit.fontScale))
+        {
+            return this.textFit.fontScale / 100000.0;
+        }
+        return undefined;
+    },
     isNotNull: function()
     {
         return this.flatTx          !== null ||
@@ -9423,6 +9450,8 @@ CBodyPr.prototype =
             }
         }, this, []);
     },
+
+
 
     Write_ToBinary2: function(w)
     {
@@ -11383,23 +11412,23 @@ function CorrectUniFill(asc_fill, unifill, editorId)
     if (null != _alpha)
 	{
 		ret.transparent = _alpha;
-		
-		
+
+
 	}
-	
+
 	if(ret.transparent != null)
 	{
-		
+
 		if(ret.fill && ret.fill.type === c_oAscFill.FILL_TYPE_BLIP)
 		{
-			
+
 			for(var i = 0; i < ret.fill.Effects.length; ++i)
 			{
-				if(ret.fill.Effects[i].Type = EFFECT_TYPE_ALPHAMODFIX)
+				if(ret.fill.Effects[i].Type === EFFECT_TYPE_ALPHAMODFIX)
 				{
 					ret.fill.Effects[i].amt = ((ret.transparent * 100000 / 255) >> 0);
 					break;
-				}  
+				}
 			}
 			if(i === ret.fill.Effects.length)
 			{
@@ -11409,7 +11438,7 @@ function CorrectUniFill(asc_fill, unifill, editorId)
 			}
 		}
 	}
-        
+
 
     return ret;
 }
@@ -11681,6 +11710,8 @@ function CreateAscShapePropFromProp(shapeProp)
     obj.description = shapeProp.description;
     obj.columnNumber = shapeProp.columnNumber;
     obj.columnSpace = shapeProp.columnSpace;
+    obj.textFitType = shapeProp.textFitType;
+    obj.vertOverflowType = shapeProp.vertOverflowType;
     obj.shadow = shapeProp.shadow;
     if(shapeProp.signatureId)
     {
@@ -12789,9 +12820,9 @@ function CorrectUniColor(asc_color, unicolor, flag)
     window['AscFormat'].nTWTNone   = 0;
     window['AscFormat'].nTWTSquare = 1;
 
-    window['AscFormat'].text_fit_No         = 0;
-    window['AscFormat'].text_fit_Auto       = 1;
-    window['AscFormat'].text_fit_NormAuto   = 2;
+    window['AscFormat']["text_fit_No"]         = window['AscFormat'].text_fit_No         = 0;
+    window['AscFormat']["text_fit_Auto"]       = window['AscFormat'].text_fit_Auto       = 1;
+    window['AscFormat']["text_fit_NormAuto"]   = window['AscFormat'].text_fit_NormAuto   = 2;
 
     window['AscFormat'].BULLET_TYPE_COLOR_NONE	= 0;
     window['AscFormat'].BULLET_TYPE_COLOR_CLRTX	= 1;
@@ -12834,9 +12865,9 @@ function CorrectUniColor(asc_color, unicolor, flag)
     window['AscFormat']._arr_lt_types_weight = _arr_lt_types_weight;
     window['AscFormat']._global_layout_summs_array = _global_layout_summs_array;
 
-    window['AscFormat'].nOTOwerflow = nOTOwerflow;
-    window['AscFormat'].nOTClip = nOTClip;
-    window['AscFormat'].nOTEllipsis = nOTEllipsis;
+    window['AscFormat'].nOTOwerflow = window['AscFormat']['nOTOwerflow'] = nOTOwerflow;
+    window['AscFormat'].nOTClip = window['AscFormat']['nOTClip'] = nOTClip;
+    window['AscFormat'].nOTEllipsis = window['AscFormat']['nOTEllipsis'] = nOTEllipsis;
 
     window['AscFormat'].BULLET_TYPE_BULLET_NONE = BULLET_TYPE_BULLET_NONE;
     window['AscFormat'].BULLET_TYPE_BULLET_CHAR = BULLET_TYPE_BULLET_CHAR;

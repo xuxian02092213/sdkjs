@@ -45,12 +45,6 @@
 
 		var c_oAscSelectionType = Asc.c_oAscSelectionType;
 
-		var c_oAscShiftType = {
-			None  : 0,
-			Move  : 1,
-			Change: 2
-		};
-
 
 		/** @const */
 		var kLeftLim1 = .999999999999999;
@@ -277,6 +271,20 @@
 			};
 		}
 
+		function replaceSpellCheckWords(cellValue, options) {
+			// ToDo replace one command
+			if (1 === options.indexInArray && options.replaceWith) {
+				cellValue = options.replaceWith;
+			} else {
+				for (var i = 0; i < options.replaceWords.length; ++i) {
+					cellValue = cellValue.replace(options.replaceWords[i][0], function () {
+						return options.replaceWords[i][1];
+					});
+				}
+			}
+			return cellValue;
+		}
+
 		function getFindRegExp(value, options) {
 			var findFlags = "g"; // Заменяем все вхождения
 			// Не чувствителен к регистру
@@ -300,10 +308,42 @@
 
 			if (options.isWholeWord)
 				value = '\\b' + value + '\\b';
-				
+
 			return new RegExp(value, findFlags);
 		}
 
+		function convertFillToUnifill(fill) {
+			var oUniFill = null;
+			if(!fill) {
+				return AscFormat.CreateNoFillUniFill();
+			}
+			var oSF = fill.getSolidFill();
+			if(oSF) {
+				oUniFill = new AscFormat.CreateSolidFillRGBA(oSF.getR(), oSF.getG(), oSF.getB(), Math.min(255, 255*oSF.getA() + 0.5 >> 0));
+			} else if (fill.patternFill) {
+				oUniFill = new AscFormat.CUniFill();
+				oUniFill.fill = new AscFormat.CPattFill();
+				oUniFill.fill.ftype = fill.patternFill.getHatchOffset();
+				oUniFill.fill.fgClr = AscFormat.CreateUniColorRGB2(fill.patternFill.fgColor || AscCommonExcel.createRgbColor(0, 0, 0));
+				oUniFill.fill.bgClr = AscFormat.CreateUniColorRGB2(fill.patternFill.bgColor || AscCommonExcel.createRgbColor(255, 255, 255));
+			} else if (fill.gradientFill) {
+				oUniFill = new AscFormat.CUniFill();
+				oUniFill.fill = new AscFormat.CGradFill();
+				if (fill.gradientFill.type === Asc.c_oAscFillGradType.GRAD_LINEAR) {
+					oUniFill.fill.lin = new AscFormat.GradLin();
+					oUniFill.fill.lin.angle = fill.gradientFill.degree * 60000;
+				} else {
+					oUniFill.fill.path = new AscFormat.GradPath();
+				}
+				for (var i = 0; i < fill.gradientFill.stop.length; ++i) {
+					var oGradStop = new AscFormat.CGs();
+					oGradStop.pos = fill.gradientFill.stop[i].position * 100000;
+					oGradStop.color = AscFormat.CreateUniColorRGB2(fill.gradientFill.stop[i].color || AscCommonExcel.createRgbColor(255, 255, 255));
+					oUniFill.fill.addColor(oGradStop);
+				}
+			}
+			return oUniFill;
+		}
 		var referenceType = {
 			A: 0,			// Absolute
 			ARRC: 1,	// Absolute row; relative column
@@ -456,8 +496,7 @@
 			var isDelete = offset && (offset.col < 0 || offset.row < 0);
 			if (isHor) {
 				if (this.r1 <= range.r1 && range.r2 <= this.r2 && this.c1 <= range.c2) {
-					return (this.c1 < range.c1 || (!isDelete && this.c1 === range.c1 && this.c2 === range.c1)) ?
-						c_oAscShiftType.Move : c_oAscShiftType.Change;
+					return true;
 				} else if (isDelete && this.c1 <= range.c1 && range.c2 <= this.c2) {
 					var topIn = this.r1 <= range.r1 && range.r1 <= this.r2;
 					var bottomIn = this.r1 <= range.r2 && range.r2 <= this.r2;
@@ -465,15 +504,14 @@
 				}
 			} else {
 				if (this.c1 <= range.c1 && range.c2 <= this.c2 && this.r1 <= range.r2) {
-					return (this.r1 < range.r1 || (!isDelete && this.r1 === range.r1 && this.r2 === range.r1)) ?
-						c_oAscShiftType.Move : c_oAscShiftType.Change;
+					return true;
 				} else if (isDelete && this.r1 <= range.r1 && range.r2 <= this.r2) {
 					var leftIn = this.c1 <= range.c1 && range.c1 <= this.c2;
 					var rightIn = this.c1 <= range.c2 && range.c2 <= this.c2;
 					return leftIn || rightIn;
 				}
 			}
-			return c_oAscShiftType.None;
+			return false;
 		};
 
 		Range.prototype.difference = function(range) {
@@ -921,6 +959,12 @@
 			this.refType1 = (this.refType1 + 1) % 4;
 			this.refType2 = (this.refType2 + 1) % 4;
 		};
+		Range.prototype.getWidth = function() {
+			return this.c2 - this.c1 + 1;
+		};
+		Range.prototype.getHeight = function() {
+			return this.r2 - this.r1 + 1;
+		};
 
 		/**
 		 *
@@ -950,7 +994,7 @@
 		Range3D.prototype.constructor = Range3D;
 		Range3D.prototype.isIntersect = function () {
 			var oRes = true;
-			
+
 			if (2 == arguments.length) {
 				oRes = this.sheet === arguments[1];
 			}
@@ -1152,7 +1196,6 @@
 				}
 
 				mc = this.worksheet.getMergedByCell(this.activeCell.row, this.activeCell.col);
-
 				if (mc) {
 					incompleate = !curRange.containsRange(mc);
 					if (dc > 0 && (incompleate || this.activeCell.col > mc.c1 || this.activeCell.row !== mc.r1)) {
@@ -1199,19 +1242,23 @@
 			}
 			return (lastRow !== this.activeCell.row || lastCol !== this.activeCell.col) ? 1 : -1;
 		};
-		SelectionRange.prototype.setCell = function (r, c) {
-			var res = false;
+		SelectionRange.prototype.setActiveCell = function (r, c) {
 			this.activeCell.row = r;
 			this.activeCell.col = c;
 			this.update();
-
-			// Check active cell in merge cell (bug 36708)
+		};
+		SelectionRange.prototype.validActiveCell = function () {
+			var res = true;
+			// Check active cell in merge cell for selection row or column (bug 36708)
 			var mc = this.worksheet.getMergedByCell(this.activeCell.row, this.activeCell.col);
 			if (mc) {
-				res = -1 === this.offsetCell(1, 0, false, function () {return false;});
-				if (res) {
-					this.activeCell.row = mc.r1;
-					this.activeCell.col = mc.c1;
+				var curRange = this.ranges[this.activeCellId];
+				if (!curRange.containsRange(mc)) {
+					if (-1 === this.offsetCell(1, 0, false, function () {return false;})) {
+						res = false;
+						this.activeCell.row = mc.r1;
+						this.activeCell.col = mc.c1;
+					}
 				}
 			}
 			return res;
@@ -1501,6 +1548,16 @@
 			}
 			return false;
 		};
+		MultiplyRange.prototype.getUnionRange = function() {
+			if (0 === this.ranges.length) {
+				return null;
+			}
+			var res = this.ranges[0].clone();
+			for (var i = 1; i < this.ranges.length; ++i) {
+				res.union2(this.ranges[i]);
+			}
+			return res;
+		};
 
 		function VisibleRange(visibleRange, offsetX, offsetY) {
 			this.visibleRange = visibleRange;
@@ -1709,13 +1766,13 @@
 				c[channel].apply(this, Array.prototype.slice.call(arguments, 1));
 			}
 		}
-		
+
 		function trim(val)
 		{
 			if(!String.prototype.trim)
 				return val.trim();
 			else
-				return val.replace(/^\s+|\s+$/g,'');  
+				return val.replace(/^\s+|\s+$/g,'');
 		}
 
 		function isNumberInfinity(val) {
@@ -1963,7 +2020,7 @@
 			if ( !(this instanceof asc_CMouseMoveData) ) {
 				return new asc_CMouseMoveData(obj);
 			}
-			
+
 			if (obj) {
 				this.type = obj.type;
 				this.x = obj.x;
@@ -2085,6 +2142,11 @@
 			this.startOffsetPx = 0;
 
 			this.scale = null;
+
+			this.titleRowRange = null;
+			this.titleColRange = null;
+			this.titleWidth = 0;
+			this.titleHeight = 0;
 
 			return this;
 		}
@@ -2296,9 +2358,9 @@
 			this.scanByRows = true;						// просмотр по строкам/столбцам
 			this.scanForward = true;					// поиск вперед/назад
 			this.isMatchCase = false;					// учитывать регистр
-			this.isWholeCell = false;	              
-			this.isWholeWord = false;                
-			this.isSpellCheck = false;		    // изменение вызванное в проверке орфографии	
+			this.isWholeCell = false;
+			this.isWholeWord = false;
+			this.isSpellCheck = false;		    // изменение вызванное в проверке орфографии
 			this.scanOnOnlySheet = true;				// искать только на листе/в книге
 			this.lookIn = Asc.c_oAscFindLookIn.Formulas;	// искать в формулах/значениях/примечаниях
 
@@ -2328,9 +2390,9 @@
 			result.scanForward = this.scanForward;
 			result.isMatchCase = this.isMatchCase;
 			result.isWholeCell = this.isWholeCell;
-			result.isWholeWord = this.isWholeWord;  
-			result.isSpellCheck = this.isSpellCheck;	
-			result.scanOnOnlySheet = this.scanOnOnlySheet;		
+			result.isWholeWord = this.isWholeWord;
+			result.isSpellCheck = this.isSpellCheck;
+			result.scanOnOnlySheet = this.scanOnOnlySheet;
 			result.lookIn = this.lookIn;
 
 			result.replaceWith = this.replaceWith;
@@ -2374,7 +2436,7 @@
 		asc_CFindOptions.prototype.asc_setIsMatchCase = function (val) {this.isMatchCase = val;};
 		asc_CFindOptions.prototype.asc_setIsWholeCell = function (val) {this.isWholeCell = val;};
 		asc_CFindOptions.prototype.asc_setIsWholeWord = function (val) {this.isWholeWord = val;};
-		asc_CFindOptions.prototype.asc_changeSingleWord = function (val) { this.isChangeSingleWord = val; };	
+		asc_CFindOptions.prototype.asc_changeSingleWord = function (val) { this.isChangeSingleWord = val; };
 		asc_CFindOptions.prototype.asc_setScanOnOnlySheet = function (val) {this.scanOnOnlySheet = val;};
 		asc_CFindOptions.prototype.asc_setLookIn = function (val) {this.lookIn = val;};
 		asc_CFindOptions.prototype.asc_setReplaceWith = function (val) {this.replaceWith = val;};
@@ -2720,6 +2782,13 @@
 			}
 		};
 
+		cDate.prototype.getDateString = function (api) {
+			return api.asc_getLocaleExample(AscCommon.getShortDateFormat(), this.getExcelDate());
+		};
+		cDate.prototype.getTimeString = function (api) {
+			return api.asc_getLocaleExample(AscCommon.getShortTimeFormat(), this.getExcelDateWithTime(true) - this.getTimezoneOffset()/(60*24));
+		};
+
 		/*
 		 * Export
 		 * -----------------------------------------------------------------------------
@@ -2730,7 +2799,6 @@
 		window['AscCommonExcel'].g_ActiveCell = null; // Active Cell for calculate (in R1C1 mode for relative cell)
 		window['AscCommonExcel'].g_R1C1Mode = false; // No calculate in R1C1 mode
 		window['AscCommonExcel'].kCurCells = "se-cells";
-		window["AscCommonExcel"].c_oAscShiftType = c_oAscShiftType;
 		window["AscCommonExcel"].recalcType = recalcType;
 		window["AscCommonExcel"].sizePxinPt = sizePxinPt;
 		window['AscCommonExcel'].c_sPerDay = c_sPerDay;
@@ -2757,6 +2825,8 @@
 		window["AscCommonExcel"].getMatchingBorder = getMatchingBorder;
 		window["AscCommonExcel"].WordSplitting = WordSplitting;
 		window["AscCommonExcel"].getFindRegExp = getFindRegExp;
+		window["AscCommonExcel"].convertFillToUnifill = convertFillToUnifill;
+		window["AscCommonExcel"].replaceSpellCheckWords = replaceSpellCheckWords;
 		window["Asc"].outputDebugStr = outputDebugStr;
 		window["Asc"].isNumberInfinity = isNumberInfinity;
 		window["Asc"].trim = trim;
@@ -2791,7 +2861,7 @@
 		prot["asc_getX"] = prot.asc_getX;
 		prot["asc_getReverseX"] = prot.asc_getReverseX;
 		prot["asc_getY"] = prot.asc_getY;
-		prot["asc_getHyperlink"] = prot.asc_getHyperlink;		
+		prot["asc_getHyperlink"] = prot.asc_getHyperlink;
 		prot["asc_getCommentIndexes"] = prot.asc_getCommentIndexes;
 		prot["asc_getUserId"] = prot.asc_getUserId;
 		prot["asc_getLockedObjectType"] = prot.asc_getLockedObjectType;

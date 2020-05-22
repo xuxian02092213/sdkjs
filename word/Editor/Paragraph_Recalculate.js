@@ -399,6 +399,7 @@ Paragraph.prototype.Recalculate_Page = function(CurPage)
     this.FontMap.NeedRecalc = true;
 
     this.Internal_CheckSpelling();
+    this.RecalculateEndInfo();
 
     var RecalcResult = this.private_RecalculatePage( CurPage );
 
@@ -564,7 +565,7 @@ Paragraph.prototype.private_RecalculateFastRange       = function(CurRange, CurL
         if ( para_Math === Item.Type )
         {
             // TODO: Надо бы перенести эту проверку на изменение контента параграфа
-            Item.Set_Inline(true === this.Check_MathPara(Pos)? false : true);
+            Item.Set_Inline(true !== this.CheckMathPara(Pos));
             PRS.bFastRecalculate = true; // чтобы не обновить случайно StartLine (Recalculate_Reset)
         }
 
@@ -1051,6 +1052,11 @@ Paragraph.prototype.private_RecalculateLine            = function(CurLine, CurPa
     //-------------------------------------------------------------------------------------------------------------
     if (false === this.private_RecalculateLineCheckFootnotes(CurLine, CurPage, PRS, ParaPr))
         return;
+
+    //-------------------------------------------------------------------------------------------------------------
+    // 15. Регистрируем концевые сноски на странице
+    //-------------------------------------------------------------------------------------------------------------
+    this.private_RecalculateLineCheckEndnotes(CurLine, CurPage, PRS, ParaPr);
 };
 
 Paragraph.prototype.private_RecalculateLineWidow       = function(CurLine, CurPage, PRS, ParaPr)
@@ -1103,7 +1109,7 @@ Paragraph.prototype.private_RecalculateLineFillRanges  = function(CurLine, CurPa
         var Count = this.Content.length;
         while (CurPos < Count)
         {
-            if (true === this.Check_MathPara(CurPos))
+            if (true === this.CheckMathPara(CurPos))
             {
                 UseFirstLine = false;
                 break;
@@ -1183,7 +1189,7 @@ Paragraph.prototype.private_RecalculateLineInfo        = function(CurLine, CurPa
     if (true === PRS.BadLeftTab)
         this.Lines[CurLine].Info |= paralineinfo_BadLeftTab;
 
-    if (PRS.GetFootnoteReferencesCount(null, true) > 0)
+    if (PRS.GetFootnoteReferencesCount(null, true) > 0 || PRS.GetEndnoteReferenceCount(null, true) > 0)
     	this.Lines[CurLine].Info |= paralineinfo_Notes;
 
     if (true === PRS.TextOnLine)
@@ -1224,7 +1230,7 @@ Paragraph.prototype.private_RecalculateLineMetrics     = function(CurLine, CurPa
 			// Выставляем настройки для символа параграфа
 			var EndTextPr = this.Get_CompiledPr2(false).TextPr.Copy();
 			EndTextPr.Merge(this.TextPr.Value);
-
+            EndTextPr.CheckFontScale();
 			g_oTextMeasurer.SetTextPr(EndTextPr, this.Get_Theme());
 			g_oTextMeasurer.SetFontSlot(fontslot_ASCII);
 
@@ -1469,14 +1475,28 @@ Paragraph.prototype.private_RecalculateLinePosition    = function(CurLine, CurPa
 			Bottom = this.YLimit;
 	}
 
-    // Верхнюю границу мы сохраняем только для первой строки данной страницы
+	this.Lines[CurLine].Top    = Top    - this.Pages[CurPage].Y;
+	this.Lines[CurLine].Bottom = Bottom - this.Pages[CurPage].Y;
+
+	// В MSWord версиях 14 и ниже пустая строка с переносом колонки не имеет высоты
+	// Заметим, что границы строки мы оставляем корректными
+	if (this.LogicDocument
+		&& this.LogicDocument.GetCompatibilityMode
+		&& this.LogicDocument.GetCompatibilityMode() <= AscCommon.document_compatibility_mode_Word14
+		&& this.Lines[CurLine].Info & paralineinfo_BreakPage
+		&& this.Lines[CurLine].Info & paralineinfo_Empty
+		&& !(this.Lines[CurLine].Info & paralineinfo_BreakRealPage))
+	{
+		Bottom  = Top;
+		Top2    = Top;
+		Bottom2 = Top;
+	}
+
+	// Верхнюю границу мы сохраняем только для первой строки данной страницы
     if (CurLine === this.Pages[CurPage].FirstLine && !(this.Lines[CurLine].Info & paralineinfo_RangeY))
         this.Pages[CurPage].Bounds.Top = Top;
 
     this.Pages[CurPage].Bounds.Bottom = Bottom;
-
-    this.Lines[CurLine].Top    = Top    - this.Pages[CurPage].Y;
-    this.Lines[CurLine].Bottom = Bottom - this.Pages[CurPage].Y;
 
     PRS.LineTop        = AscCommon.CorrectMMToTwips(Top);
     PRS.LineBottom     = AscCommon.CorrectMMToTwips(Bottom);
@@ -1518,13 +1538,13 @@ Paragraph.prototype.private_RecalculateLineBottomBound = function(CurLine, CurPa
 		}
 	}
     else if (oTopDocument instanceof CFootEndnote)
-    {
+	{
 		// bNoFootnotes - означает, первая или нет данная сноска в колонке. Если она не первая,
 		// тогда если у нее не убирается первая строка первого параграфа, все равно надо делать перенос
-        var oLogicDocument = this.LogicDocument;
-        if (true !== oLogicDocument.Footnotes.IsEmptyPageColumn(PRS.PageAbs, PRS.ColumnAbs))
+		var oController = oTopDocument.GetParent();
+		if (oController instanceof CEndnotesController || !oController.IsEmptyPageColumn(PRS.PageAbs, PRS.ColumnAbs, oTopDocument.GetSectionIndex()))
 			bNoFootnotes = false;
-    }
+	}
 
     // Сначала проверяем не нужно ли сделать перенос страницы в данном месте
     // Перенос не делаем, если это первая строка на новой странице
@@ -1532,7 +1552,7 @@ Paragraph.prototype.private_RecalculateLineBottomBound = function(CurLine, CurPa
 		&& (Top > YLimit || Bottom2 > YLimit)
 		&& (CurLine != this.Pages[CurPage].FirstLine
 		|| false === bNoFootnotes
-		|| (0 === RealCurPage && (null != this.Get_DocumentPrev()
+		|| (0 === RealCurPage && ((null != this.Get_DocumentPrev() && !this.Parent.IsElementStartOnNewPage(this.GetIndex()))
 		|| (true === this.Parent.IsTableCellContent() && true !== this.Parent.IsTableFirstRowOnNewPage())
 		|| (true === this.Parent.IsBlockLevelSdtContent() && true !== this.Parent.IsBlockLevelSdtFirstOnNewPage()))))
 		&& false === BreakPageLineEmpty)
@@ -1578,7 +1598,7 @@ Paragraph.prototype.private_RecalculateLineCheckRanges = function(CurLine, CurPa
 		Ranges[nIndex].Y1 = AscCommon.CorrectMMToTwips(Ranges[nIndex].Y1);
 	}
 
-	if (this.LogicDocument && this.LogicDocument.GetCompatibilityMode && this.LogicDocument.GetCompatibilityMode() >= document_compatibility_mode_Word15)
+	if (this.LogicDocument && this.LogicDocument.GetCompatibilityMode && this.LogicDocument.GetCompatibilityMode() >= AscCommon.document_compatibility_mode_Word15)
 	{
 		Bottom = Bottom2;
 		Top2   = Top;
@@ -2022,6 +2042,30 @@ Paragraph.prototype.private_RecalculateLineCheckFootnotes = function(CurLine, Cu
 	return true;
 };
 
+Paragraph.prototype.private_RecalculateLineCheckEndnotes = function(CurLine, CurPage, PRS, ParaPr)
+{
+    if (!((PRS.RecalcResult & recalcresult_NextElement) || (PRS.RecalcResult & recalcresult_NextLine)) || PRS.Fast)
+        return;
+
+    var oTopDocument  = PRS.TopDocument;
+    var arrEndnotes   = [];
+    var oLineBreakPos = this.GetLineEndPos(CurLine);
+    for (var nIndex = 0, nCount = PRS.Endnotes.length; nIndex < nCount; ++nIndex)
+    {
+        var oEndnote = PRS.Endnotes[nIndex].EndnoteReference.GetFootnote();
+        var oPos     = PRS.Endnotes[nIndex].Pos;
+
+        // Проверим позицию
+        if (oLineBreakPos.Compare(oPos) <= 0)
+            continue;
+
+        arrEndnotes.push(oEndnote);
+    }
+
+    if (oTopDocument instanceof CDocument)
+        oTopDocument.GetEndnotesController().RegisterEndnotes(PRS.PageAbs, arrEndnotes);
+};
+
 Paragraph.prototype.private_RecalculateRange           = function(CurRange, CurLine, CurPage, RangesCount, PRS, ParaPr)
 {
     // Найдем начальную позицию данного отрезка
@@ -2065,7 +2109,7 @@ Paragraph.prototype.private_RecalculateRange           = function(CurRange, CurL
 
         if ( para_Math === Item.Type )
         {
-            var NotInlineMath = this.Check_MathPara(Pos);
+            var NotInlineMath = this.CheckMathPara(Pos);
             if (true === NotInlineMath && true !== PRS.EmptyLine)
             {
                 PRS.ForceNewLine = true;
@@ -2074,7 +2118,7 @@ Paragraph.prototype.private_RecalculateRange           = function(CurRange, CurL
                 break;
             }
             // TODO: Надо бы перенести эту проверку на изменение контента параграфа
-            Item.Set_Inline(true === this.Check_MathPara(Pos)? false : true);
+            Item.Set_Inline(true !== NotInlineMath);
         }
 
         if ( ( 0 === Pos && 0 === CurLine && 0 === CurRange ) || Pos !== StartPos )
@@ -2306,7 +2350,7 @@ Paragraph.prototype.private_RecalculateMoveLineToNextPage = function(CurLine, Cu
 		if (true === ParaPr.KeepLines && this.LogicDocument && this.LogicDocument.GetCompatibilityMode && false === bSkipWidowAndKeepLines)
 		{
 			var CompatibilityMode = this.LogicDocument.GetCompatibilityMode();
-			if (CompatibilityMode <= document_compatibility_mode_Word14)
+			if (CompatibilityMode <= AscCommon.document_compatibility_mode_Word14)
 			{
 				if (null != this.Get_DocumentPrev() && true != this.Parent.IsTableCellContent() && 0 === CurPage)
 				{
@@ -2314,7 +2358,7 @@ Paragraph.prototype.private_RecalculateMoveLineToNextPage = function(CurLine, Cu
 					PRS.RunRecalcInfoBreak = null;
 				}
 			}
-			else if (CompatibilityMode >= document_compatibility_mode_Word15)
+			else if (CompatibilityMode >= AscCommon.document_compatibility_mode_Word15)
 			{
 				// TODO: Разобраться с 2016 вордом
 				if (null != this.Get_DocumentPrev() && 0 === CurPage)
@@ -2354,7 +2398,7 @@ Paragraph.prototype.private_CheckNeedBeforeSpacing = function(CurPage, Parent, P
 
 	if (this.LogicDocument
 		&& this.LogicDocument.GetCompatibilityMode
-		&& this.LogicDocument.GetCompatibilityMode() <= document_compatibility_mode_Word14
+		&& this.LogicDocument.GetCompatibilityMode() <= AscCommon.document_compatibility_mode_Word14
 		&& true === ParaPr.PageBreakBefore)
 		return true;
 
@@ -2817,6 +2861,7 @@ function CParagraphRecalculateStateWrap(Para)
     this.Word            = false;
     this.AddNumbering    = true;
     this.TextOnLine      = false;
+    this.RangeSpaces     = [];
 
     this.BreakPageLine      = false; // Разрыв страницы (параграфа) в данной строке
     this.UseFirstLine       = false;
@@ -2888,6 +2933,8 @@ function CParagraphRecalculateStateWrap(Para)
 
     this.Footnotes                  = [];
 	this.FootnotesRecalculateObject = null;
+
+	this.Endnotes = [];
 
     // for ParaMath
     this.bMath_OneLine       = false;
@@ -2967,6 +3014,7 @@ CParagraphRecalculateStateWrap.prototype =
         this.bEndRunToContent    = false;
         this.PosEndRun           = new CParagraphContentPos();
         this.Footnotes           = [];
+        this.Endnotes            = [];
 
         this.OperGapRight        = 0;
         this.OperGapLeft         = 0;
@@ -3000,6 +3048,7 @@ CParagraphRecalculateStateWrap.prototype =
         this.X               = X;
         this.XEnd            = XEnd;
         this.XRange          = X;
+		this.RangeSpaces     = [];
 
 		this.MoveToLBP      = false;
 		this.LineBreakPos   = new CParagraphContentPos();
@@ -3123,6 +3172,7 @@ CParagraphRecalculateStateWrap.prototype =
 				var oNumTextPr = Para.Get_CompiledPr2(false).TextPr.Copy();
 				oNumTextPr.Merge(Para.TextPr.Value);
 				oNumTextPr.Merge(oNumLvl.GetTextPr());
+                oNumTextPr.CheckFontScale();
 				var nNumSuff   = oNumLvl.GetSuff();
 				var nNumJc     = oNumLvl.GetJc();
 
@@ -3399,6 +3449,35 @@ CParagraphRecalculateStateWrap.prototype.GetFootnoteReferencesCount = function(o
 
 	return nRefsCount;
 };
+CParagraphRecalculateStateWrap.prototype.AddEndnoteReference = function(oEndnoteReference, oPos)
+{
+	for (var nIndex = 0, nCount = this.Endnotes.length; nIndex < nCount; ++nIndex)
+	{
+		if (this.Endnotes[nIndex].EndnoteReference === oEndnoteReference)
+			return;
+	}
+
+	this.Endnotes.push({EndnoteReference : oEndnoteReference, Pos : oPos});
+};
+CParagraphRecalculateStateWrap.prototype.GetEndnoteReferenceCount = function(oEndnoteReference, isAllowCustom)
+{
+	var _isAllowCustom = (true === isAllowCustom ? true : false);
+
+	// Если данную ссылку мы добавляли уже в строке, тогда ищем сколько было элементов до нее, если не добавляли,
+	// тогда возвращаем просто количество ссылок. Ссылки с флагом CustomMarkFollows не учитываются
+
+	var nRefsCount = 0;
+	for (var nIndex = 0, nCount = this.Endnotes.length; nIndex < nCount; ++nIndex)
+	{
+		if (this.Endnotes[nIndex].EndnoteReference === oEndnoteReference)
+			return nRefsCount;
+
+		if (true === _isAllowCustom || true !== this.Endnotes[nIndex].EndnoteReference.IsCustomMarkFollows())
+			nRefsCount++;
+	}
+
+	return nRefsCount;
+};
 CParagraphRecalculateStateWrap.prototype.SetFast = function(bValue)
 {
 	this.Fast = bValue;
@@ -3490,6 +3569,52 @@ CParagraphRecalculateStateWrap.prototype.IsCondensedSpaces = function()
 {
 	return this.CondensedSpaces;
 };
+CParagraphRecalculateStateWrap.prototype.AddCondensedSpaceToRange = function(oSpace)
+{
+	this.RangeSpaces.push(oSpace);
+	oSpace.ResetCondensedWidth();
+};
+/**
+ * Пытаемся ужать пробелы по
+ * @param nWidth1
+ * @param nWidth2
+ * @param nX
+ * @param nXLimit
+ * @returns {boolean}
+ */
+CParagraphRecalculateStateWrap.prototype.TryCondenseSpaces = function(nWidth1, nWidth2, nX, nXLimit)
+{
+	if (!this.CondensedSpaces)
+		return false;
+
+	var nKoef = 1 - 0.25 * (Math.min(12.5, nWidth1) / 12.5);
+
+	var nSumSpaces = 0;
+	for (var nIndex = 0, nCount = this.RangeSpaces.length; nIndex < nCount; ++nIndex)
+	{
+		nSumSpaces += this.RangeSpaces[nIndex].WidthOrigin / TEXTWIDTH_DIVIDER;
+	}
+
+	var nSpace = nSumSpaces * (1 - nKoef);
+	if (nX - nSpace + nWidth1 < nXLimit)
+	{
+		for (var nIndex = 0, nCount = this.RangeSpaces.length; nIndex < nCount; ++nIndex)
+		{
+			this.RangeSpaces[nIndex].SetCondensedWidth(nKoef);
+		}
+
+		return true;
+	}
+	else
+	{
+		for (var nIndex = 0, nCount = this.RangeSpaces.length; nIndex < nCount; ++nIndex)
+		{
+			this.RangeSpaces[nIndex].ResetCondensedWidth();
+		}
+	}
+
+	return false;
+};
 CParagraphRecalculateStateWrap.prototype.CheckUpdateLBP = function(nInRunPos)
 {
 	 if (this.UpdateLBP)
@@ -3568,8 +3693,16 @@ CParagraphRecalculateStateInfo.prototype.Reset = function(PrevInfo)
 {
 	if (null !== PrevInfo && undefined !== PrevInfo)
 	{
-		this.Comments      = PrevInfo.Comments;
+		this.Comments      = [];
 		this.ComplexFields = [];
+
+		if (PrevInfo.Comments)
+		{
+			for (var nIndex = 0, nCount = PrevInfo.Comments.length; nIndex < nCount; ++nIndex)
+			{
+				this.Comments[nIndex] = PrevInfo.Comments[nIndex];
+			}
+		}
 
 		if (PrevInfo.ComplexFields)
 		{
@@ -3651,6 +3784,63 @@ CParagraphRecalculateStateInfo.prototype.IsComplexFieldCode = function()
 	}
 
 	return false;
+};
+CParagraphRecalculateStateInfo.prototype.ProcessFieldCharAndCollectComplexField = function(oChar)
+{
+	if (oChar.IsBegin())
+	{
+		var oComplexField = oChar.GetComplexField();
+		if (!oComplexField)
+		{
+			oChar.SetUse(false);
+		}
+		else
+		{
+			oChar.SetUse(true);
+			oComplexField.SetBeginChar(oChar);
+			this.ComplexFields.push(new CComplexFieldStatePos(oComplexField, true));
+		}
+	}
+	else if (oChar.IsEnd())
+	{
+		if (this.ComplexFields.length > 0)
+		{
+			oChar.SetUse(true);
+			var oComplexField = this.ComplexFields[this.ComplexFields.length - 1].ComplexField;
+			oComplexField.SetEndChar(oChar);
+			this.ComplexFields.splice(this.ComplexFields.length - 1, 1);
+
+			if (this.ComplexFields.length > 0 && this.ComplexFields[this.ComplexFields.length - 1].IsFieldCode())
+				this.ComplexFields[this.ComplexFields.length - 1].ComplexField.SetInstructionCF(oComplexField);
+		}
+		else
+		{
+			oChar.SetUse(false);
+		}
+	}
+	else if (oChar.IsSeparate())
+	{
+		if (this.ComplexFields.length > 0)
+		{
+			oChar.SetUse(true);
+			var oComplexField = this.ComplexFields[this.ComplexFields.length - 1].ComplexField;
+			oComplexField.SetSeparateChar(oChar);
+			this.ComplexFields[this.ComplexFields.length - 1].SetFieldCode(false);
+		}
+		else
+		{
+			oChar.SetUse(false);
+		}
+	}
+};
+CParagraphRecalculateStateInfo.prototype.ProcessInstruction = function(oInstruction)
+{
+	if (this.ComplexFields.length <= 0)
+		return;
+
+	var oComplexField = this.ComplexFields[this.ComplexFields.length - 1].ComplexField;
+	if (oComplexField && null === oComplexField.GetSeparateChar())
+		oComplexField.SetInstruction(oInstruction);
 };
 
 

@@ -46,6 +46,8 @@
 	var c_oAscAlignH         = Asc.c_oAscAlignH;
 	var c_oAscAlignV         = Asc.c_oAscAlignV;
 
+	var TrackedPositions	= [];
+
 	/**
 	 * Class representing a container for paragraphs and tables.
 	 * @param Document
@@ -56,6 +58,1471 @@
 		this.Document = Document;
 	}
 
+	/**
+	 * Class represents a continuous region in a document. 
+	 * Each Range object is determined by the position of the start and end characters
+	 * @param oElement - may be Document, Table, Paragraph, Run, Hyperlink
+	 * @param {Number} Start - start element of Range in current Element
+	 * @param {Number} End - end element of Range in current Element
+	 * @constructor
+	 */
+	function ApiRange(oElement, Start, End)
+	{
+		this.Element		= oElement;
+		this.Controller		= null;
+		this.Start			= undefined;
+		this.End 		 	= undefined;
+		this.isEmpty 		= true;
+		this.Paragraphs 	= [];
+		this.Text 			= undefined;
+		this.oDocument		= editor.GetDocument();
+		this.EndPos			= null;
+		this.StartPos		= null;
+		this.TextPr 		= new CTextPr();
+
+		this.private_SetRangePos(Start, End);
+		this.private_CalcDocPos();
+
+		if (this.StartPos === null || this.EndPos === null)
+			return false;
+		else 
+			this.isEmpty = false;
+
+		this.private_SetController();
+		TrackedPositions.push(this.EndPos);
+		TrackedPositions.push(this.StartPos);
+		
+		this.oDocument.Document.TrackDocumentPositions(TrackedPositions);
+
+		this.Text 		= this.GetText();
+		this.Paragraphs = this.GetAllParagraphs();
+	};
+
+	ApiRange.prototype.constructor = ApiRange;
+	ApiRange.prototype.private_SetRangePos = function(Start, End)
+	{
+		function callback(oRun)
+		{
+			var nRangePos = 0;
+
+			var nCurPos = oRun.Content.length;
+			
+			for (var nPos = 0; nPos < nCurPos; ++nPos)
+			{
+				if (para_Text === oRun.Content[nPos].Type)
+					nRangePos++;
+			}
+
+			if (nRangePos !== 0)
+				charsCount += nRangePos;
+		};
+
+		if (Start > End)
+		{
+			var temp	= Start;
+			Start		= End;
+			End			= temp;
+		}
+		if (Start === undefined)
+			this.Start = 0;
+		else if (typeof(Start) === "number")
+			this.Start = Start
+		else if (Array.isArray(Start) === true)
+			this.StartPos = Start;
+
+		if (End === undefined)
+		{
+			this.End 		= 0;
+			var charsCount 	= 0;
+
+			this.Element.CheckRunContent(callback);
+			
+			this.End = charsCount;
+			if (this.End > 0)
+				this.End--;
+		}
+		else if (typeof(End) === "number")
+			this.End = End;
+		else if (Array.isArray(End) === true)
+			this.EndPos = End;
+	};
+	ApiRange.prototype.private_CalcDocPos = function()
+	{
+		if (this.StartPos || this.EndPos)
+			return;
+
+		var isStartDocPosFinded = false;
+		var isEndDocPosFinded	= false;
+		var StartChar			= this.Start;
+		var EndChar				= this.End;
+		var StartPos			= null;
+		var EndPos				= null;
+		var charsCount 			= 0;
+
+		function callback(oRun)
+		{
+			var nRangePos = 0;
+
+			var nCurPos = oRun.Content.length;
+			for (var nPos = 0; nPos < nCurPos; ++nPos)
+			{
+				if (para_Text === oRun.Content[nPos].Type)
+					nRangePos++;
+
+				if (StartChar - charsCount === nRangePos - 1 && !isStartDocPosFinded)
+				{
+					var DocPosInRun = 
+					{
+						Class : oRun,
+						Position : nPos,
+					};
+		
+					var DocPos = oRun.GetDocumentPositionFromObject();
+		
+					DocPos.push(DocPosInRun);
+		
+					StartPos = DocPos;
+
+					isStartDocPosFinded = true;
+				}
+				if (EndChar - charsCount === nRangePos - 1 && !isEndDocPosFinded)
+				{
+					var DocPosInRun = 
+					{
+						Class : oRun,
+						Position : nPos + 1,
+					};
+		
+					var DocPos = oRun.GetDocumentPositionFromObject();
+		
+					DocPos.push(DocPosInRun);
+		
+					EndPos = DocPos;
+
+					isEndDocPosFinded = true;
+				}
+			}
+
+			if (nRangePos !== 0)
+				charsCount += nRangePos;
+		};
+
+		if (this.Element instanceof CDocument || this.Element instanceof CTable || this.Element instanceof CBlockLevelSdt)
+		{
+			var allParagraphs	= [];
+			allParagraphs		= this.Element.GetAllParagraphs({OnlyMainDocument : true, All : true}, allParagraphs);
+
+			for (var paraItem = 0; paraItem < allParagraphs.length; paraItem++)
+			{
+				if (!isStartDocPosFinded && !isEndDocPosFinded)
+					allParagraphs[paraItem].CheckRunContent(callback);
+				else 
+					break;
+
+				this.StartPos	= StartPos;
+				this.EndPos		= EndPos;
+			}
+		}
+		else if (this.Element instanceof Paragraph || this.Element instanceof ParaHyperlink || this.Element instanceof CInlineLevelSdt)
+		{
+			this.Element.CheckRunContent(callback);
+			
+			this.StartPos	= StartPos;
+			this.EndPos		= EndPos;
+		}
+	}
+	ApiRange.prototype.private_SetController = function()
+	{
+		if (this.StartPos[0].Class.IsHdrFtr())
+		{
+			this.Controller = this.oDocument.Document.GetHdrFtr();
+		}
+		else if (this.StartPos[0].Class.IsFootnote())
+		{
+			this.Controller = this.oDocument.Document.GetFootnotesController();
+		}
+		else if (this.StartPos[0].Class.Is_DrawingShape())
+		{
+			this.Controller = this.oDocument.Document.DrawingsController;
+		}
+		else 
+		{
+			this.Controller = this.oDocument.Document.LogicDocumentController;
+		}
+	};
+	/**
+	 * Get a paragraph from all paragraphs that are in the range
+	 * @param {Number} nPos - position 
+	 * @return {ApiParagraph}
+	 */	
+	ApiRange.prototype.GetParagraph = function(nPos)
+	{
+		if (nPos > this.Paragraphs.length - 1 || nPos < 0)
+			return false;
+		
+		if (this.Paragraphs[nPos])
+			return this.Paragraphs[nPos];
+		else 
+			return false;
+	};
+	/**
+	 * Added text in the specified position
+	 * @param {String} sText
+	 * @param {string} [sPosition = "after"] - can be "before" or "after"
+	 * @return {String}
+	 */	
+	ApiRange.prototype.AddText = function(sText, sPosition)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+		if (typeof(sText) !== "string")
+			return false;
+		if (sPosition !== "after" && sPosition !== "before")
+			sPosition = "after";
+		
+		var Document = private_GetLogicDocument();
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		if (sPosition === "after")
+		{
+			var lastRun			= this.EndPos[this.EndPos.length - 1].Class;
+			var lastRunPos		= this.EndPos[this.EndPos.length - 2].Position;
+			var lastRunParent	= lastRun.GetParent();
+			var tempRun			= editor.CreateRun();
+
+			tempRun.AddText(sText);
+			tempRun.SetTextPr(new ApiTextPr(null, this.TextPr));
+			lastRunParent.Add_ToContent(lastRunPos, tempRun.Run);
+		}
+		else if (sPosition === "before")
+		{
+			var firstRun		= this.StartPos[this.StartPos.length - 1].Class;
+			var firstRunPos		= this.StartPos[this.StartPos.length - 1].Position;
+			firstRun.AddText(sText, firstRunPos);
+		}
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		return this;
+	};
+	/**
+	 * Added the bookmark to the specified range
+	 * @param {String} sName
+	 * @return {ApiRange}
+	 */	
+	ApiRange.prototype.AddBookmark = function(sName)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+		if (typeof(sName) !== "string")
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RemoveBookmark(sName);
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.SetSelection(false);
+		
+		Document.AddBookmark(sName);
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		return this;
+	};
+	/**
+	 * Get text in the specified range
+	 * @return {String}
+	 */	
+	ApiRange.prototype.GetText = function()
+	{
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.SetSelection(false);
+
+		var Text = this.Controller.GetSelectedText(false); 
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+		
+		return Text;
+	};
+	/**
+	 * Gets a collection of paragraphs that represents all paragraphs in the specified range.
+	 * @return {Array}
+	 */	
+	ApiRange.prototype.GetAllParagraphs = function()
+	{
+		var done = false;
+
+		var AllParagraphsListOfElement = [];
+		var RangeParagraphsList = [];
+
+		var startPara = this.StartPos[this.StartPos.length - 1].Class.GetParagraph();
+		var endPara   = this.EndPos[this.EndPos.length - 1].Class.GetParagraph();
+
+		if (startPara instanceof ParaHyperlink)
+		{
+			startPara = startPara.Paragraph;
+		}
+
+		if (endPara instanceof ParaHyperlink)
+		{
+			endPara = endPara.Paragraph;
+		}
+
+		if (startPara.Id === endPara.Id)
+		{
+			RangeParagraphsList.push(new ApiParagraph(startPara));
+			return RangeParagraphsList;
+		}
+
+		if (this.Element instanceof CDocument)
+		{
+			AllParagraphsListOfElement = this.Element.GetAllParagraphs({All : true});
+
+			for (var Index1 = 0; Index1 < AllParagraphsListOfElement.length; Index1++)
+			{
+				if (done)
+					break;
+
+				if (AllParagraphsListOfElement[Index1].Id === startPara.Id)
+				{
+					RangeParagraphsList.push(new ApiParagraph(AllParagraphsListOfElement[Index1]));
+
+					for (var Index2 = Index1 + 1; Index2 < AllParagraphsListOfElement.length; Index2++)
+					{
+						if (AllParagraphsListOfElement[Index2].Id !== endPara.Id)
+						{
+							RangeParagraphsList.push(new ApiParagraph(AllParagraphsListOfElement[Index2]));
+						}
+						else 
+						{
+							RangeParagraphsList.push(new ApiParagraph(endPara));
+
+							done = true;
+							break;
+						}
+					}
+				}
+			}
+		}
+		else if (this.Element instanceof CTable)
+		{
+			AllParagraphsListOfElement = [];
+			this.Element.GetAllParagraphs({All : true}, AllParagraphsListOfElement);
+
+			for (var Index1 = 0; Index1 < AllParagraphsListOfElement.length; Index1++)
+			{
+				if (done)
+					break;
+
+				if (AllParagraphsListOfElement[Index1].Id === startPara.Id)
+				{
+					RangeParagraphsList.push(new ApiParagraph(AllParagraphsListOfElement[Index1]));
+
+					for (var Index2 = Index1 + 1; Index2 < AllParagraphsListOfElement.length; Index2++)
+					{
+						if (AllParagraphsListOfElement[Index2].Id !== endPara.Id)
+						{
+							RangeParagraphsList.push(new ApiParagraph(AllParagraphsListOfElement[Index2]));
+						}
+						else 
+						{
+							RangeParagraphsList.push(new ApiParagraph(endPara));
+
+							done = true;
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		return RangeParagraphsList;
+	};
+	/**
+	 * Set the selection to the specified range.
+	 * @typeofeditors ["CDE"]
+	 */	
+	ApiRange.prototype.SetSelection = function(bUpdate)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+		if (bUpdate === undefined)
+			bUpdate = true;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		this.StartPos[0].Class.SetSelectionByContentPositions(this.StartPos, this.EndPos);
+
+		if (bUpdate)
+		{
+			var controllerType = null;
+
+			if (this.StartPos[0].Class.IsHdrFtr())
+			{
+				controllerType = docpostype_HdrFtr;
+			}
+			else if (this.StartPos[0].Class.IsFootnote())
+			{
+				controllerType = docpostype_Footnotes;
+			}
+			else if (this.StartPos[0].Class.Is_DrawingShape())
+			{
+				controllerType = docpostype_DrawingObjects;
+			}
+			else 
+			{
+				controllerType = docpostype_Content;
+			}
+			Document.SetDocPosType(controllerType);
+			Document.UpdateSelection();
+		}
+	};
+	/**
+	 * Returns a new range that goes beyond that range in any direction and spans a different range. The current range has not changed. Throws an error if the two ranges do not have a union.
+	 * @typeofeditors ["CDE"]
+	 * @param {ApiRange} oRange 
+	 * @return {ApiRange} 
+	 */	
+	ApiRange.prototype.ExpandTo = function(oRange)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+		if (!oRange || oRange.isEmpty || oRange.isEmpty === undefined)
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+		Document.RefreshDocumentPositions([oRange.StartPos, oRange.EndPos]);
+
+		var firstStartPos 		= this.StartPos;
+		var firstEndPos			= this.EndPos;
+		var secondStartPos		= oRange.StartPos;
+		var secondEndPos		= oRange.EndPos;
+
+		if (this.Controller !== oRange.Controller)
+			return false;
+
+		function check_pos(firstPos, secondPos)
+		{
+			for (var nPos = 0, nLen = Math.min(firstPos.length, secondPos.length); nPos < nLen; ++nPos)
+			{
+				if (!secondPos[nPos] || !firstPos[nPos] || firstPos[nPos].Class !== secondPos[nPos].Class)
+					return 1;
+
+				if (firstPos[nPos].Position < secondPos[nPos].Position)
+					return 1;
+				else if (firstPos[nPos].Position > secondPos[nPos].Position)
+					return -1;
+			}
+
+			return 1;
+		}
+		
+		var newRangeStartPos	= null;
+		var newRangeEndPos		= null;
+
+		if (check_pos(firstStartPos, secondStartPos) === 1)
+			newRangeStartPos = firstStartPos;
+		else 
+			newRangeStartPos = secondStartPos;
+
+		if (check_pos(firstEndPos, secondEndPos) === 1)
+			newRangeEndPos = secondEndPos;
+		else 
+			newRangeEndPos = firstEndPos;
+
+		return new ApiRange(newRangeStartPos[0].Class, newRangeStartPos, newRangeEndPos);
+	};
+	/**
+	 * Returns a new range as the intersection of this range with another range. The current range has not changed. Throws an error if the two ranges do not overlap or are not adjacent.
+	 * @typeofeditors ["CDE"]
+	 * @param {ApiRange} oRange 
+	 * @return {ApiRange} 
+	 */	
+	ApiRange.prototype.IntersectWith = function(oRange)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+		if (!oRange || oRange.isEmpty || oRange.isEmpty === undefined)
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+		Document.RefreshDocumentPositions([oRange.StartPos, oRange.EndPos]);
+
+		var firstStartPos 		= this.StartPos;
+		var firstEndPos			= this.EndPos;
+		var secondStartPos		= oRange.StartPos;
+		var secondEndPos		= oRange.EndPos;
+
+		if (this.Controller !== oRange.Controller)
+			return false;
+
+		function check_direction(firstPos, secondPos)
+		{
+			for (var nPos = 0, nLen = Math.min(firstPos.length, secondPos.length); nPos < nLen; ++nPos)
+			{
+				if (!secondPos[nPos] || !firstPos[nPos] || firstPos[nPos].Class !== secondPos[nPos].Class)
+					return 1;
+
+				if (firstPos[nPos].Position < secondPos[nPos].Position)
+					return 1;
+				else if (firstPos[nPos].Position > secondPos[nPos].Position)
+					return -1;
+			}
+
+			return 1;
+		}
+		
+		var newRangeStartPos	= null;
+		var newRangeEndPos		= null;
+
+		// Взаимное расположение диапазонов относительно друг друга. A и B - начало и конец первого диапазона, C и D - начало и конец второго диапазона.
+		var AC	= check_direction(firstStartPos, secondStartPos);
+		var AD	= check_direction(firstStartPos, secondEndPos);
+		var BC	= check_direction(firstEndPos, secondStartPos);
+		var BD	= check_direction(firstEndPos, secondEndPos);
+
+		if (AC === AD && AC === BC && AC === BD)
+			return false;
+		else if (AC === BD && AD !== BC)
+		{
+			if (AC === 1)
+			{
+				newRangeStartPos	= secondStartPos;
+				newRangeEndPos		= firstEndPos;
+			}
+			else if (AC === - 1)
+			{
+				newRangeStartPos	= firstStartPos;
+				newRangeEndPos		= secondEndPos;
+			}
+		}
+		else if (AC !== BD && AD !== BC)
+		{
+			if (AC === 1)
+			{
+				newRangeStartPos	= secondStartPos;
+				newRangeEndPos		= secondEndPos;
+			}
+			else if (AC === - 1)
+			{
+				newRangeStartPos	= firstStartPos;
+				newRangeEndPos		= firstEndPos;
+			}
+		}
+
+		return new ApiRange(newRangeStartPos[0].Class, newRangeStartPos, newRangeEndPos);
+	};
+	/**
+	 * Set the bold property to the text character.
+	 * @typeofeditors ["CDE"]
+	 * @param {boolean} isBold - Specifies that the contents of this Range are displayed bold.
+	 */
+	ApiRange.prototype.SetBold = function(isBold)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+
+		var Document			= private_GetLogicDocument();
+		var oldSelectionInfo	= null;
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+				
+		this.SetSelection(false);
+
+		var SelectedContent = Document.GetSelectedElementsInfo({CheckAllSelection : true});
+		if (!SelectedContent.CanEditBlockSdts() || !SelectedContent.CanDeleteInlineSdts())
+		{
+			Document.LoadDocumentState(oldSelectionInfo);
+			Document.UpdateSelection();
+
+			return false;
+		}
+
+		var ParaTextPr = new AscCommonWord.ParaTextPr({Bold : isBold});
+
+		this.Controller.AddToParagraph(ParaTextPr);
+		this.TextPr.Merge(ParaTextPr.Value);
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+		
+		return this;
+	};
+	/**
+	 * Specify that any lowercase characters in this text Range are formatted for display only as their capital letter character equivalents.
+	 * @typeofeditors ["CDE"]
+	 * @param {boolean} isCaps - Specifies that the contents of the current Range are displayed capitalized.
+	 */
+	ApiRange.prototype.SetCaps = function(isCaps)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.SetSelection(false);
+
+		var SelectedContent = Document.GetSelectedElementsInfo({CheckAllSelection : true});
+		if (!SelectedContent.CanEditBlockSdts() || !SelectedContent.CanDeleteInlineSdts())
+		{
+			Document.LoadDocumentState(oldSelectionInfo);
+			Document.UpdateSelection();
+
+			return false;
+		}
+
+		var ParaTextPr = new AscCommonWord.ParaTextPr({Caps : isCaps});
+		Document.AddToParagraph(ParaTextPr);
+		this.TextPr.Merge(ParaTextPr.Value);
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		return this;
+	};
+	/**
+	 * Set the text color for the current text Range in the RGB format.
+	 * @typeofeditors ["CDE"]
+	 * @param {byte} r - Red color component value.
+	 * @param {byte} g - Green color component value.
+	 * @param {byte} b - Blue color component value.
+	 * @param {boolean} [isAuto=false] - If this parameter is set to "true", then r,g,b parameters will be ignored.
+	 */
+	ApiRange.prototype.SetColor = function(r, g, b, isAuto)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		var color = new Asc.asc_CColor();
+		color.r    = r;
+		color.g    = g;
+		color.b    = b;
+		color.Auto = isAuto;
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+		
+		this.SetSelection(false);
+
+		var SelectedContent = Document.GetSelectedElementsInfo({CheckAllSelection : true});
+		if (!SelectedContent.CanEditBlockSdts() || !SelectedContent.CanDeleteInlineSdts())
+		{
+			Document.LoadDocumentState(oldSelectionInfo);
+			Document.UpdateSelection();
+
+			return false;
+		}
+
+		var ParaTextPr = null;
+		if (true === color.Auto)
+		{
+			ParaTextPr = new AscCommonWord.ParaTextPr({
+				Color      : {
+					Auto : true,
+					r    : 0,
+					g    : 0,
+					b    : 0
+				}, Unifill : undefined
+			});
+			Document.AddToParagraph(ParaTextPr);
+		}
+		else
+		{
+			var Unifill        = new AscFormat.CUniFill();
+			Unifill.fill       = new AscFormat.CSolidFill();
+			Unifill.fill.color = AscFormat.CorrectUniColor(color, Unifill.fill.color, 1);
+			ParaTextPr = new AscCommonWord.ParaTextPr({Unifill : Unifill});
+			Document.AddToParagraph(ParaTextPr);
+		}
+
+		this.TextPr.Merge(ParaTextPr.Value);
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		return this;
+	};
+	/**
+	 * Specify that the contents of this Range is displayed with two horizontal lines through each character displayed on the line.
+	 * @typeofeditors ["CDE"]
+	 * @param {boolean} isDoubleStrikeout - Specifies that the contents of the current Range are displayed double struck through.
+	 */
+	ApiRange.prototype.SetDoubleStrikeout = function(isDoubleStrikeout)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+		
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+			
+		this.SetSelection(false);
+		
+		var SelectedContent = Document.GetSelectedElementsInfo({CheckAllSelection : true});
+		if (!SelectedContent.CanEditBlockSdts() || !SelectedContent.CanDeleteInlineSdts())
+		{
+			Document.LoadDocumentState(oldSelectionInfo);
+			Document.UpdateSelection();
+
+			return false;
+		}
+
+		var ParaTextPr = new AscCommonWord.ParaTextPr({DStrikeout : isDoubleStrikeout});
+		Document.AddToParagraph(ParaTextPr);
+		
+		this.TextPr.Merge(ParaTextPr.Value);
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		return this;
+	};
+	/**
+	 * Specify a highlighting color in the RGB format which is applied as a background for the contents of the current Range.
+	 * @typeofeditors ["CDE"]
+	 * @param {byte} r - Red color component value.
+	 * @param {byte} g - Green color component value.
+	 * @param {byte} b - Blue color component value.
+	 * @param {boolean} [isNone=false] If this parameter is set to "true", then r,g,b parameters will be ignored.
+	 */
+	ApiRange.prototype.SetHighlight = function(r, g, b, isNone)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+				
+		this.SetSelection(false);
+
+		var SelectedContent = Document.GetSelectedElementsInfo({CheckAllSelection : true});
+		if (!SelectedContent.CanEditBlockSdts() || !SelectedContent.CanDeleteInlineSdts())
+		{
+			Document.LoadDocumentState(oldSelectionInfo);
+			Document.UpdateSelection();
+
+			return false;
+		}
+
+		var ParaTextPr = null;
+		if (true === isNone)
+		{
+			ParaTextPr = new ParaTextPr({HighLight : highlight_None});
+			Document.AddToParagraph(ParaTextPr);
+			this.TextPr.HighlightColor = highlight_None;
+		}
+		else
+		{
+			var color = new CDocumentColor(r, g, b);
+			ParaTextPr = new ParaTextPr({HighLight : color});
+			Document.AddToParagraph(ParaTextPr);
+		}
+
+		this.TextPr.Merge(ParaTextPr.Value);
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		return this;
+	};
+	/**
+	 * Specify the shading applied to the contents of the current text Range.
+	 * @typeofeditors ["CDE"]
+	 * @param {ShdType} sType - The shading type applied to the contents of the current text Range.
+	 * @param {byte} r - Red color component value.
+	 * @param {byte} g - Green color component value.
+	 * @param {byte} b - Blue color component value.
+	 */
+	ApiRange.prototype.SetShd = function(sType, r, g, b)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		var color = new Asc.asc_CColor();
+		color.r    = r;
+		color.g    = g;
+		color.b    = b;
+		color.Auto = false;
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+		
+		this.SetSelection(false);
+
+		var SelectedContent = Document.GetSelectedElementsInfo({CheckAllSelection : true});
+		if (!SelectedContent.CanEditBlockSdts() || !SelectedContent.CanDeleteInlineSdts())
+		{
+			Document.LoadDocumentState(oldSelectionInfo);
+			Document.UpdateSelection();
+
+			return false;
+		}
+
+		var Shd = new CDocumentShd();
+
+		if (sType === "nil")
+		{
+			var _Shd = {Value : Asc.c_oAscShdNil};
+			Shd.Set_FromObject(_Shd);
+			Document.SetParagraphShd(_Shd);
+		}
+		else if (sType === "clear")
+		{
+			var Unifill        = new AscFormat.CUniFill();
+			Unifill.fill       = new AscFormat.CSolidFill();
+			Unifill.fill.color = AscFormat.CorrectUniColor(color, Unifill.fill.color, 1);
+			var _Shd = {
+				Value   : Asc.c_oAscShdClear,
+				Color   : {
+					r : color.asc_getR(),
+					g : color.asc_getG(),
+					b : color.asc_getB()
+				},
+				Unifill : Unifill
+			};
+			
+			Shd.Set_FromObject(_Shd);
+			Document.SetParagraphShd(_Shd);
+		}
+
+		this.TextPr.Shd = Shd;
+		
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		return this;
+	};
+	/**
+	 * Set the italic property to the text character.
+	 * @typeofeditors ["CDE"]
+	 * @param {boolean} isItalic - Specifies that the contents of the current Range are displayed italicized.
+	 */
+	ApiRange.prototype.SetItalic = function(isItalic)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+				
+		this.SetSelection();
+		var ParaTextPr = new AscCommonWord.ParaTextPr({Italic : isItalic});
+		Document.AddToParagraph(ParaTextPr);
+
+		this.TextPr.Merge(ParaTextPr.Value);
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		return this;
+	};
+	/**
+	 * Specify that the contents of this Range are displayed with a single horizontal line through the center of the line.
+	 * @typeofeditors ["CDE"]
+	 * @param {boolean} isStrikeout - Specifies that the contents of the current Range are displayed struck through.
+	 */
+	ApiRange.prototype.SetStrikeout = function(isStrikeout)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+		
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+				
+		this.SetSelection(false);
+		
+		var SelectedContent = Document.GetSelectedElementsInfo({CheckAllSelection : true});
+		if (!SelectedContent.CanEditBlockSdts() || !SelectedContent.CanDeleteInlineSdts())
+		{
+			Document.LoadDocumentState(oldSelectionInfo);
+			Document.UpdateSelection();
+
+			return false;
+		}
+
+		var ParaTextPr = new AscCommonWord.ParaTextPr({
+			Strikeout  : isStrikeout,
+			DStrikeout : false
+			});
+		Document.AddToParagraph(ParaTextPr);
+		
+		this.TextPr.Merge(ParaTextPr.Value);
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		return this;
+	};
+	/**
+	 * Specify that all small letter characters in this text Range are formatted for display only as their capital
+	 * letter character equivalents in a font size two points smaller than the actual font size specified for this text.
+	 * @typeofeditors ["CDE"]
+	 * @param {boolean} isSmallCaps - Specifies that the contents of the current Range are displayed capitalized two points smaller.
+	 */
+	ApiRange.prototype.SetSmallCaps = function(isSmallCaps)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+		
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+				
+		this.SetSelection(false);
+
+		var SelectedContent = Document.GetSelectedElementsInfo({CheckAllSelection : true});
+		if (!SelectedContent.CanEditBlockSdts() || !SelectedContent.CanDeleteInlineSdts())
+		{
+			Document.LoadDocumentState(oldSelectionInfo);
+			Document.UpdateSelection();
+
+			return false;
+		}
+
+		var ParaTextPr = new AscCommonWord.ParaTextPr({
+			SmallCaps : isSmallCaps,
+			Caps      : false
+		});
+		Document.AddToParagraph(ParaTextPr);
+		
+		this.TextPr.Merge(ParaTextPr.Value);
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		return this;
+	};
+	/**
+	 * Set text spacing measured in twentieths of a point.
+	 * @typeofeditors ["CDE"]
+	 * @param {twips} nSpacing - The value of the text spacing measured in twentieths of a point (1/1440 of an inch).
+	 */
+	ApiRange.prototype.SetSpacing = function(nSpacing)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+		
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+		
+		this.SetSelection(false);
+
+		var SelectedContent = Document.GetSelectedElementsInfo({CheckAllSelection : true});
+		if (!SelectedContent.CanEditBlockSdts() || !SelectedContent.CanDeleteInlineSdts())
+		{
+			Document.LoadDocumentState(oldSelectionInfo);
+			Document.UpdateSelection();
+
+			return false;
+		}
+
+		var ParaTextPr = new AscCommonWord.ParaTextPr({Spacing : nSpacing});
+		Document.AddToParagraph(ParaTextPr);
+		
+		this.TextPr.Merge(ParaTextPr.Value);
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		return this;
+	};
+	/**
+	 * Specify that the contents of this Range are displayed along with a line appearing directly below the character
+	 * (less than all the spacing above and below the characters on the line).
+	 * @typeofeditors ["CDE"]
+	 * @param {boolean} isUnderline - Specifies that the contents of the current Range are displayed underlined.
+	 */
+	ApiRange.prototype.SetUnderline = function(isUnderline)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.SetSelection(false);
+
+		var SelectedContent = Document.GetSelectedElementsInfo({CheckAllSelection : true});
+		if (!SelectedContent.CanEditBlockSdts() || !SelectedContent.CanDeleteInlineSdts())
+		{
+			Document.LoadDocumentState(oldSelectionInfo);
+			Document.UpdateSelection();
+
+			return false;
+		}
+
+
+		var ParaTextPr = new AscCommonWord.ParaTextPr({Underline : isUnderline});
+		Document.AddToParagraph(ParaTextPr);
+		this.TextPr.Merge(ParaTextPr.Value);
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		return this;
+	};
+	/**
+	 * Specify the alignment which will be applied to the contents of this Range in relation to the default appearance of the Range text:
+	 * * <b>"baseline"</b> - the characters in the current text Range will be aligned by the default text baseline.
+	 * * <b>"subscript"</b> - the characters in the current text Range will be aligned below the default text baseline.
+	 * * <b>"superscript"</b> - the characters in the current text Range will be aligned above the default text baseline.
+	 * @typeofeditors ["CDE"]
+	 * @param {("baseline" | "subscript" | "superscript")} sType - The vertical alignment type applied to the text contents.
+	 */
+	ApiRange.prototype.SetVertAlign = function(sType)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+
+		var value = undefined;
+
+		if (sType === "baseline")
+			value = 0;
+		else if (sType === "subscript")
+			value = 2;
+		else if (sType === "superscript")
+			value = 1;
+		else 
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+		
+		this.SetSelection(false);
+
+		var SelectedContent = Document.GetSelectedElementsInfo({CheckAllSelection : true});
+		if (!SelectedContent.CanEditBlockSdts() || !SelectedContent.CanDeleteInlineSdts())
+		{
+			Document.LoadDocumentState(oldSelectionInfo);
+			Document.UpdateSelection();
+
+			return false;
+		}
+
+		var ParaTextPr = new AscCommonWord.ParaTextPr({VertAlign : value});
+		Document.AddToParagraph(ParaTextPr);
+		
+		this.TextPr.Merge(ParaTextPr.Value);
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+		return this;
+	};
+	/**
+	 * Specify the amount by which text is raised or lowered for this Range in relation to the default
+	 * baseline of the surrounding non-positioned text.
+	 * @typeofeditors ["CDE"]
+	 * @param {hps} nPosition - Specifies a positive (raised text) or negative (lowered text)
+	 * measurement in half-points (1/144 of an inch).
+	 */
+	ApiRange.prototype.SetPosition = function(nPosition)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+
+		if (typeof nPosition !== "number")
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+		
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+				
+		this.SetSelection(false);
+
+		var SelectedContent = Document.GetSelectedElementsInfo({CheckAllSelection : true});
+		if (!SelectedContent.CanEditBlockSdts() || !SelectedContent.CanDeleteInlineSdts())
+		{
+			Document.LoadDocumentState(oldSelectionInfo);
+			Document.UpdateSelection();
+
+			return false;
+		}
+
+		var ParaTextPr = new AscCommonWord.ParaTextPr({Position : nPosition});
+		Document.AddToParagraph(ParaTextPr);
+		
+		this.TextPr.Merge(ParaTextPr.Value);
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		return this;
+	};
+	/**
+	 * Set the font size for the characters of the current text Range.
+	 * @typeofeditors ["CDE"]
+	 * @param {hps} nSize - The text size value measured in half-points (1/144 of an inch).
+	 */
+	ApiRange.prototype.SetFontSize = function(FontSize)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+		
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+				
+		this.SetSelection(false);
+
+		var SelectedContent = Document.GetSelectedElementsInfo({CheckAllSelection : true});
+		if (!SelectedContent.CanEditBlockSdts() || !SelectedContent.CanDeleteInlineSdts())
+		{
+			Document.LoadDocumentState(oldSelectionInfo);
+			Document.UpdateSelection();
+
+			return false;
+		}
+
+		var ParaTextPr = new AscCommonWord.ParaTextPr({FontSize : FontSize});
+		Document.AddToParagraph(ParaTextPr);
+		
+		this.TextPr.Merge(ParaTextPr.Value);
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		return this;
+	};
+	/**
+	 * Set all 4 font slots with the specified font family.
+	 * @typeofeditors ["CDE"]
+	 * @param {string} sFontFamily - The font family or families used for the current text Range.
+	 */
+	ApiRange.prototype.SetFontFamily = function(sFontFamily)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+		if (typeof sFontFamily !== "string")
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		var loader   = AscCommon.g_font_loader;
+		var fontinfo = g_fontApplication.GetFontInfo(sFontFamily);
+		var isasync  = loader.LoadFont(fontinfo);
+
+		if (isasync === false)
+		{
+			var FontFamily = {
+				Name : sFontFamily,
+				Index : -1
+			};
+
+			var oldSelectionInfo = Document.SaveDocumentState();
+		
+			for (var Index = 0; Index < TrackedPositions.length; Index++)
+			{
+				Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+			}
+			
+			this.SetSelection(false);
+
+			var SelectedContent = Document.GetSelectedElementsInfo({CheckAllSelection : true});
+			if (!SelectedContent.CanEditBlockSdts() || !SelectedContent.CanDeleteInlineSdts())
+			{
+				Document.LoadDocumentState(oldSelectionInfo);
+				Document.UpdateSelection();
+	
+				return false;
+			}
+	
+			var ParaTextPr = new AscCommonWord.ParaTextPr({FontFamily : FontFamily});
+			Document.AddToParagraph(ParaTextPr);
+			
+			this.TextPr.Merge(ParaTextPr.Value);
+
+			Document.LoadDocumentState(oldSelectionInfo);
+			Document.UpdateSelection();
+
+			Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+			return this;
+		}
+	};
+	/**
+	 * Set the style for the current Range
+	 * @typeofeditors ["CDE"]
+	 * @param {ApiStyle} oStyle - The style which must be applied to the text character.
+	 */
+	ApiRange.prototype.SetStyle = function(oStyle)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+
+		if (!(oStyle instanceof ApiStyle))
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+		
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+				
+		this.SetSelection(false);
+
+		var SelectedContent = Document.GetSelectedElementsInfo({CheckAllSelection : true});
+		if (!SelectedContent.CanEditBlockSdts() || !SelectedContent.CanDeleteInlineSdts())
+		{
+			Document.LoadDocumentState(oldSelectionInfo);
+			Document.UpdateSelection();
+
+			return false;
+		}
+
+		Document.SetParagraphStyle(styleName, true);
+		
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		return this;
+	};
+	/**
+	 * Get the text properties of the current Range.
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiTextPr} 
+	 */
+	ApiRange.prototype.GetTextPr = function()
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+		
+		return new ApiTextPr(this, this.TextPr);
+	};
+	/**
+	 * Sets the text properties of the current Range.
+	 * @typeofeditors ["CDE"]
+	 * @param {ApiTextPr}
+	 * @return {ApiRange} 
+	 */
+	ApiRange.prototype.SetTextPr = function(oTextPr)
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+		
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+				
+		this.SetSelection(false);
+
+		var SelectedContent = Document.GetSelectedElementsInfo({CheckAllSelection : true});
+		if (!SelectedContent.CanEditBlockSdts() || !SelectedContent.CanDeleteInlineSdts())
+		{
+			Document.LoadDocumentState(oldSelectionInfo);
+			Document.UpdateSelection();
+
+			return false;
+		}
+
+		var ParaTextPr = new AscCommonWord.ParaTextPr(oTextPr.TextPr);
+		Document.AddToParagraph(ParaTextPr);
+		this.TextPr.Set_FromObject(oTextPr.TextPr);
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+
+		return this;
+	};
+	/**
+	 * Delete all contents of the current range
+	 * @typeofeditors ["CDE"]
+	 */
+	ApiRange.prototype.Delete = function()
+	{
+		if (this.isEmpty || this.isEmpty === undefined || this.StartPos[this.StartPos.length - 1].Deleted || this.EndPos[this.EndPos.length - 1].Deleted)
+			return false;
+
+		var Document = private_GetLogicDocument();
+		Document.RefreshDocumentPositions([this.StartPos, this.EndPos]);
+		
+		var oldSelectionInfo	= Document.SaveDocumentState();
+
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.SetSelection(false);
+		this.Controller.Remove(-1, true, false, false, false);
+
+		this.isEmpty = true;
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+
+		return true;
+	};
 	/**
 	 * Class representing a document.
 	 * @constructor
@@ -77,8 +1544,8 @@
 		this.Parent = Parent;
 		this.ParaPr = ParaPr;
 	}
-
-
+	
+	
 	/**
 	 * Class representing paragraph bullet
 	 * @constructor
@@ -146,6 +1613,40 @@
 	}
 	ApiRun.prototype = Object.create(ApiTextPr.prototype);
 	ApiRun.prototype.constructor = ApiRun;
+
+	/**
+	 * Class representing a hyperlink of Paragraph
+	 * @constructor
+	 */
+	function ApiParaHyperlink(ParaHyperlink)
+	{
+		this.ParaHyperlink = ParaHyperlink;
+	}
+	ApiParaHyperlink.prototype.constructor = ApiParaHyperlink;
+
+	ApiParaHyperlink.prototype.GetElement = function(nPos)
+	{
+		if (nPos < 0 || nPos >= this.ParaHyperlink.Content.length)
+			return null;
+		
+		if (this.ParaHyperlink.Content[nPos] instanceof ParaRun)
+		{
+			return new ApiRun(this.ParaHyperlink.Content[nPos]);
+		}
+	};
+	/**
+	 * Returns a Range object that represents the part of the document contained in the specified hyperlink.
+	 * @typeofeditors ["CDE"]
+	 * @param {Number} Start - start character in current element
+	 * @param {Number} End - end character in current element
+	 * @returns {ApiRange} 
+	 * */
+	ApiParaHyperlink.prototype.GetRange = function(Start, End)
+	{
+		var Range = new ApiRange(this.ParaHyperlink, Start, End);
+
+		return Range;
+	};
 
 	/**
 	 * Class representing a style.
@@ -645,6 +2146,16 @@
 		return new ApiParagraph(new Paragraph(private_GetDrawingDocument(), private_GetLogicDocument()));
 	};
 	/**
+	 * Create a new paragraph.
+	 * @memberof Api
+	 * @typeofeditors ["CDE", "CSE"]
+	 * @returns {ApiParagraph}
+	 */
+	Api.prototype.CreateRange = function(oElement, Start, End)
+	{
+		return new ApiRange(oElement, Start, End);
+	};
+	/**
 	 * Create a new table with a specified number of rows and columns.
 	 * @memberof Api
 	 * @typeofeditors ["CDE"]
@@ -1002,7 +2513,10 @@
 	{
 		return new ApiFill(AscFormat.builder_CreateRadialGradient(aGradientStop));
 	};
-
+	Api.prototype.CreateRange = function(oElement, Start, End)
+	{
+		return new ApiRange(oElement, Start, End);
+	};
 	/**
 	 * Create a pattern fill which allows to fill the object using a selected pattern as the object background.
 	 * @memberof Api
@@ -1189,6 +2703,156 @@
 	{
 		return "unsupported";
 	};
+	/**
+	 *  Adds a comment to the desired element or array of elements.
+	 * @param {Array | ApiParagraph | ApiDocument} oElement - may be Document, Paragraph or Run[]
+	 * @param {string} Comment - comment
+	 * @param {string} Autor - autor's name (not obligatory)
+	 */
+	Api.prototype.AddComment = function(oElement, Comment, Autor)
+	{
+		if (!Comment || typeof(Comment) !== "string")
+			return;
+	
+		if (typeof(Autor) !== "string")
+			Autor = "";
+		
+		// Если oElement не является массивом, определяем параграф это или документ
+		if (!Array.isArray(oElement))
+		{
+			// Проверка на параграф
+			if (oElement instanceof ApiParagraph | oElement instanceof ApiDocument)
+				oElement.AddComment(Comment, Autor);
+		}
+		// Проверка на массив с ранами
+		else if (Array.isArray(oElement))
+		{
+			// Если хотя бы один элемент массива не является раном, или хотя бы один ран не принадлежит 
+			// ни одному параграфу - не добавляем комментарий
+			for (var Index = 0; Index < oElement.length; Index++)
+			{
+				if (!(oElement[Index] instanceof ApiRun))
+					return false;					
+			}
+			
+			// Если раны из принципиально разных контекcтов (из тела и хедера(или футера) то комментарий не добавляем)
+			for (var Index = 1; Index < oElement.length; Index++)
+			{
+				if (oElement[0].Run.GetDocumentPositionFromObject()[0].Class !== oElement[Index].Run.GetDocumentPositionFromObject()[0].Class)
+					return false;
+			}
+			
+			var CommentData = new AscCommon.CCommentData();
+			CommentData.SetText(Comment);
+			CommentData.SetUserName(Autor);
+
+			var oDocument = private_GetLogicDocument();
+			
+			var StartRun = this.GetFirstRunInArray(oElement); 
+			var StartPos = StartRun.Run.GetDocumentPositionFromObject();
+
+			var EndRun	= this.GetLastRunInArray(oElement)
+			var EndPos	= EndRun.Run.GetDocumentPositionFromObject();
+
+			oDocument.SetContentSelection(StartPos, EndPos, 0, 1, -1);
+			
+			var COMENT = oDocument.AddComment(CommentData, false);
+			oDocument.RemoveSelection();
+			
+			if (null != COMENT)
+			{
+				editor.sync_AddComment(COMENT.Get_Id(), CommentData);
+			}
+		}
+	};
+
+	/**
+	 * Get the Run that is first in position
+	 * @param {Array} Runs - Array of Runs
+	 * @return {ApiRun} 
+	 */
+	Api.prototype.GetFirstRunInArray = function(Runs)
+	{
+		if (!Array.isArray(Runs))
+			return false;
+			
+		var min_pos_Index = 0; // Индекс рана в массиве, с которого начнется выделение
+
+		var MinPos = Runs[0].Run.GetDocumentPositionFromObject();
+
+		for (var Index = 1; Index < Runs.length; Index++)
+		{
+			var TempPos = Runs[Index].Run.GetDocumentPositionFromObject();
+
+			var MinPosLength = MinPos.length;
+			var UsedLength1  = 0;
+
+
+			if (MinPosLength <= TempPos.length)
+				UsedLength1 = MinPosLength;
+			else 
+				UsedLength1 = TempPos.length;
+
+			for (var Pos = 0; Pos < UsedLength1; Pos++)
+			{
+				if (TempPos[Pos].Position < MinPos[Pos].Position)
+				{
+					MinPos = TempPos;
+					min_pos_Index = Index;
+					break;
+				}
+				else if (TempPos[Pos].Position === MinPos[Pos].Position)
+					continue;
+				else if (TempPos[Pos].Position > MinPos[Pos].Position)
+					break;
+			}
+		}
+		
+		return Runs[min_pos_Index];
+	};
+	
+	/**
+	 * Get the Run that is last in position
+	 * @param {Array} Runs - Array of Runs
+	 * @return {ApiRun} 
+	 */
+	Api.prototype.GetLastRunInArray = function(Runs)
+	{
+		if (!Array.isArray(Runs))
+			return false;
+			
+		var max_pos_Index = 0; // Индекс рана в массиве, на котором закончится
+
+		var MaxPos = Runs[0].Run.GetDocumentPositionFromObject();
+
+		for (var Index = 1; Index < Runs.length; Index++)
+		{
+			var TempPos = Runs[Index].Run.GetDocumentPositionFromObject();
+
+			var MaxPosLength = MaxPos.length;
+			var UsedLength2  = 0;
+
+			if (MaxPosLength <= TempPos.length)
+				UsedLength2 = MaxPosLength;
+			else 
+				UsedLength2 = TempPos.length;
+			
+			for (var Pos = 0; Pos < UsedLength2; Pos++)
+			{
+				if (TempPos[Pos].Position > MaxPos[Pos].Position)
+				{
+					MaxPos = TempPos;
+					max_pos_Index = Index;
+					break;
+				}
+				else if (TempPos[Pos].Position === MaxPos[Pos].Position)
+					continue;
+				else if (TempPos[Pos].Position < MaxPos[Pos].Position)
+					break;
+			}
+		}
+		return Runs[max_pos_Index];
+	};
 
 	//------------------------------------------------------------------------------------------------------------------
 	//
@@ -1235,7 +2899,7 @@
 		return null;
 	};
 	/**
-	 * Add paragraph or table using its position in the document.
+	 * Add a paragraph or a table or a blockLvl content control using its position in the document content.
 	 * @typeofeditors ["CDE", "CSE", "CPE"]
 	 * @param {number} nPos - The position where the current element will be added.
 	 * @param {DocumentElement} oElement - The document element which will be added at the current position.
@@ -1254,7 +2918,7 @@
 	 */
 	ApiDocumentContent.prototype.Push = function(oElement)
 	{
-		if (oElement instanceof ApiParagraph || oElement instanceof ApiTable)
+		if (oElement instanceof ApiParagraph || oElement instanceof ApiTable || oElement instanceof ApiBlockLvlSdt)
 		{
 			this.Document.Internal_Content_Add(this.Document.Content.length, oElement.private_GetImpl());
 			return true;
@@ -1482,7 +3146,7 @@
 			this.Document.RemoveSelection(true);
 		}
 
-		var oParagraph = this.Document.GetCurrentParagraph();
+		var oParagraph = this.Document.GetCurrentParagraph(undefined, undefined, {CheckDocContent: true});
 		if (!oParagraph)
 			return;
 
@@ -1672,6 +3336,293 @@
 	ApiDocument.prototype.IsTrackRevisions = function()
 	{
 		return this.Document.IsTrackRevisions();
+	};
+	/**
+	 * Returns a Range object that represents the part of the document contained in the specified document.
+	 * @typeofeditors ["CDE"]
+	 * @param {Number} Start - start character in current element
+	 * @param {Number} End - end character in current element
+	 * @returns {ApiRange} 
+	 * */
+	ApiDocument.prototype.GetRange = function(Start, End)
+	{
+		var Range = new ApiRange(this.Document, Start, End);
+
+		return Range;
+	};
+	ApiDocument.prototype.GetRangeBySelect = function()
+	{
+		if (!this.Document.IsSelectionUse())
+			return false;
+
+		var selectDirection	= this.Document.GetSelectDirection();
+		var documentState	= this.Document.SaveDocumentState();
+		var StartPos		= null;
+		var EndPos			= null;
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			this.Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		if (selectDirection === 1)
+		{
+			StartPos	= documentState.StartPos;
+			EndPos		= documentState.EndPos;
+		}
+		else if (selectDirection === -1)
+		{
+			StartPos	= documentState.EndPos;
+			EndPos		= documentState.StartPos;
+		}
+
+		this.Document.LoadDocumentState(documentState);
+		return new ApiRange(StartPos[0].Class, StartPos, EndPos);
+	};
+	/**
+	 * Get the last element of document. 
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 * @returns {?DocumentElement}
+	 */
+	ApiDocument.prototype.Last = function()
+	{
+		return this.GetElement(this.GetElementsCount() - 1);
+	};
+	/**
+	 * Push a paragraph or a table  or a text to actually add it to the document.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 * @param {DocumentElement} oElement - The type of the element which will be pushed to the document.
+	 * @returns {boolean} Returns <code>false</code> if the type of <code>oElement</code> is not supported by paragraph
+	 * content.
+	 */
+	ApiDocument.prototype.Push = function(oElement)
+	{
+		if (oElement instanceof ApiParagraph || oElement instanceof ApiTable || ApiBlockLvlSdt)
+		{
+			this.Document.Internal_Content_Add(this.Document.Content.length, oElement.private_GetImpl());
+		}
+		else if (typeof oElement === "string")
+		{
+			var oParagraph = editor.CreateParagraph();
+			oParagraph.AddText(oElement);
+			this.Document.Internal_Content_Add(this.Document.Content.length, oParagraph.private_GetImpl());
+		}
+		else 
+			return false;
+	};
+	/**
+	 * Removes a bookmark from the document, if one exists.
+	 * @typeofeditors ["CDE"]
+	 * @param {string} sName - bookmark name
+	 */
+	ApiDocument.prototype.DeleteBookmark = function(sName)
+	{
+		if (sName === undefined)
+			return false;
+
+		this.Document.RemoveBookmark(sName);
+	};
+	/**
+	 *  Adds a comment to the document.
+	 * @param {string} Comment - comment
+	 * @param {string} Autor - autor's name (not obligatory)
+	 */
+	ApiDocument.prototype.AddComment = function(Comment, Autor)
+	{
+		if (!Comment || typeof(Comment) !== "string")
+			return;
+	
+		if (typeof(Autor) !== "string")
+			Autor = "";
+		
+		var CommentData = new AscCommon.CCommentData();
+		CommentData.SetText(Comment);
+		CommentData.SetUserName(Autor);
+
+		var COMENT = this.Document.AddComment(CommentData, true);
+
+		if (null !== COMENT)
+		{
+			editor.sync_AddComment(COMENT.Get_Id(), CommentData);
+		}
+	};
+	/**
+	 * Gets a bookmark's range.
+	 * @typeofeditors ["CDE"]
+	 * @param {string} sName - bookmark name
+	 * @return {ApiRange} 
+	 */
+	ApiDocument.prototype.GetBookmarkRange = function(sName)
+	{
+		if (sName === undefined)
+			return false;
+
+		var Document = private_GetLogicDocument();
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.Document.GoToBookmark(sName, true);
+
+		var oRange = this.GetRangeBySelect();
+
+		this.Document.LoadDocumentState(oldSelectionInfo);
+		this.Document.UpdateSelection();
+
+		return oRange;
+	};
+	/**
+	 * Gets the collection of section objects in the document.
+	 * @typeofeditors ["CDE"]
+	 * @return {Array}  
+	 */
+	ApiDocument.prototype.GetSections = function()
+	{
+		var arrApiSections = [];
+
+		for (var Index = 0; Index < this.Document.SectionsInfo.Elements.length; Index++)
+			arrApiSections.push(new ApiSection(this.Document.SectionsInfo.Elements[Index]))
+
+		return arrApiSections;
+	};
+	/**
+	 * Get the collection of tables on a given absolute page
+	 * @param nPage - page number
+	 * @typeofeditors ["CDE"]
+	 * @return {Array}  
+	 */
+	ApiDocument.prototype.GetAllTablesOnPage = function(nPage)
+	{
+		var arrApiAllTables = [];
+
+		var arrAllTables = this.Document.GetAllTablesOnPage(nPage);
+
+		for (var Index = 0; Index < arrAllTables.length; Index++)
+		{
+			arrApiAllTables.push(new ApiTable(arrAllTables[Index].Table));
+		};
+
+		return arrApiAllTables;
+	};
+	/**
+	 * Remove current selection
+	 * @typeofeditors ["CDE"]
+	 */
+	ApiDocument.prototype.RemoveSelection = function()
+	{
+		this.Document.RemoveSelection();
+	};
+	/**
+	 * Gets the collection of drawing objects in the document.
+	 * @typeofeditors ["CDE"]
+	 * @return {Array}  
+	 */
+	ApiDocument.prototype.GetAllDrawingObjects = function()
+	{
+		var arrAllDrawing = this.Document.GetAllDrawingObjects();
+		var arrApiShapes  = [];
+
+		for (var Index = 0; Index < arrAllDrawing.length; Index++)
+			arrApiShapes.push(new ApiDrawing(arrAllDrawing[Index]));
+		
+		return arrApiShapes;
+	};
+	/**
+	 * Gets the collection of shapes objects in the document.
+	 * @typeofeditors ["CDE"]
+	 * @return {Array}  
+	 */
+	ApiDocument.prototype.GetAllShapes = function()
+	{
+		var arrAllDrawing = this.Document.GetAllDrawingObjects();
+		var arrApiShapes  = [];
+
+		for (var Index = 0; Index < arrAllDrawing.length; Index++)
+			if (arrAllDrawing[Index].GraphicObj instanceof CShape)
+				arrApiShapes.push(new ApiShape(arrAllDrawing[Index].GraphicObj));
+		
+		return arrApiShapes;
+	};
+	/**
+	 * Gets the collection of image objects in the document.
+	 * @typeofeditors ["CDE"]
+	 * @return {Array}  
+	 */
+	ApiDocument.prototype.GetAllImages = function()
+	{
+		var arrAllDrawing = this.Document.GetAllDrawingObjects();
+		var arrApiImages  = [];
+
+		for (var Index = 0; Index < arrAllDrawing.length; Index++)
+			if (arrAllDrawing[Index].GraphicObj instanceof CImageShape)
+				arrApiImages.push(new ApiImage(arrAllDrawing[Index].GraphicObj));
+		
+		return arrApiImages;
+	};
+	/**
+	 * Gets the collection of chart objects in the document.
+	 * @typeofeditors ["CDE"]
+	 * @return {Array}  
+	 */
+	ApiDocument.prototype.GetAllCharts = function()
+	{
+		var arrAllDrawing = this.Document.GetAllDrawingObjects();
+		var arrApiCharts  = [];
+
+		for (var Index = 0; Index < arrAllDrawing.length; Index++)
+			if (arrAllDrawing[Index].GraphicObj instanceof CChartSpace)
+				arrApiCharts.push(new ApiChart(arrAllDrawing[Index].GraphicObj));
+		
+		return arrApiCharts;
+	};
+	/**
+	 * Searches for the scope of a document object. The search results are a collection of ApiRange objects.
+	 * @param {string} sText 
+	 * @param {bool} isMatchCase - is case sensitive. 
+	 * @typeofeditors ["CDE"]
+	 * @return {Array}  
+	 */
+	ApiDocument.prototype.Search = function(sText, isMatchCase)
+	{
+		if (isMatchCase === undefined)
+			isMatchCase	= false;
+
+		var docSearchEngine	= this.Document.Search(sText, {MatchCase : isMatchCase});
+		var foundItems 		= [];
+		var arrApiRanges	= [];
+		var docSearchEngineElementsLenght = 0;
+
+		for (var FoundId in docSearchEngine.Elements)
+			docSearchEngineElementsLenght++;
+
+		for (var Index = 1; Index <= docSearchEngineElementsLenght; Index++)
+			foundItems.push(docSearchEngine.Elements[Index]);
+
+		for (var Index1 = 0; Index1 < foundItems.length; Index1++)
+		{
+			for (var Index2 = Index1 + 1; Index2 < foundItems.length; Index2++)
+			{
+				if (foundItems[Index1].Id === foundItems[Index2].Id)
+				{
+					foundItems.splice(Index2, 1);
+					Index2--;
+				}
+			}
+		}
+
+		for (var para in foundItems)
+		{
+			var oParagraph			= new ApiParagraph(foundItems[para]);
+			var arrOfParaApiRanges	= oParagraph.Search(sText, isMatchCase);
+
+			for (var itemRange = 0; itemRange < arrOfParaApiRanges.length; itemRange++)	
+				arrApiRanges.push(arrOfParaApiRanges[itemRange]);
+		}
+
+		return arrApiRanges;
 	};
 	//------------------------------------------------------------------------------------------------------------------
 	//
@@ -1919,6 +3870,43 @@
 		}
 	};
 	/**
+	 * Delete current paragraph.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 */
+	ApiParagraph.prototype.Delete = function()
+	{
+		var parentOfElement = this.Paragraph.GetParent();
+
+		var PosInDocument = parentOfElement.Content.indexOf(this.Paragraph);
+
+		if (PosInDocument !== - 1)
+			parentOfElement.Remove_FromContent(PosInDocument, 1, true);
+		else 
+			return false;
+	};
+	/**
+	 * Gets the next paragraph.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 */
+	ApiParagraph.prototype.GetNext = function()
+	{
+		if (this.Paragraph.Next !== null && this.Paragraph.Next !== undefined)
+			return new ApiParagraph(this.Paragraph.Next);
+
+		return false;
+	};
+	/**
+	 * Gets the Previous paragraph.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 */
+	ApiParagraph.prototype.GetPrevious = function()
+	{
+		if (this.Paragraph.Prev !== null && this.Paragraph.Prev !== undefined)
+			return new ApiParagraph(this.Paragraph.Prev);
+
+		return false;
+	};
+	/**
 	 * Create a copy of the paragraph. Ingonore comments, footnote references, complex fields
 	 * @returns {ApiParagraph}
 	 * @typeofeditors ["CDE", "CSE", "CPE"]
@@ -2009,6 +3997,1038 @@
 		private_PushElementToParagraph(this.Paragraph, oSdt.Sdt);
 		return oSdt;
 	};
+	/**
+	 *  Adds a comment to the paragraph.
+	 * @param {string} Comment - comment
+	 * @param {string} Autor - autor's name (not obligatory)
+	 */
+	ApiParagraph.prototype.AddComment = function(Comment, Autor)
+	{
+		if (!Comment || typeof(Comment) !== "string")
+			return;
+	
+		if (typeof(Autor) !== "string")
+			Autor = "";
+
+		var CommentData = new AscCommon.CCommentData();
+		CommentData.SetText(Comment);
+		CommentData.SetUserName(Autor);
+
+		var oDocument = private_GetLogicDocument()
+
+		var StartPos	= this.Paragraph.GetFirstRun().GetDocumentPositionFromObject();
+		var EndPos		= this.Paragraph.Content[this.Paragraph.Content.length - 2].GetDocumentPositionFromObject();
+
+		oDocument.SetContentSelection(StartPos, EndPos, 0, 1, -1);
+
+		var COMENT = oDocument.AddComment(CommentData, false);
+		oDocument.RemoveSelection();
+		
+		if (null != COMENT)
+		{
+			editor.sync_AddComment(COMENT.Get_Id(), CommentData);
+		}
+	};
+	/**
+	 * Returns a Range object that represents the part of the document contained in the specified paragraph.
+	 * @typeofeditors ["CDE"]
+	 * @param {Number} Start - start character in current element
+	 * @param {Number} End - end character in current element
+	 * @returns {ApiRange} 
+	 * */
+	ApiParagraph.prototype.GetRange = function(Start, End)
+	{
+		var Range = new ApiRange(this.Paragraph, Start, End);
+	
+		return Range;
+	};
+	/**
+	 * Add an element to the current paragraph.
+	 * @typeofeditors ["CDE"]
+	 * @param {ParagraphContent} oElement - The document element which will be added at the current position. Returns false if the
+	 * type of oElement is not supported by a paragraph.
+	 * @returns {boolean} Returns <code>false</code> if the type of <code>oElement</code> is not supported by paragraph
+	 * content.
+	 */
+	ApiParagraph.prototype.Push = function(oElement)
+	{
+		if (oElement instanceof ApiRun || ApiInlineLvlSdt)
+		{
+			this.AddElement(oElement);
+		}
+		else if (typeof oElement === "string")
+		{
+			var LastTextPrInParagraph = undefined;
+
+			if (this.GetLastRunWithText() !== null)
+			{
+				LastTextPrInParagraph = this.GetLastRunWithText().GetTextPr().TextPr;
+			}
+			else 
+			{
+				LastTextPrInParagraph = this.Paragraph.TextPr.Value;
+			}
+			
+			var oRun = editor.CreateRun();
+			oRun.AddText(oElement);
+			oRun.Run.Apply_TextPr(LastTextPrInParagraph, undefined, true);
+			
+			this.AddElement(oRun);
+		}
+		else 
+			return false;
+	};
+	/**
+	 * Get last Run with text in the current paragraph
+	 * @typeofeditors ["CDE"]
+	 * @returns {ApiRun} Returns <code>false</code> if the paragraph doesn't containt the required run 
+	 */
+	ApiParagraph.prototype.GetLastRunWithText = function()
+	{
+		for (var curElement = this.GetElementsCount() - 1; curElement >= 0; curElement--)
+		{
+			var Element = this.GetElement(curElement);
+
+			if (Element instanceof ApiRun)
+			{
+				for (var Index = 0; Index < Element.Run.GetElementsCount(); Index++)
+				{
+					if (Element.Run.GetElement(Index) instanceof ParaText)
+					{
+						return Element;
+					}
+				}
+			}
+		}
+
+		return this.GetElement(this.GetElementsCount() - 1);
+	};
+	/**
+	 * Set the bold property to the text character.
+	 * @typeofeditors ["CDE"]
+	 * @param {boolean} isBold - Specifies that the contents of this paragraph are displayed bold.
+	 */
+	ApiParagraph.prototype.SetBold = function(isBold)
+	{
+		var Document = private_GetLogicDocument();
+		
+		var StartPos	= this.Paragraph.GetStartPos();
+		var EndPos		= this.Paragraph.Get_EndPos();
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.Paragraph.SetSelectionContentPos(StartPos, EndPos, true);
+		this.Paragraph.MoveCursorToStartPos();
+		this.Paragraph.Add(new AscCommonWord.ParaTextPr({Bold : isBold}));
+		
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+		
+		return this;
+	};
+	/**
+	 * Specify that any lowercase characters in this paragraph are formatted for display only as their capital letter character equivalents.
+	 * @typeofeditors ["CDE"]
+	 * @param {boolean} isCaps - Specifies that the contents of the current paragraph are displayed capitalized.
+	 */
+	ApiParagraph.prototype.SetCaps = function(isCaps)
+	{
+		var Document = private_GetLogicDocument();
+		
+		var StartPos	= this.Paragraph.GetStartPos();
+		var EndPos		= this.Paragraph.Get_EndPos();
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.Paragraph.SetSelectionContentPos(StartPos, EndPos, true);
+		this.Paragraph.MoveCursorToStartPos();
+		this.Paragraph.Add(new AscCommonWord.ParaTextPr({Caps : isCaps}));
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+		
+		return this;
+	};
+	/**
+	 * Set the text color for the current paragraph in the RGB format.
+	 * @typeofeditors ["CDE"]
+	 * @param {byte} r - Red color component value.
+	 * @param {byte} g - Green color component value.
+	 * @param {byte} b - Blue color component value.
+	 * @param {boolean} [isAuto=false] - If this parameter is set to "true", then r,g,b parameters will be ignored.
+	 */
+	ApiParagraph.prototype.SetColor = function(r, g, b, isAuto)
+	{
+		var color = new Asc.asc_CColor();
+		color.r    = r;
+		color.g    = g;
+		color.b    = b;
+		color.Auto = isAuto;
+
+		var Document = private_GetLogicDocument();
+		
+		var StartPos	= this.Paragraph.GetStartPos();
+		var EndPos		= this.Paragraph.Get_EndPos();
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.Paragraph.SetSelectionContentPos(StartPos, EndPos, true);
+		this.Paragraph.MoveCursorToStartPos();
+
+		if (true === color.Auto)
+		{
+			this.Paragraph.Add(new AscCommonWord.ParaTextPr({
+				Color      : {
+					Auto : true,
+					r    : 0,
+					g    : 0,
+					b    : 0
+				}, Unifill : undefined
+			}));
+		}
+		else
+		{
+			var Unifill        = new AscFormat.CUniFill();
+			Unifill.fill       = new AscFormat.CSolidFill();
+			Unifill.fill.color = AscFormat.CorrectUniColor(color, Unifill.fill.color, 1);
+			this.Paragraph.Add(new AscCommonWord.ParaTextPr({Unifill : Unifill}));
+		}
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+		
+		return this;
+	};
+	/**
+	 * Specify that the contents of this paragraph is displayed with two horizontal lines through each character displayed on the line.
+	 * @typeofeditors ["CDE"]
+	 * @param {boolean} isDoubleStrikeout - Specifies that the contents of the current paragraph are displayed double struck through.
+	 */
+	ApiParagraph.prototype.SetDoubleStrikeout = function(isDoubleStrikeout)
+	{
+		var Document = private_GetLogicDocument();
+		
+		var StartPos	= this.Paragraph.GetStartPos();
+		var EndPos		= this.Paragraph.Get_EndPos();
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.Paragraph.SetSelectionContentPos(StartPos, EndPos, true);
+		this.Paragraph.MoveCursorToStartPos();
+		this.Paragraph.Add(new AscCommonWord.ParaTextPr({DStrikeout : isDoubleStrikeout}));
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+		
+		return this;
+	};
+	/**
+	 * Set all 4 font slots with the specified font family.
+	 * @typeofeditors ["CDE"]
+	 * @param {string} sFontFamily - The font family or families used for the current paragraph.
+	 */
+	ApiParagraph.prototype.SetFontFamily = function(sFontFamily)
+	{
+		if (typeof sFontFamily !== "string")
+			return false;
+
+		var loader   = AscCommon.g_font_loader;
+		var fontinfo = g_fontApplication.GetFontInfo(sFontFamily);
+		var isasync  = loader.LoadFont(fontinfo);
+
+		var Document = private_GetLogicDocument();
+		
+		if (isasync === false)
+		{
+			var FontFamily = {
+				Name : sFontFamily,
+				Index : -1
+			};
+
+			var StartPos	= this.Paragraph.GetStartPos();
+			var EndPos		= this.Paragraph.Get_EndPos();
+
+			var oldSelectionInfo = Document.SaveDocumentState();
+		
+			for (var Index = 0; Index < TrackedPositions.length; Index++)
+			{
+				Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+			}
+
+			this.Paragraph.SetSelectionContentPos(StartPos, EndPos, true);
+			this.Paragraph.MoveCursorToStartPos();
+			
+			this.Paragraph.Add(new AscCommonWord.ParaTextPr({FontFamily : FontFamily}));
+
+			Document.LoadDocumentState(oldSelectionInfo);
+			Document.UpdateSelection();
+			
+			return this;
+		}
+		
+		return false;
+	};
+	/**
+	 * Set the font size for the characters of the current paragraph.
+	 * @typeofeditors ["CDE"]
+	 * @param {hps} nSize - The text size value measured in half-points (1/144 of an inch).
+	 */
+	ApiParagraph.prototype.SetFontSize = function(nSize)
+	{
+		var Document = private_GetLogicDocument();
+		
+		var StartPos	= this.Paragraph.GetStartPos();
+		var EndPos		= this.Paragraph.Get_EndPos();
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.Paragraph.SetSelectionContentPos(StartPos, EndPos, true);
+		this.Paragraph.MoveCursorToStartPos();
+		this.Paragraph.Add(new AscCommonWord.ParaTextPr({FontSize : nSize}));
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+		
+		return this;
+	};
+	/**
+	 * Specify a highlighting color in the RGB format which is applied as a background for the contents of the current paragraph.
+	 * @typeofeditors ["CDE"]
+	 * @param {byte} r - Red color component value.
+	 * @param {byte} g - Green color component value.
+	 * @param {byte} b - Blue color component value.
+	 * @param {boolean} [isNone=false] If this parameter is set to "true", then r,g,b parameters will be ignored.
+	 */
+	ApiParagraph.prototype.SetHighlight = function(r, g, b, isNone)
+	{
+		var Document = private_GetLogicDocument();
+		
+		var StartPos	= this.Paragraph.GetStartPos();
+		var EndPos		= this.Paragraph.Get_EndPos();
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.Paragraph.SetSelectionContentPos(StartPos, EndPos, true);
+		this.Paragraph.MoveCursorToStartPos();
+
+		if (true === isNone)
+		{
+			this.Paragraph.Add(new ParaTextPr({HighLight : highlight_None}));
+		}
+		else
+		{
+			var color = new CDocumentColor(r, g, b);
+			this.Paragraph.Add(new ParaTextPr({HighLight : color}));
+		}
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+		
+		return this;
+	};
+	/**
+	 * Set the italic property to the text character.
+	 * @typeofeditors ["CDE"]
+	 * @param {boolean} isItalic - Specifies that the contents of the current paragraph are displayed italicized.
+	 */
+	ApiParagraph.prototype.SetItalic = function(isItalic)
+	{
+		var Document = private_GetLogicDocument();
+		
+		var StartPos	= this.Paragraph.GetStartPos();
+		var EndPos		= this.Paragraph.Get_EndPos();
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.Paragraph.SetSelectionContentPos(StartPos, EndPos, true);
+		this.Paragraph.MoveCursorToStartPos();
+		this.Paragraph.Add(new AscCommonWord.ParaTextPr({Italic : isItalic}));
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+		
+		return this;
+	};
+	/**
+	 * Specify the amount by which text is raised or lowered for this paragraph in relation to the default
+	 * baseline of the surrounding non-positioned text.
+	 * @typeofeditors ["CDE"]
+	 * @param {hps} nPosition - Specifies a positive (raised text) or negative (lowered text)
+	 * measurement in half-points (1/144 of an inch).
+	 */
+	ApiParagraph.prototype.SetPosition = function(nPosition)
+	{
+		var Document = private_GetLogicDocument();
+		
+		var StartPos	= this.Paragraph.GetStartPos();
+		var EndPos		= this.Paragraph.Get_EndPos();
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.Paragraph.SetSelectionContentPos(StartPos, EndPos, true);
+		this.Paragraph.MoveCursorToStartPos();
+		this.Paragraph.Add(new AscCommonWord.ParaTextPr({Position : nPosition}));
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+		
+		return this;
+	};
+	/**
+	 * Specify the shading applied to the contents of the current paragraph.
+	 * @typeofeditors ["CDE"]
+	 * @param {ShdType} sType - The shading type applied to the contents of the current paragraph.
+	 * @param {byte} r - Red color component value.
+	 * @param {byte} g - Green color component value.
+	 * @param {byte} b - Blue color component value.
+	 */
+	ApiParagraph.prototype.SetShd = function(sType, r, g, b)
+	{
+		var color = new Asc.asc_CColor();
+		color.r    = r;
+		color.g    = g;
+		color.b    = b;
+		color.Auto = false;
+
+		var Document = private_GetLogicDocument();
+		
+		var StartPos	= this.Paragraph.GetStartPos();
+		var EndPos		= this.Paragraph.Get_EndPos();
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.Paragraph.SetSelectionContentPos(StartPos, EndPos, true);
+		this.Paragraph.MoveCursorToStartPos();
+
+		var Shd = new CDocumentShd();
+
+		if (sType === "nil")
+		{
+			var _Shd = {Value : Asc.c_oAscShdNil};
+			Shd.Set_FromObject(_Shd);
+			this.Paragraph.SetParagraphShd(_Shd);
+		}
+		else if (sType === "clear")
+		{
+			var Unifill        = new AscFormat.CUniFill();
+			Unifill.fill       = new AscFormat.CSolidFill();
+			Unifill.fill.color = AscFormat.CorrectUniColor(color, Unifill.fill.color, 1);
+			var _Shd = {
+				Value   : Asc.c_oAscShdClear,
+				Color   : {
+					r : color.asc_getR(),
+					g : color.asc_getG(),
+					b : color.asc_getB()
+				},
+				Unifill : Unifill
+			};
+			
+			Shd.Set_FromObject(_Shd);
+			this.Paragraph.SetParagraphShd(_Shd);
+		}
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+		
+		return this;
+	};
+	/**
+	 * Specify that all small letter characters in this paragraph are formatted for display only as their capital
+	 * letter character equivalents in a font size two points smaller than the actual font size specified for this text.
+	 * @typeofeditors ["CDE"]
+	 * @param {boolean} isSmallCaps - Specifies that the contents of the current paragraph are displayed capitalized two points smaller.
+	 */
+	ApiParagraph.prototype.SetSmallCaps = function(isSmallCaps)
+	{
+		var Document = private_GetLogicDocument();
+		
+		var StartPos	= this.Paragraph.GetStartPos();
+		var EndPos		= this.Paragraph.Get_EndPos();
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.Paragraph.SetSelectionContentPos(StartPos, EndPos, true);
+		this.Paragraph.MoveCursorToStartPos();
+
+		this.Paragraph.Add(new AscCommonWord.ParaTextPr({
+			SmallCaps : isSmallCaps,
+			Caps      : false
+		}));
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+		
+		return this;
+	};
+	/**
+	 * Set text spacing measured in twentieths of a point.
+	 * @typeofeditors ["CDE"]
+	 * @param {twips} nSpacing - The value of the text spacing measured in twentieths of a point (1/1440 of an inch).
+	 */
+	ApiParagraph.prototype.SetSpacing = function(nSpacing)
+	{
+		var Document = private_GetLogicDocument();
+		
+		var StartPos	= this.Paragraph.GetStartPos();
+		var EndPos		= this.Paragraph.Get_EndPos();
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.Paragraph.SetSelectionContentPos(StartPos, EndPos, true);
+		this.Paragraph.MoveCursorToStartPos();
+		this.Paragraph.Add(new AscCommonWord.ParaTextPr({Spacing : nSpacing}));
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+		
+		return this;
+	};
+	/**
+	 * Specify that the contents of this paragraph are displayed with a single horizontal line through the center of the line.
+	 * @typeofeditors ["CDE"]
+	 * @param {boolean} isStrikeout - Specifies that the contents of the current paragraph are displayed struck through.
+	 */
+	ApiParagraph.prototype.SetStrikeout = function(isStrikeout)
+	{
+		var Document = private_GetLogicDocument();
+		
+		var StartPos	= this.Paragraph.GetStartPos();
+		var EndPos		= this.Paragraph.Get_EndPos();
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.Paragraph.SetSelectionContentPos(StartPos, EndPos, true);
+		this.Paragraph.MoveCursorToStartPos();
+
+		this.Paragraph.Add(new AscCommonWord.ParaTextPr({
+			Strikeout  : isStrikeout,
+			DStrikeout : false
+			}));
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+		
+		return this;
+	};
+	/**
+	 * Set style for the current Paragraph.
+	 * @typeofeditors ["CDE"]
+	 * @param {ApiStyle} oStyle - The style which must be applied to the text character.
+	 */
+	ApiParagraph.prototype.SetStyle = function(oStyle)
+	{
+		if (!(oStyle instanceof ApiStyle))
+			return false;
+
+		var Document = private_GetLogicDocument();
+
+		var styleName = oStyle.GetName();
+
+		var StartPos	= this.Paragraph.GetStartPos();
+		var EndPos		= this.Paragraph.Get_EndPos();
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.Paragraph.SetSelectionContentPos(StartPos, EndPos, true);
+		this.Paragraph.MoveCursorToStartPos();
+		this.Paragraph.SetParagraphStyle(styleName);
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+		
+		return this;
+	};
+	/**
+	 * Specify that the contents of this paragraph are displayed along with a line appearing directly below the character
+	 * (less than all the spacing above and below the characters on the line).
+	 * @typeofeditors ["CDE"]
+	 * @param {boolean} isUnderline - Specifies that the contents of the current paragraph are displayed underlined.
+	 */
+	ApiParagraph.prototype.SetUnderline = function(isUnderline)
+	{
+		var Document = private_GetLogicDocument();
+		
+		var StartPos	= this.Paragraph.GetStartPos();
+		var EndPos		= this.Paragraph.Get_EndPos();
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.Paragraph.SetSelectionContentPos(StartPos, EndPos, true);
+		this.Paragraph.MoveCursorToStartPos();
+		this.Paragraph.Add(new AscCommonWord.ParaTextPr({Underline : isUnderline}));
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+		
+		return this;
+	};
+	/**
+	 * Specify the alignment which will be applied to the contents of this paragraph in relation to the default appearance of the paragraph text:
+	 * * <b>"baseline"</b> - the characters in the current paragraph will be aligned by the default text baseline.
+	 * * <b>"subscript"</b> - the characters in the current paragraph will be aligned below the default text baseline.
+	 * * <b>"superscript"</b> - the characters in the current paragraph will be aligned above the default text baseline.
+	 * @typeofeditors ["CDE"]
+	 * @param {("baseline" | "subscript" | "superscript")} sType - The vertical alignment type applied to the text contents.
+	 */
+	ApiParagraph.prototype.SetVertAlign = function(sType)
+	{
+		var Document = private_GetLogicDocument();
+		
+		var value = undefined;
+
+		if (sType === "baseline")
+			value = 0;
+		else if (sType === "subscript")
+			value = 2;
+		else if (sType === "superscript")
+			value = 1;
+		else 
+			return false;
+
+		var StartPos	= this.Paragraph.GetStartPos();
+		var EndPos		= this.Paragraph.Get_EndPos();
+
+		var oldSelectionInfo = Document.SaveDocumentState();
+		
+		for (var Index = 0; Index < TrackedPositions.length; Index++)
+		{
+			Document.CollaborativeEditing.Add_DocumentPosition(TrackedPositions[Index]);
+		}
+
+		this.Paragraph.SetSelectionContentPos(StartPos, EndPos, true);
+		this.Paragraph.MoveCursorToStartPos();
+		this.Paragraph.Add(new AscCommonWord.ParaTextPr({VertAlign : value}));
+
+		Document.LoadDocumentState(oldSelectionInfo);
+		Document.UpdateSelection();
+		
+		return this;
+	};
+	/**
+	 * Get the last no empty element of the paragraph.
+	 * @typeofeditors ["CDE"]
+	 * @returns {?ParagraphContent}
+	 */
+	ApiParagraph.prototype.Last = function()
+	{
+		var LastNoEmptyRun = null;
+
+		for (var Index = this.GetElementsCount() - 1; Index >= 0; Index--)
+		{
+			LastNoEmptyRun = this.GetElement(Index);
+
+			if (LastNoEmptyRun.Run.Content.length !== 0)
+			{
+				return LastNoEmptyRun;
+			}
+		}
+
+		return false;
+	};
+	/**
+	 * Gets the collection of content control objects in the Paragraph.
+	 * @typeofeditors ["CDE"]
+	 * @return {Array}  
+	 */
+	ApiParagraph.prototype.GetAllContentControls = function()
+	{
+		var arrApiContentControls = [];
+
+		var ContentControls = this.Paragraph.GetAllContentControls();
+
+		for (var Index = 0; Index < ContentControls.length; Index++)
+		{
+			if (ContentControls[Index] instanceof CBlockLevelSdt)
+				arrApiContentControls.push(new ApiBlockLvlSdt(ContentControls[Index]));
+			else if (ContentControls[Index] instanceof CInlineLevelSdt)
+				arrApiContentControls.push(new ApiInlineLvlSdt(ContentControls[Index]));
+		} 
+
+		return arrApiContentControls;
+	};
+	/**
+	 * Gets the collection of drawing objects in the paragraph.
+	 * @typeofeditors ["CDE"]
+	 * @return {Array}  
+	 */
+	ApiParagraph.prototype.GetAllDrawingObjects = function()
+	{
+		var arrAllDrawing = this.Paragraph.GetAllDrawingObjects();
+		var arrApiShapes  = [];
+
+		for (var Index = 0; Index < arrAllDrawing.length; Index++)
+			arrApiShapes.push(new ApiDrawing(arrAllDrawing[Index]));
+		
+		return arrApiShapes;
+	};
+	/**
+	 * Gets the collection of shapes objects in the Paragraph.
+	 * @typeofeditors ["CDE"]
+	 * @return {Array}  
+	 */
+	ApiParagraph.prototype.GetAllShapes = function()
+	{
+		var arrAllDrawing = this.Paragraph.GetAllDrawingObjects();
+		var arrApiShapes  = [];
+
+		for (var Index = 0; Index < arrAllDrawing.length; Index++)
+			if (arrAllDrawing[Index].GraphicObj instanceof CShape)
+				arrApiShapes.push(new ApiShape(arrAllDrawing[Index]));
+
+		return arrApiShapes;
+	};
+	/**
+	 * Gets the collection of image objects in the Paragraph.
+	 * @typeofeditors ["CDE"]
+	 * @return {Array}  
+	 */
+	ApiParagraph.prototype.GetAllImages = function()
+	{
+		var arrAllDrawing = this.Paragraph.GetAllDrawingObjects();
+		var arrApiImages  = [];
+
+		for (var Index = 0; Index < arrAllDrawing.length; Index++)
+			if (arrAllDrawing[Index].GraphicObj instanceof CImageShape)
+				arrApiImages.push(new ApiImage(arrAllDrawing[Index]));
+
+		return arrApiImages;
+	};
+	/**
+	 * Gets the collection of chart objects in the Paragraph.
+	 * @typeofeditors ["CDE"]
+	 * @return {Array}  
+	 */
+	ApiParagraph.prototype.GetAllCharts = function()
+	{
+		var arrAllDrawing = this.Paragraph.GetAllDrawingObjects();
+		var arrApiCharts  = [];
+
+		for (var Index = 0; Index < arrAllDrawing.length; Index++)
+			if (arrAllDrawing[Index].GraphicObj instanceof CChartSpace)
+				arrApiCharts.push(new ApiChart(arrAllDrawing[Index]));
+
+		return arrApiCharts;
+	};
+	/**
+	 * Gets the content control that contains the paragraph.
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiBlockLvlSdt | ApiInlineLvlSdt}  
+	 */
+	ApiParagraph.prototype.GetParentContentControl = function()
+	{
+		var ParaPosition = this.Paragraph.GetDocumentPositionFromObject();
+
+		for (var Index = ParaPosition.length - 1; Index >= 1; Index--)
+		{
+			if (ParaPosition[Index].Class.Parent)
+				if (ParaPosition[Index].Class.Parent instanceof CBlockLevelSdt)
+					return new ApiBlockLvlSdt(ParaPosition[Index].Class.Parent);
+			else if (ParaPosition[Index].Class.Parent)
+				if (ParaPosition[Index].Class.Parent instanceof CInlineLevelSdt)
+					return new ApiInlineLvlSdt(ParaPosition[Index].Class.Parent);
+		}
+
+		return false;
+	};
+	/**
+	 * Gets the table that contains the paragraph.
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiTable}  
+	 */
+	ApiParagraph.prototype.GetParentTable = function()
+	{
+		var ParaPosition = this.Paragraph.GetDocumentPositionFromObject();
+
+		for (var Index = ParaPosition.length - 1; Index >= 1; Index--)
+		{
+			if (ParaPosition[Index].Class instanceof CTable)
+				return new ApiTable(ParaPosition[Index].Class);
+		}
+
+		return false;
+	};
+	/**
+	 * Gets the table cell that contains the paragraph.
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiTableCell}  
+	 */
+	ApiParagraph.prototype.GetParentTableCell = function()
+	{
+		var ParaPosition = this.Paragraph.GetDocumentPositionFromObject();
+
+		for (var Index = ParaPosition.length - 1; Index >= 1; Index--)
+		{
+			if (ParaPosition[Index].Class.Parent && this.Paragraph.IsTableCellContent())
+				if (ParaPosition[Index].Class.Parent instanceof CTableCell)
+					return new ApiTableCell(ParaPosition[Index].Class.Parent);
+		}
+
+		return false;
+	};
+	/**
+	 * Gets text of the paragraph.
+	 * @typeofeditors ["CDE"]
+	 * @return {string}  
+	 */
+	ApiParagraph.prototype.GetText = function()
+	{
+		var ParaText = this.Paragraph.GetText();
+
+		return ParaText;
+	};
+	/**
+	 * Gets text properties of the paragraph.
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiTextPr}  
+	 */
+	ApiParagraph.prototype.GetTextPr = function()
+	{
+		var TextPr = this.Paragraph.TextPr.Value;
+
+		return new ApiTextPr(this, TextPr);
+	};
+	/**
+	 * Sets text properties of the paragraph.
+	 * @param {ApiTextPr} oTextPr
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiTextPr}  
+	 */
+	ApiParagraph.prototype.SetTextPr = function(oTextPr)
+	{
+		this.Paragraph.Add(new AscCommonWord.ParaTextPr(oTextPr.TextPr));
+
+		return this.GetTextPr();
+	};
+	/**
+	 * Insert content control to the paragraph
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiParagraph}  
+	 */
+	ApiParagraph.prototype.InsertContentControl = function()
+	{
+		this.Paragraph.AddContentControl(2);
+
+		return this;
+	};
+	/**
+	 * Wraps the paragraph object with a rich text content control.
+	 * @param {number} nType - if nType === 1 -> returns ApiBlockLvlSdt  
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiParagraph | ApiBlockLvlSdt}  
+	 */
+	ApiParagraph.prototype.InsertInContentControl = function(nType)
+	{
+		var Document = private_GetLogicDocument();
+
+		var Para = this.Copy();
+		var ContentControl = null;
+
+		this.RemoveAllElements();
+
+		var paraParent	= this.Paragraph.GetParent();
+		var paraIndex	= this.Paragraph.Index;
+
+		if (paraIndex >= 0)
+		{
+			paraParent.CurPos.ContentPos = paraIndex;
+			this.Paragraph.MoveCursorToStartPos();
+			ContentControl = new ApiBlockLvlSdt(paraParent.AddContentControl(1));
+			ContentControl.Sdt.Content.RemoveFromContent(0, ContentControl.Sdt.Content.GetElementsCount(), false);
+			ContentControl.Sdt.Content.AddToContent(0, Para.Paragraph);
+			ContentControl.Sdt.SetShowingPlcHdr(false);
+			this.Delete();
+		}
+		else 
+		{
+			ContentControl = new ApiBlockLvlSdt(new CBlockLevelSdt(Document, Document))
+			ContentControl.Sdt.Content.RemoveFromContent(0, ContentControl.Sdt.Content.GetElementsCount(), false);
+			ContentControl.Sdt.Content.AddToContent(0, Para.Paragraph);
+			ContentControl.Sdt.SetShowingPlcHdr(false);
+		}
+
+		if (nType === 1)
+			return ContentControl;
+		else 
+			return Para;
+	};
+	/**
+	 * Inserts a paragraph at the specified position.
+	 * @param {string | ApiParagraph} paragraph - text or paragraph
+	 * @param {string} sPosition - can be "after" or "before"
+	 * @param {bool} beRNewPara - if "true" - returns new paragraph, else returns this paragraph.
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiParagraph} 
+	 */
+	ApiParagraph.prototype.InsertParagraph = function(paragraph, sPosition, beRNewPara)
+	{
+		var paraParent = this.Paragraph.GetParent();
+		var paraIndex  = paraParent.Content.indexOf(this.Paragraph);
+		var oNewPara   = null;
+
+		if (sPosition !== "before" && sPosition !== "after")
+			sPosition = "after";
+
+		if (paragraph instanceof ApiParagraph)
+		{
+			oNewPara = paragraph;
+
+			if (sPosition === "before")
+				paraParent.Internal_Content_Add(paraIndex, oNewPara.private_GetImpl());
+			else if (sPosition === "after")
+				paraParent.Internal_Content_Add(paraIndex + 1, oNewPara.private_GetImpl());
+		}
+		else if (typeof paragraph === "string")
+		{
+			oNewPara = editor.CreateParagraph();
+			oNewPara.AddText(paragraph);
+
+			if (sPosition === "before")
+				paraParent.Internal_Content_Add(paraIndex, oNewPara.private_GetImpl());
+			else if (sPosition === "after")
+				paraParent.Internal_Content_Add(paraIndex + 1, oNewPara.private_GetImpl());
+		}
+		else 
+			return false;
+
+		if (beRNewPara === true)
+			return oNewPara;
+		else 
+			return this;
+	};
+	/**
+	 * Select a paragraph.
+	 * @typeofeditors ["CDE"]
+	 * @return {bool} 
+	 */
+	ApiParagraph.prototype.SetSelection = function()
+	{
+		var Document = private_GetLogicDocument();
+		
+		var StartPos	= this.Paragraph.GetFirstRun().GetDocumentPositionFromObject();
+		var EndPos		= this.Paragraph.Content[this.Paragraph.Content.length - 2].GetDocumentPositionFromObject();
+
+		if (StartPos[0].Position !== -1)
+		{
+			oDocument.SetContentSelection(StartPos, EndPos, 0, 1, -1);
+			Document.UpdateSelection();
+			return true;
+		}
+		else 
+			return false;		
+	};
+	/**
+	 * Searches for the scope of a paragraph object. The search results are a collection of ApiRange objects.
+	 * @param {string} sText 
+	 * @param {bool} isMatchCase - is case sensitive. 
+	 * @typeofeditors ["CDE"]
+	 * @return {Array}  
+	 */
+	ApiParagraph.prototype.Search = function(sText, isMatchCase)
+	{
+		if (isMatchCase === undefined)
+			isMatchCase = false;
+
+		var arrApiRanges	= [];
+		var Api				= editor; 
+		var oDocument		= Api.GetDocument();
+		var SearchEngine	= null;
+
+		if (!oDocument.Document.SearchEngine.Compare(sText, {MatchCase: isMatchCase}))
+		{
+			SearchEngine		= new CDocumentSearch();
+			SearchEngine.Set(sText, {MatchCase: isMatchCase});
+			this.Paragraph.Search(sText, {MatchCase: isMatchCase}, SearchEngine, 0)
+		}
+		else 
+			SearchEngine = oDocument.Document.SearchEngine;
+
+		var SearchResults	= this.Paragraph.SearchResults;
+
+		for (var FoundId in SearchResults)
+		{
+			var StartSearchContentPos	= SearchResults[FoundId].StartPos;
+			var EndSearchContentPos		= SearchResults[FoundId].EndPos;
+
+			var StartChar	= this.Paragraph.ConvertParaContentPosToRangePos(StartSearchContentPos);
+			var EndChar		= this.Paragraph.ConvertParaContentPosToRangePos(EndSearchContentPos);
+			if (EndChar > 0)
+				EndChar--;
+
+			arrApiRanges.push(this.GetRange(StartChar, EndChar));
+		}
+
+		return arrApiRanges;
+	};
 	//------------------------------------------------------------------------------------------------------------------
 	//
 	// ApiRun
@@ -2040,6 +5060,76 @@
 	ApiRun.prototype.ClearContent = function()
 	{
 		this.Run.Remove_FromContent(0, this.Run.Content.length);
+	};
+	/**
+	 * Remove all content from the current run.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 */
+	ApiRun.prototype.RemoveAllElements = function()
+	{
+		this.Run.Remove_FromContent(0, this.Run.Content.length);
+	};
+	/**
+	 * Delete current run.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 */
+	ApiRun.prototype.Delete = function()
+	{
+		var parentOfElement = this.Run.Get_Parent();
+
+		var PosInParent = parentOfElement.Content.indexOf(this.Run);
+
+		if (PosInParent !== - 1)
+			parentOfElement.Remove_FromContent(PosInParent, 1, true);
+		else 
+			return false;
+	};
+	/**
+	 * Delete current run.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 */
+	ApiRun.prototype.GetNext = function()
+	{
+		var PosInParent		= null;
+		var parentOfElement = this.Run.Get_Parent();
+
+		if (parentOfElement)
+			PosInParent = parentOfElement.Content.indexOf(this.Run);
+
+		if (PosInParent !== null)
+		{
+			for (var Index = PosInParent + 1; Index < parentOfElement.Content.length; Index++)
+			{
+				var newElement = parentOfElement.Content[Index];
+
+				if (newElement !== undefined && newElement instanceof ParaRun)
+				{
+					if (newElement.Content.length !== 0)
+						return new ApiRun(newElement); 
+				}
+					
+			}
+		}
+	};
+	/**
+	 * Delete current run.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 */
+	ApiRun.prototype.GetPrevious = function()
+	{
+		var PosInParent		= null;
+		var parentOfElement = this.Run.Get_Parent();
+
+		if (parentOfElement)
+			PosInParent = parentOfElement.Content.indexOf(this.Run);
+
+		if (PosInParent !== null)
+		{
+			for (var Index = PosInParent; Index < parentOfElement.Content.length; Index++)
+			{
+				
+			}
+		}
 	};
 	/**
 	 * Add some text to this run.
@@ -2113,7 +5203,267 @@
 
 		return new ApiRun(oRun);
 	};
+	/**
+	 * Returns a Range object that represents the part of the document contained in the specified run.
+	 * @typeofeditors ["CDE"]
+	 * @param {Number} Start - start character in current element
+	 * @param {Number} End - end character in current element
+	 * @returns {ApiRange} 
+	 * */
+	ApiRun.prototype.GetRange = function(Start, End)
+	{
+		var Range = new ApiRange(this.Run, Start, End);
 
+		return Range;
+	};
+	/**
+	 * Sets text properties of the paragraph.
+	 * @param {ApiTextPr} oTextPr
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiTextPr}  
+	 */
+	ApiRun.prototype.SetTextPr = function(oTextPr)
+	{
+		var runTextPr = this.GetTextPr();
+		runTextPr.TextPr.Merge(oTextPr.TextPr);
+		runTextPr.private_OnChange();
+
+		return runTextPr;
+	};
+	/**
+	 * Set the bold property to the text character.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 * @param {boolean} isBold - Specifies that the contents of this run are displayed bold.
+	 */
+	ApiRun.prototype.SetBold = function(isBold)
+	{
+		var oTextPr = this.GetTextPr();
+		oTextPr.SetBold(isBold);
+		
+		return oTextPr;
+	};
+	/**
+	 * Specify that any lowercase characters in this text run are formatted for display only as their capital letter character equivalents.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 * @param {boolean} isCaps - Specifies that the contents of the current run are displayed capitalized.
+	 */
+	ApiRun.prototype.SetCaps = function(isCaps)
+	{
+		var oTextPr = this.GetTextPr();
+		oTextPr.SetCaps(isCaps);
+		
+		return oTextPr;
+	};
+	/**
+	 * Set the text color for the current text run in the RGB format.
+	 * @typeofeditors ["CDE"]
+	 * @param {byte} r - Red color component value.
+	 * @param {byte} g - Green color component value.
+	 * @param {byte} b - Blue color component value.
+	 * @param {boolean} [isAuto=false] - If this parameter is set to "true", then r,g,b parameters will be ignored.
+	 */
+	ApiRun.prototype.SetColor = function(r, g, b, isAuto)
+	{
+		var oTextPr = this.GetTextPr();
+		oTextPr.SetColor(r, g, b, isAuto);
+		
+		return oTextPr;
+	};
+	/**
+	 * Specify that the contents of this run is displayed with two horizontal lines through each character displayed on the line.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 * @param {boolean} isDoubleStrikeout - Specifies that the contents of the current run are displayed double struck through.
+	 */
+	ApiRun.prototype.SetDoubleStrikeout = function(isDoubleStrikeout)
+	{
+		var oTextPr = this.GetTextPr();
+		oTextPr.SetDoubleStrikeout(isDoubleStrikeout);
+		
+		return oTextPr;
+	};
+	/**
+	 * Set the text color for the current text run.
+	 * @typeofeditors ["CSE", "CPE"]
+	 * @param {ApiFill} oApiFill - The color or pattern used to fill the text color.
+	 */
+	ApiRun.prototype.SetFill = function(oApiFill)
+	{
+		var oTextPr = this.GetTextPr();
+		oTextPr.SetFill(oApiFill);
+		
+		return oTextPr;
+	};
+	/**
+	 * Set all 4 font slots with the specified font family.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 * @param {string} sFontFamily - The font family or families used for the current text run.
+	 */
+	ApiRun.prototype.SetFontFamily = function(sFontFamily)
+	{
+		var oTextPr = this.GetTextPr();
+		oTextPr.SetFontFamily(sFontFamily);
+		
+		return oTextPr;
+	};
+	/**
+	 * Set the font size for the characters of the current text run.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 * @param {hps} nSize - The text size value measured in half-points (1/144 of an inch).
+	 */
+	ApiRun.prototype.SetFontSize = function(nSize)
+	{
+		var oTextPr = this.GetTextPr();
+		oTextPr.SetFontSize(nSize);
+		
+		return oTextPr;
+	};
+	/**
+	 * Specify a highlighting color in the RGB format which is applied as a background for the contents of the current run.
+	 * @typeofeditors ["CDE"]
+	 * @param {byte} r - Red color component value.
+	 * @param {byte} g - Green color component value.
+	 * @param {byte} b - Blue color component value.
+	 * @param {boolean} [isNone=false] If this parameter is set to "true", then r,g,b parameters will be ignored.
+	 */
+	ApiRun.prototype.SetHighlight = function(r, g, b, isNone)
+	{
+		var oTextPr = this.GetTextPr();
+		oTextPr.SetHighlight(r, g, b, isNone);
+		
+		return oTextPr;
+	};
+	/**
+	 * Set the italic property to the text character.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 * @param {boolean} isItalic - Specifies that the contents of the current run are displayed italicized.
+	 */
+	ApiRun.prototype.SetItalic = function(isItalic)
+	{
+		var oTextPr = this.GetTextPr();
+		oTextPr.SetItalic(isItalic);
+		
+		return oTextPr;
+	};
+	/**
+	 * Specify the languages which will be used to check spelling and grammar (if requested) when processing
+	 * the contents of this text run.
+	 * @typeofeditors ["CDE"]
+	 * @param {string} sLangId - The possible value for this parameter is a language identifier as defined by
+	 * RFC 4646/BCP 47. Example: "en-CA".
+	 */
+	ApiRun.prototype.SetLanguage = function(sLangId)
+	{
+		var oTextPr = this.GetTextPr();
+		oTextPr.SetLanguage(sLangId);
+		
+		return oTextPr;
+	};
+	/**
+	 * Specify the amount by which text is raised or lowered for this run in relation to the default
+	 * baseline of the surrounding non-positioned text.
+	 * @typeofeditors ["CDE"]
+	 * @param {hps} nPosition - Specifies a positive (raised text) or negative (lowered text)
+	 * measurement in half-points (1/144 of an inch).
+	 */
+	ApiRun.prototype.SetPosition = function(nPosition)
+	{
+		var oTextPr = this.GetTextPr();
+		oTextPr.SetPosition(nPosition);
+		
+		return oTextPr;
+	};
+	/**
+	 * Specify the shading applied to the contents of the current text run.
+	 * @typeofeditors ["CDE"]
+	 * @param {ShdType} sType - The shading type applied to the contents of the current text run.
+	 * @param {byte} r - Red color component value.
+	 * @param {byte} g - Green color component value.
+	 * @param {byte} b - Blue color component value.
+	 */
+	ApiRun.prototype.SetShd = function(sType, r, g, b)
+	{
+		var oTextPr = this.GetTextPr();
+		oTextPr.SetShd(sType, r, g, b);
+		
+		return oTextPr;
+	};
+	/**
+	 * Specify that all small letter characters in this text run are formatted for display only as their capital
+	 * letter character equivalents in a font size two points smaller than the actual font size specified for this text.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 * @param {boolean} isSmallCaps - Specifies that the contents of the current run are displayed capitalized two points smaller.
+	 */
+	ApiRun.prototype.SetSmallCaps = function(isSmallCaps)
+	{
+		var oTextPr = this.GetTextPr();
+		oTextPr.SetSmallCaps(isSmallCaps);
+		
+		return oTextPr;
+	};
+	/**
+	 * Set text spacing measured in twentieths of a point.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 * @param {twips} nSpacing - The value of the text spacing measured in twentieths of a point (1/1440 of an inch).
+	 */
+	ApiRun.prototype.SetSpacing = function(SetSpacing)
+	{
+		var oTextPr = this.GetTextPr();
+		oTextPr.SetSpacing(SetSpacing);
+		
+		return oTextPr;
+	};
+	/**
+	 * Specify that the contents of this run are displayed with a single horizontal line through the center of the line.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 * @param {boolean} isStrikeout - Specifies that the contents of the current run are displayed struck through.
+	 */
+	ApiRun.prototype.SetStrikeout = function(isStrikeout)
+	{
+		var oTextPr = this.GetTextPr();
+		oTextPr.SetStrikeout(isStrikeout);
+		
+		return oTextPr;
+	};
+	/**
+	 * Set style for the current Run.
+	 * @typeofeditors ["CDE"]
+	 * @param {ApiStyle} oStyle - The style which must be applied to the text character.
+	 */
+	ApiRun.prototype.SetStyle = function(oStyle)
+	{
+		var oTextPr = this.GetTextPr();
+		oTextPr.SetStyle(oStyle);
+		
+		return oTextPr;
+	};
+	/**
+	 * Specify that the contents of this run are displayed along with a line appearing directly below the character
+	 * (less than all the spacing above and below the characters on the line).
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 * @param {boolean} isUnderline - Specifies that the contents of the current run are displayed underlined.
+	 */
+	ApiRun.prototype.SetUnderline = function(isUnderline)
+	{
+		var oTextPr = this.GetTextPr();
+		oTextPr.SetUnderline(isUnderline);
+		
+		return oTextPr;
+	};
+	/**
+	 * Specify the alignment which will be applied to the contents of this run in relation to the default appearance of the run text:
+	 * * <b>"baseline"</b> - the characters in the current text run will be aligned by the default text baseline.
+	 * * <b>"subscript"</b> - the characters in the current text run will be aligned below the default text baseline.
+	 * * <b>"superscript"</b> - the characters in the current text run will be aligned above the default text baseline.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 * @param {("baseline" | "subscript" | "superscript")} sType - The vertical alignment type applied to the text contents.
+	 */
+	ApiRun.prototype.SetVertAlign = function(sType)
+	{
+		var oTextPr = this.GetTextPr();
+		oTextPr.SetVertAlign(sType);
+		
+		return oTextPr;
+	};
 	//------------------------------------------------------------------------------------------------------------------
 	//
 	// ApiSection
@@ -2348,6 +5698,38 @@
 	ApiSection.prototype.SetTitlePage = function(isTitlePage)
 	{
 		this.Section.Set_TitlePage(private_GetBoolean(isTitlePage));
+	};
+	/**
+	 * Gets next sections if exists.
+	 * @typeofeditors ["CDE"]
+	 */
+	ApiSection.prototype.GetNext = function()
+	{
+		var oDocument		= editor.GetDocument();
+		var arrApiSections	= oDocument.GetSections();
+
+		var sectionIndex	= arrApiSections.indexOf(this);
+		
+		if (sectionIndex !== - 1 && arrApiSections[sectionIndex + 1])
+		{
+			return arrApiSections[sectionIndex + 1];
+		}
+	};
+	/**
+	 * Gets preious sections if exists.
+	 * @typeofeditors ["CDE"]
+	 */
+	ApiSection.prototype.GetPrevious = function()
+	{
+		var oDocument		= editor.GetDocument();
+		var arrApiSections	= oDocument.GetSections();
+
+		var sectionIndex	= arrApiSections.indexOf(this);
+		
+		if (sectionIndex !== - 1 && arrApiSections[sectionIndex - 1])
+		{
+			return arrApiSections[sectionIndex - 1];
+		}
 	};
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -2595,6 +5977,18 @@
 	{
 		var oTable = this.Table.Copy();
 		return new ApiTable(oTable);
+	};
+	/**
+	 * Returns a Range object that represents the part of the document contained in the specified table.
+	 * @typeofeditors ["CDE"]
+	 * @param {Number} Start - start character in current element
+	 * @param {Number} End - end character in current element
+	 * @returns {ApiRange} 
+	 * */
+	ApiTable.prototype.GetRange = function(Start, End)
+	{
+		var Range = new ApiRange(this.Table, Start, End)
+		return Range;
 	};
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -4378,6 +7772,334 @@
 	{
 		this.Drawing.Set_Distance(private_EMU2MM(nLeft), private_EMU2MM(nTop), private_EMU2MM(nRight), private_EMU2MM(nBottom));
 	};
+	/**
+	 * Gets the parent paragraph that contains the graphic object.
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiParagraph}
+	 */
+	ApiDrawing.prototype.GetParagraph = function()
+	{
+		var Paragraph = this.Drawing.GetParagraph();
+
+		if (Paragraph)
+			return new ApiParagraph(this.Drawing.GetParagraph());
+		else 
+			return false;
+	};
+	/**
+	 * Gets the parent content control that contains the graphic object.
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiBlockLvlSdt}
+	 */
+	ApiDrawing.prototype.GetParentContentControl = function()
+	{
+		var ParaParent = this.GetParagraph();
+
+		if (ParaParent)
+			return ParaParent.GetParentContentControl();
+		return 	false;
+	};
+	/**
+	 * Gets the parent table that contains the graphic object.
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiTable}
+	 */
+	ApiDrawing.prototype.GetParentTable = function()
+	{
+		var ParaParent = this.GetParagraph();
+
+		if (ParaParent)
+			return ParaParent.GetParentTable();
+		return false;
+	};
+	/**
+	 * Gets the parent table cell that contains the graphic object.
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiTable}
+	 */
+	ApiDrawing.prototype.GetParentTableCell = function()
+	{
+		var ParaParent = this.GetParagraph();
+
+		if (ParaParent)
+			return ParaParent.GetParentTableCell();
+		return false;
+	};
+	/**
+	 * Deletes the graphic object. 
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiTable}
+	 */
+	ApiDrawing.prototype.Delete = function()
+	{
+		var ParaParent = this.GetParagraph();
+
+		if (ParaParent)
+		{
+			var ApiParentRun = new ApiRun(this.Drawing.GetRun());
+			ApiParentRun.Run.RemoveElement(this.Drawing);
+		}
+		else 	 
+			return false;
+	};
+	/**
+	 * Copy the graphic object. 
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiDrawing}
+	 */
+	ApiDrawing.prototype.Copy = function()
+	{
+		var CopyParaDrawing = this.Drawing.copy();
+		return new ApiDrawing(CopyParaDrawing);
+	};
+	/**
+	 * Wraps the graphic object with a rich text content control.
+	 * @param {number} nType - if nType === 1 -> returns ApiBlockLvlSdt, else -> return ApiDrawing
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiDrawing | ApiBlockLvlSdt}  
+	 */
+	ApiDrawing.prototype.InsertInContentControl = function(nType)
+	{
+		var Api = editor; 
+		var oDocument = Api.GetDocument();
+
+		var ContentControl			= null;
+		var paragraphInControl		= null;
+		var parentParagraph 		= this.Drawing.GetParagraph();
+
+		if (!parentParagraph)
+			return false;
+
+		var parentOfParentParagraph = parentParagraph.GetParent();
+
+		var paraIndex = parentParagraph.Index;
+
+		if (paraIndex >= 0)
+		{
+			parentOfParentParagraph.CurPos.ContentPos = paraIndex;
+			parentParagraph.MoveCursorToStartPos();
+			parentParagraph.MoveCursorToDrawing(this.Drawing.Id);
+			this.Delete();
+			ContentControl		= new ApiBlockLvlSdt(parentOfParentParagraph.AddContentControl(1));
+			paragraphInControl	= ContentControl.Sdt.GetFirstParagraph();
+
+			if (paragraphInControl.Content.length > 1)
+			{
+				paragraphInControl.RemoveFromContent(0, paragraphInControl.Content.length - 1);
+				paragraphInControl.CorrectContent();
+			}
+
+			paragraphInControl.Add(this.Drawing);
+			ContentControl.Sdt.SetShowingPlcHdr(false);
+		}
+		else 
+		{
+			ContentControl		= new ApiBlockLvlSdt(new CBlockLevelSdt(oDocument.Document, oDocument.Document))
+			paragraphInControl	= ContentControl.Sdt.GetFirstParagraph();
+
+			if (paragraphInControl.Content.length > 1)
+			{
+				paragraphInControl.RemoveFromContent(0, paragraphInControl.Content.length - 1);
+				paragraphInControl.CorrectContent();
+			}
+
+			paragraphInControl.Add(this.Drawing);
+			ContentControl.Sdt.SetShowingPlcHdr(false);
+		}
+
+		if (nType === 1)
+			return ContentControl;
+		else
+			return this;
+	};
+	/**
+	 * Inserts a paragraph at the specified position.
+	 * @param {string | ApiParagraph} paragraph - text or paragraph
+	 * @param {string} sPosition - can be "after" or "before"
+	 * @param {bool} beRNewPara - if "true" - returns new paragraph, else returns this ApiDrawing.
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiParagraph | ApiDrawing} 
+	 */
+	ApiDrawing.prototype.InsertParagraph = function(paragraph, sPosition, beRNewPara)
+	{
+		var parentParagraph = this.GetParagraph();
+
+		if (parentParagraph)
+			if (beRNewPara)
+				return parentParagraph.InsertParagraph(paragraph, sPosition, true)
+			else 
+			{
+				parentParagraph.InsertParagraph(paragraph, sPosition, true);
+				return this;
+			}
+		else 
+			return false;
+	};
+	/**
+	 * Selects the graphic object.
+	 * @typeofeditors ["CDE"]
+	 */	
+	ApiDrawing.prototype.Select = function()
+	{
+		var Api = editor;
+		var oDocument = Api.GetDocument();
+		this.Drawing.SelectAsText();
+		oDocument.Document.UpdateSelection();
+	};
+	/**
+	 * Inserts a break at the specified location in the main document.
+	 * @param {number}	breakType - 0 -> page break, 1 -> line break.
+	 * @param {string}	position  - can bet "after" or "before" 
+	 * @typeofeditors ["CDE"]
+	 */	
+	ApiDrawing.prototype.AddBreak = function(breakType, position)
+	{
+		var ParentRun	= (new ApiRun(this.Drawing.GetRun()));
+
+		if (!ParentRun)
+			return false;
+
+		if (breakType === 0)
+		{
+			if (position === "before")
+				ParentRun.Run.Add_ToContent(ParentRun.Run.Content.indexOf(this.Drawing), new ParaNewLine(break_Page));
+			else if (position === "after")
+				ParentRun.Run.Add_ToContent(ParentRun.Run.Content.indexOf(this.Drawing) + 1, new ParaNewLine(break_Page));
+		}
+		else if (breakType === 1)
+		{
+			if (position === "before")
+				ParentRun.Run.Add_ToContent(ParentRun.Run.Content.indexOf(this.Drawing), new ParaNewLine(break_Line));
+			else if (position === "after")
+				ParentRun.Run.Add_ToContent(ParentRun.Run.Content.indexOf(this.Drawing) + 1, new ParaNewLine(break_Line));
+		}
+	};
+	/**
+	 * Horizontal Reflection.
+	 * @param {bool}	bFlip 
+	 * @typeofeditors ["CDE"]
+	 */	
+	ApiDrawing.prototype.SetHFlip = function(bFlip)
+	{
+		if (this.Drawing.GraphicObj && this.Drawing.GraphicObj.spPr && this.Drawing.GraphicObj.spPr.xfrm)
+			this.Drawing.GraphicObj.spPr.xfrm.setFlipH(bFlip);
+	};
+	/**
+	 * Vertical reflection.
+	 * @param {bool}	bFlip 
+	 * @typeofeditors ["CDE"]
+	 */	
+	ApiDrawing.prototype.SetVFlip = function(bFlip)
+	{
+		if (this.Drawing.GraphicObj && this.Drawing.GraphicObj.spPr && this.Drawing.GraphicObj.spPr.xfrm)
+			this.Drawing.GraphicObj.spPr.xfrm.setFlipV(bFlip);
+	};
+	/**
+	 *Scales the height of the figure using the specified coefficient.
+	 * @param {number}	coefficient 
+	 * @typeofeditors ["CDE"]
+	 */	
+	ApiDrawing.prototype.ScaleHeight = function(coefficient)
+	{
+		if (typeof(coefficient) !== "number")
+			return false;
+
+		var currentHeight = this.Drawing.getXfrmExtY();
+
+		this.Drawing.setExtent(undefined, currentHeight * coefficient);
+		if(this.Drawing.GraphicObj && this.Drawing.GraphicObj.spPr && this.Drawing.GraphicObj.spPr.xfrm)
+		{
+			this.Drawing.GraphicObj.spPr.xfrm.setExtY(currentHeight * coefficient);
+		}
+	};
+	/**
+	 * Scales the width of the graphic object using the specified ratio.
+	 * @param {number}	coefficient
+	 * @typeofeditors ["CDE"]
+	 */	
+	ApiDrawing.prototype.ScaleWidth = function(coefficient)
+	{
+		if (typeof(coefficient) !== "number")
+			return false;
+
+		var currentWidth = this.Drawing.getXfrmExtX();
+
+		this.Drawing.setExtent(currentWidth * coefficient, undefined);
+		if(this.Drawing.GraphicObj && this.Drawing.GraphicObj.spPr && this.Drawing.GraphicObj.spPr.xfrm)
+		{
+			this.Drawing.GraphicObj.spPr.xfrm.setExtX(currentWidth * coefficient);
+		}
+	};
+	/**
+	 * Sets the fill formatting properties for the specified graphic object.
+	 * @param {ApiFill} oFill
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiDrawing} - this
+	 */	
+	ApiDrawing.prototype.Fill = function(oFill)
+	{
+		this.Drawing.GraphicObj.spPr.setFill(oFill.UniFill);
+	};
+	/**
+	 * Sets the outline properties for the specified graphic object.
+	 * @param {ApiStroke} oStroke
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiDrawing} - this
+	 */	
+	ApiDrawing.prototype.SetOutLine = function(oStroke)
+	{
+		this.Drawing.GraphicObj.spPr.setLn(oStroke.Ln);;
+	};
+	/**
+	 * Gets the next inline drawing object. Throws an error if this inline drawing object is the last.
+	 * @typeofeditors ["CDE"]
+	 * @returns {ApiImage | false}
+	 */
+	ApiDrawing.prototype.GetNextDrawing = function()
+	{
+		var oDocument				= editor.GetDocument();
+		var GetAllDrawingObjects	= oDocument.GetAllDrawingObjects();
+		var drawingIndex			= null;
+
+		for (var Index = 0; Index < GetAllDrawingObjects.length; Index++)
+		{
+			if (GetAllDrawingObjects[Index].Drawing.Id === this.Drawing.Id)
+			{
+				drawingIndex = Index;
+				break;
+			}
+		}
+
+		if (drawingIndex !== null && GetAllDrawingObjects[drawingIndex + 1])
+			return GetAllDrawingObjects[drawingIndex + 1];
+
+		return false;
+	};
+	/**
+	 * Gets the previous inline drawing object. Throws an error if this inline drawing object is the first.
+	 * @typeofeditors ["CDE"]
+	 * @returns {ApiImage | false}
+	 */
+	ApiDrawing.prototype.GetPrevDrawing = function()
+	{
+		var oDocument				= editor.GetDocument();
+		var GetAllDrawingObjects	= oDocument.GetAllDrawingObjects();
+		var drawingIndex			= null;
+
+		for (var Index = 0; Index < GetAllDrawingObjects.length; Index++)
+		{
+			if (GetAllDrawingObjects[Index].Drawing.Id === this.Drawing.Id)
+			{
+				drawingIndex = Index;
+				break;
+			}
+		}
+
+		if (drawingIndex !== null && GetAllDrawingObjects[drawingIndex - 1])
+			return GetAllDrawingObjects[drawingIndex - 1];
+
+		return false;
+	};
 
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -4394,6 +8116,57 @@
 	ApiImage.prototype.GetClassType = function()
 	{
 		return "image";
+	};
+
+	/**
+	 * Gets the next inline image. Throws an error if this inline image is the last.
+	 * @typeofeditors ["CDE"]
+	 * @returns {ApiImage | false}
+	 */
+	ApiImage.prototype.GetNextImage	= function()
+	{
+		var oDocument	= editor.GetDocument();
+		var AllImages	= oDocument.GetAllImages();
+		var imageIndex	= null;
+
+		for (var Index = 0; Index < AllImages.length; Index++)
+		{
+			if (AllImages[Index].Image.Id === this.Image.Id)
+			{
+				imageIndex = Index;
+				break;
+			}
+		}
+
+		if (imageIndex !== null && AllImages[imageIndex + 1])
+			return AllImages[imageIndex + 1];
+
+		return false;
+	};
+	/**
+	 * Gets the previous inline image. Throws an error if this inline image is the first.
+	 * @typeofeditors ["CDE"]
+	 * @returns {ApiImage | false}
+	 */
+	ApiImage.prototype.GetPrevImage	= function()
+	{
+		var oDocument	= editor.GetDocument();
+		var AllImages	= oDocument.GetAllImages();
+		var imageIndex	= null;
+
+		for (var Index = 0; Index < AllImages.length; Index++)
+		{
+			if (AllImages[Index].Image.Id === this.Image.Id)
+			{
+				imageIndex = Index;
+				break;
+			}
+		}
+
+		if (imageIndex !== null && AllImages[imageIndex - 1])
+			return AllImages[imageIndex - 1];
+
+		return false;
 	};
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -4480,7 +8253,56 @@
 		}
 	};
 
+	/**
+	 * Gets the next inline shape. Throws an error if this inline shape is the last.
+	 * @typeofeditors ["CDE"]
+	 * @returns {ApiShape | false}
+	 */
+	ApiShape.prototype.GetNextShape = function()
+	{
+		var oDocument	= editor.GetDocument();
+		var AllShapes	= oDocument.GetAllShapes();
+		var shapeIndex	= null;
 
+		for (var Index = 0; Index < AllShapes.length; Index++)
+		{
+			if (AllShapes[Index].Shape.Id === this.Shape.Id)
+			{
+				shapeIndex = Index;
+				break;
+			}
+		}
+
+		if (shapeIndex !== null && AllShapes[shapeIndex + 1])
+			return AllShapes[shapeIndex + 1];
+
+		return false;
+	};
+	/**
+	 * Gets the previous inline shape. Throws an error if this inline shape is the first.
+	 * @typeofeditors ["CDE"]
+	 * @returns {ApiShape | false}
+	 */
+	ApiShape.prototype.GetPrevShape	= function()
+	{
+		var oDocument	= editor.GetDocument();
+		var AllShapes	= oDocument.GetAllShapes();
+		var shapeIndex	= null;
+
+		for (var Index = 0; Index < AllShapes.length; Index++)
+		{
+			if (AllShapes[Index].Shape.Id === this.Shape.Id)
+			{
+				shapeIndex = Index;
+				break;
+			}
+		}
+
+		if (shapeIndex !== null && AllShapes[shapeIndex - 1])
+			return AllShapes[shapeIndex - 1];
+
+		return false;
+	};
 
 	//------------------------------------------------------------------------------------------------------------------
 	//
@@ -4776,6 +8598,56 @@
 		AscFormat.builder_SetVerAxisFontSize(this.Chart, nFontSize);
 	};
 
+	/**
+	 * Gets the next inline chart. Throws an error if this inline chart is the last.
+	 * @typeofeditors ["CDE"]
+	 * @returns {ApiChart | false}
+	 */
+	ApiChart.prototype.GetNextChart = function()
+	{
+		var oDocument	= editor.GetDocument();
+		var AllCharts	= oDocument.GetAllCharts();
+		var chartIndex	= null;
+
+		for (var Index = 0; Index < AllCharts.length; Index++)
+		{
+			if (AllCharts[Index].Chart.Id === this.Chart.Id)
+			{
+				chartIndex = Index;
+				break;
+			}
+		}
+
+		if (chartIndex !== null && AllCharts[chartIndex + 1])
+			return AllCharts[chartIndex + 1];
+
+		return false;
+	};
+	/**
+	 * Gets the previous inline chart. Throws an error if this inline chart is the first.
+	 * @typeofeditors ["CDE"]
+	 * @returns {ApiChart | false}
+	 */
+	ApiChart.prototype.GetPrevChart	= function()
+	{
+		var oDocument	= editor.GetDocument();
+		var AllCharts	= oDocument.GetAllCharts();
+		var chartIndex	= null;
+
+		for (var Index = 0; Index < AllCharts.length; Index++)
+		{
+			if (AllCharts[Index].Chart.Id === this.Chart.Id)
+			{
+				chartIndex = Index;
+				break;
+			}
+		}
+
+		if (chartIndex !== null && AllCharts[chartIndex - 1])
+			return AllCharts[chartIndex -1];
+
+		return false;
+	};
 
 	//------------------------------------------------------------------------------------------------------------------
 	//
@@ -5055,6 +8927,159 @@
 
 		return true;
 	};
+	/**
+	 * Add an element to the end of inline text content control.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 * @param {number} nPos - The position where the current element will be added.
+	 * @param {DocumentElement} oElement - The document element which will be added at the current position.
+	 */
+	ApiInlineLvlSdt.prototype.Push = function(oElement)
+	{
+		if (!private_IsSupportedParaElement(oElement))
+			return false;
+
+		if (this.Sdt.IsShowingPlcHdr())
+		{
+			this.Sdt.RemoveFromContent(0, this.Sdt.GetElementsCount(), false);
+			this.Sdt.SetShowingPlcHdr(false);
+		}
+
+		var oParaElement = oElement.private_GetImpl();
+
+		this.Sdt.AddToContent(this.Sdt.GetElementsCount(), oParaElement);
+
+		return true;
+	};
+	/**
+	 * Adds text to the current content control. 
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 * @param {String} sText - The text which will be add to the content control.
+	 * @param {Number} nPos - The specified position.
+	 */
+	ApiInlineLvlSdt.prototype.AddText = function(sText)
+	{
+		if (typeof sText === "string")
+		{
+			var newRun = editor.CreateRun();
+			newRun.AddText(sText);
+			this.AddElement(newRun, this.GetElementsCount())
+
+			return true;
+		}
+
+		return false;
+	};
+	/**
+	 * Removes content control and content. If keepContent is true, the content is not deleted.
+	 * @param {bool} keepContent
+	 * @typeofeditors ["CDE"]
+	 */
+	ApiInlineLvlSdt.prototype.Delete = function(keepContent)
+	{
+		if (this.Sdt.Paragraph)
+		{
+			if (keepContent)
+			{
+				this.Sdt.RemoveContentControlWrapper();
+			}
+			else 
+			{
+				var controlIndex = this.Sdt.Paragraph.Content.indexOf(this.Sdt);
+				this.Sdt.Paragraph.RemoveFromContent(controlIndex, 1);
+			}
+
+			return true;
+		}
+
+		return false;
+	};
+	/**
+	 * Applies text settings to content of content control.
+	 * @param {ApiTextPr} oTextPr
+	 * @typeofeditors ["CDE"]
+	 */
+	ApiInlineLvlSdt.prototype.SetTextPr = function(oTextPr)
+	{
+		for (var Index = 0; Index < this.Sdt.Content.length; Index++)
+		{
+			var Run = new ApiRun(this.Sdt.Content[Index]);
+			var runTextPr = Run.GetTextPr();
+			runTextPr.TextPr.Merge(oTextPr.TextPr);
+			runTextPr.private_OnChange();
+		}
+
+		return this;
+	};
+	/**
+	 * Gets the content control that contains the current content control.
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiBlockLvlSdt}  
+	 */
+	ApiInlineLvlSdt.prototype.GetParentContentControl = function()
+	{
+		var parentContentControls = this.Sdt.GetParentContentControls();
+
+		if (parentContentControls[parentContentControls.length - 2])
+		{
+			var ContentControl = parentContentControls[parentContentControls.length - 2];
+
+			if (ContentControl instanceof CBlockLevelSdt)
+				return new ApiBlockLvlSdt(ContentControl);
+			else if (ContentControl instanceof CInlineLevelSdt)
+				return new ApiInlineLvlSdt(ContentControl);
+		}
+
+		return false; 
+	};
+	/**
+	 * Gets the table that contains the content control.
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiTable}  
+	 */
+	ApiInlineLvlSdt.prototype.GetParentTable = function()
+	{
+		var documentPos = this.Sdt.GetDocumentPositionFromObject();
+
+		for (var Index = documentPos.length - 1; Index >= 1; Index--)
+		{
+			if (documentPos[Index].Class)
+				if (documentPos[Index].Class instanceof CTable)
+					return new ApiTable(documentPos[Index].Class);
+		}
+
+		return false;
+	};
+	/**
+	 * Gets the table cell that contains the content control.
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiTableCell}  
+	 */
+	ApiInlineLvlSdt.prototype.GetParentTableCell = function()
+	{
+		var documentPos = this.Sdt.GetDocumentPositionFromObject();
+
+		for (var Index = documentPos.length - 1; Index >= 1; Index--)
+		{
+			if (documentPos[Index].Class.Parent)
+				if (documentPos[Index].Class.Parent instanceof CTableCell)
+					return new ApiTableCell(documentPos[Index].Class.Parent);
+		}
+
+		return false;
+	};
+	/**
+	 * Returns a Range object that represents the part of the document contained in the specified content control.
+	 * @typeofeditors ["CDE"]
+	 * @param {Number} Start - start character in current element
+	 * @param {Number} End - end character in current element
+	 * @returns {ApiRange} 
+	 * */
+	ApiInlineLvlSdt.prototype.GetRange = function(Start, End)
+	{
+		var Range = new ApiRange(this.Sdt, Start, End);
+
+		return Range;
+	};
 
 	//------------------------------------------------------------------------------------------------------------------
 	//
@@ -5160,6 +9185,253 @@
 	{
 		return new ApiDocumentContent(this.Sdt.GetContent());
 	};
+	/**
+	 * Gets the collection of content management objects in the content control.
+	 * @returns {Array}
+	 */
+	ApiBlockLvlSdt.prototype.GetAllContentControls = function()
+	{
+		var arrContentControls = [];
+		this.Sdt.Content.GetAllContentControls(arrContentControls);
+
+		for (var Index = 0, nCount = arrContentControls.length; Index < nCount; Index++)
+		{
+			var oControl = arrContentControls[Index];
+
+			if (oControl instanceof CBlockLevelSdt)
+				arrContentControls.push(new ApiBlockLvlSdt(oControl));
+			else if (oControl instanceof CInlineLevelSdt)
+				arrContentControls.push(new ApiInlineLvlSdt(oControl));
+		}
+
+		return arrContentControls;
+	};
+	/**
+	 * Get a collection of paragraph objects in a content control.
+	 * @returns {Array}
+	 */
+	ApiBlockLvlSdt.prototype.GetAllParagraphs = function()
+	{
+		var arrParagraphs		= [];
+		var arrApiParagraphs	= [];
+
+		this.Sdt.GetAllParagraphs({All : true}, arrParagraphs);
+
+		for (var Index = 0, nCount = arrParagraphs.length; Index < nCount; Index++)
+		{
+			arrApiParagraphs.push(new ApiParagraph(arrParagraphs[Index]));
+		}
+
+		return arrApiParagraphs;
+	};
+	/**
+	 * Get the collection of tables on a given absolute page
+	 * @param nPage - page number
+	 * @typeofeditors ["CDE"]
+	 * @return {Array}  
+	 */
+	ApiBlockLvlSdt.prototype.GetAllTablesOnPage = function(nPageAbs)
+	{
+		var arrTables		= this.Sdt.GetAllTablesOnPage(nPageAbs);
+		var arrApiTables	= [];
+
+		for (var Index = 0, nCount = arrTables.length; Index < nCount; Index++)
+		{
+			arrApiTables.push(new ApiTable(arrTables[Index].Table));
+		}
+
+		return arrApiTables;
+	};
+	/**
+	 * Clears the contents of a content control.
+	 * @typeofeditors ["CDE"]
+	 */
+	ApiBlockLvlSdt.prototype.RemoveAllElements = function()
+	{
+		this.Sdt.Content.ClearContent(true);
+
+		return true;
+	};
+	/**
+	 * Removes content control and content. If keepContent is true, the content is not deleted.
+	 * @param {bool} keepContent
+	 * @typeofeditors ["CDE"]
+	 */
+	ApiBlockLvlSdt.prototype.Delete = function(keepContent)
+	{
+		if (this.Sdt.Index >= 0)
+		{
+			if (keepContent)
+			{
+				this.Sdt.RemoveContentControlWrapper();
+			}
+			else 
+			{
+				this.Sdt.Parent.RemoveFromContent(this.Sdt.Index, 1, true);
+			}
+
+			return true;
+		}
+
+		return false;
+	};
+	/**
+	 * Applies text settings to content of content control.
+	 * @param {ApiTextPr} oTextPr
+	 * @typeofeditors ["CDE"]
+	 */
+	ApiBlockLvlSdt.prototype.SetTextPr = function(oTextPr)
+	{
+		var ParaTextPr = new AscCommonWord.ParaTextPr(oTextPr.TextPr);
+		this.Sdt.Content.Set_ApplyToAll(true);
+		this.Sdt.Add(ParaTextPr);
+		this.Sdt.Content.Set_ApplyToAll(false);
+	};
+	/**
+	 * Gets the collection of drawing objects in the document.
+	 * @typeofeditors ["CDE"]
+	 * @return {Array}  
+	 */
+	ApiBlockLvlSdt.prototype.GetAllDrawingObjects = function()
+	{
+		var arrAllDrawing = this.Sdt.GetAllDrawingObjects();
+		var arrApiDrawings  = [];
+
+		for (var Index = 0; Index < arrAllDrawing.length; Index++)
+			arrApiDrawings.push(new ApiDrawing(arrAllDrawing[Index]));
+
+		return arrApiDrawings;
+	};
+	/**
+	 * Gets the content control that contains the current content control.
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiBlockLvlSdt}  
+	 */
+	ApiBlockLvlSdt.prototype.GetParentContentControl = function()
+	{
+		var documentPos = this.Sdt.GetDocumentPositionFromObject();
+
+		for (var Index = documentPos.length - 1; Index >= 1; Index--)
+		{
+			if (documentPos[Index].Class.Parent)
+				if (documentPos[Index].Class.Parent instanceof CBlockLevelSdt)
+					return new ApiBlockLvlSdt(documentPos[Index].Class.Parent);
+		}
+
+		return false;
+	};
+	/**
+	 * Gets the table that contains the content control.
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiTable}  
+	 */
+	ApiBlockLvlSdt.prototype.GetParentTable = function()
+	{
+		var documentPos = this.Sdt.GetDocumentPositionFromObject();
+
+		for (var Index = documentPos.length - 1; Index >= 1; Index--)
+		{
+			if (documentPos[Index].Class)
+				if (documentPos[Index].Class instanceof CTable)
+					return new ApiTable(documentPos[Index].Class);
+		}
+
+		return false;
+	};
+	/**
+	 * Gets the table cell that contains the content control.
+	 * @typeofeditors ["CDE"]
+	 * @return {ApiTableCell}  
+	 */
+	ApiBlockLvlSdt.prototype.GetParentTableCell = function()
+	{
+		var documentPos = this.Sdt.GetDocumentPositionFromObject();
+
+		for (var Index = documentPos.length - 1; Index >= 1; Index--)
+		{
+			if (documentPos[Index].Class.Parent)
+				if (documentPos[Index].Class.Parent instanceof CTableCell)
+					return new ApiTableCell(documentPos[Index].Class.Parent);
+		}
+
+		return false;
+	};
+	/**
+	 * Push a paragraph or a table or BlockLvl content control to actually add it to the document.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 * @param {DocumentElement} oElement - The type of the element which will be pushed to the document.
+	 */
+	ApiBlockLvlSdt.prototype.Push = function(oElement)
+	{
+		if (oElement instanceof ApiParagraph || oElement instanceof ApiTable || ApiBlockLvlSdt)
+		{
+			if (this.Sdt.IsShowingPlcHdr())
+			{
+				this.Sdt.Content.RemoveFromContent(0, this.Sdt.Content.GetElementsCount(), false);
+				this.Sdt.SetShowingPlcHdr(false);
+			}
+			
+			this.Sdt.Content.Internal_Content_Add(this.Sdt.Content.Content.length, oElement.private_GetImpl());
+			return true;
+		}
+
+		return false;
+	};
+	/**
+	 * Push a paragraph or a table or a blocklvl content control to actually add it to the document.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 * @param {DocumentElement} oElement - The type of the element which will be pushed to the document.
+	 * @param {Number} nPos - The specified position.
+	 */
+	ApiBlockLvlSdt.prototype.AddElement = function(oElement, nPos)
+	{
+		if (oElement instanceof ApiParagraph || oElement instanceof ApiTable || ApiBlockLvlSdt)
+		{
+			if (this.Sdt.IsShowingPlcHdr())
+			{
+				this.Sdt.Content.RemoveFromContent(0, this.Sdt.Content.GetElementsCount(), false);
+				this.Sdt.SetShowingPlcHdr(false);
+			}
+			
+			this.Sdt.Content.Internal_Content_Add(nPos, oElement.private_GetImpl());
+			return true;
+		}
+
+		return false;
+	};
+	/**
+	 * Adds a text to the current content control.
+	 * @typeofeditors ["CDE", "CSE", "CPE"]
+	 * @param {String} sText - The text which will be add to the content control.
+	 * @param {Number} nPos - The specified position.
+	 */
+	ApiBlockLvlSdt.prototype.AddText = function(sText)
+	{
+		if (typeof sText === "string")
+		{
+			var oParagraph = editor.CreateParagraph();
+			oParagraph.AddText(sText);
+			this.Sdt.Content.Internal_Content_Add(this.Sdt.Content.Content.length, oParagraph.private_GetImpl());
+
+			return true;
+		}
+
+		return false;
+	};
+	/**
+	 * Returns a Range object that represents the part of the document contained in the specified content control.
+	 * @typeofeditors ["CDE"]
+	 * @param {Number} Start - start character in current element
+	 * @param {Number} End - end character in current element
+	 * @returns {ApiRange} 
+	 * */
+	ApiBlockLvlSdt.prototype.GetRange = function(Start, End)
+	{
+		var Range = new ApiRange(this.Sdt, Start, End);
+
+		return Range;
+	};
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Export
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -5505,13 +9777,15 @@
 
 		return false;
 	}
-
+	
 	function private_GetSupportedParaElement(oElement)
 	{
 		if (oElement instanceof ParaRun)
 			return new ApiRun(oElement);
 		else if (oElement instanceof CInlineLevelSdt)
 			return new ApiInlineLvlSdt(oElement);
+		else if (oElement instanceof ParaHyperlink)
+			return new ApiParaHyperlink(oElement);
 		else
 			return new ApiUnsupported();
 	}
@@ -6011,3 +10285,5 @@
 		return new ApiDocumentContent(oDocContent);
 	};
 }(window, null));
+
+

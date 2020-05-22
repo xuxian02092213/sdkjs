@@ -201,6 +201,8 @@
 			LockCreateDefName      : -311,
 
 			LockedCellPivot				: -312,
+			PivotLabledColumns			: -313,
+			PivotOverlap				: -314,
 
 			ForceSaveButton: -331,
 			ForceSaveTimeout: -332,
@@ -216,6 +218,8 @@
 
 			NoDataToParse : -601,
 
+			CannotCompareInCoEditing : 651,
+
 			CannotUngroupError : -700,
 
 			UplDocumentSize         : -751,
@@ -223,7 +227,10 @@
 			UplDocumentFileCount    : -753,
 
 			CustomSortMoreOneSelectedError: -800,
-			CustomSortNotOriginalSelectError: -801
+			CustomSortNotOriginalSelectError: -801,
+
+			// Data Validate
+			RemoveDuplicates : -850
 		}
 	};
 
@@ -263,11 +270,11 @@
 	};
 
 	var c_oAscRestrictionType = {
-		None           : 0,
-		OnlyForms      : 1,
-		OnlyComments   : 2,
-		OnlySignatures : 3,
-		View           : 0xFF // Отличие данного ограничения от обычного ViewMode в том, что редактор открывается
+		None           : 0x00,
+		OnlyForms      : 0x01,
+		OnlyComments   : 0x02,
+		OnlySignatures : 0x04,
+		View           : 0x80 // Отличие данного ограничения от обычного ViewMode в том, что редактор открывается
 		                      // как полноценный редактор, просто мы запрещаем ЛЮБОЕ редактирование. А во ViewMode
 		                      // открывается именно просмотрщик.
 	};
@@ -1420,8 +1427,20 @@
 		keepTextOnly: 23,
 		overwriteCells : 24,
 
-		useTextImport: 25
+		useTextImport: 25,
+
+		comments: 26,
+		columnWidth: 27
 	};
+
+	var c_oSpecialPasteOperation = {
+		none: 0,
+		add: 1,
+		subtract: 2,
+		multiply: 3,
+		divide: 4
+	};
+
 
 	/** @enum {number} */
 	var c_oAscNumberingFormat = {
@@ -1435,6 +1454,9 @@
 		DecimalZero           : 0x2007,
 		DecimalEnclosedCircle : 0x2008,
 
+		ChineseCounting         : 0x2101,
+		ChineseCountingThousand : 0x2102,
+		ChineseLegalSimplified  : 0x2103,
 
 		BulletFlag   : 0x1000,
 		NumberedFlag : 0x2000
@@ -1989,6 +2011,13 @@
 		g_oLcidIdToNameMap[id] = name;
 	}
 
+	var document_compatibility_mode_Word11 = 11;
+	var document_compatibility_mode_Word12 = 12;
+	var document_compatibility_mode_Word14 = 14;
+	var document_compatibility_mode_Word15 = 15;
+
+	var document_compatibility_mode_Current = document_compatibility_mode_Word12;
+
 	//------------------------------------------------------------export--------------------------------------------------
 	var prot;
 	window['Asc']                          = window['Asc'] || {};
@@ -2125,6 +2154,8 @@
 	prot['InvalidReferenceOrName']           = prot.InvalidReferenceOrName;
 	prot['LockCreateDefName']                = prot.LockCreateDefName;
 	prot['LockedCellPivot']                  = prot.LockedCellPivot;
+	prot['PivotLabledColumns']               = prot.PivotLabledColumns;
+	prot['PivotOverlap']                     = prot.PivotOverlap;
 	prot['ForceSaveButton']                  = prot.ForceSaveButton;
 	prot['ForceSaveTimeout']                 = prot.ForceSaveTimeout;
 	prot['CannotChangeFormulaArray']         = prot.CannotChangeFormulaArray;
@@ -2133,12 +2164,14 @@
 	prot['OpenWarning']                      = prot.OpenWarning;
 	prot['DataEncrypted']                    = prot.DataEncrypted;
 	prot['NoDataToParse']                    = prot.NoDataToParse;
+	prot['CannotCompareInCoEditing']         = prot.CannotCompareInCoEditing;
 	prot['CannotUngroupError']               = prot.CannotUngroupError;
 	prot['UplDocumentSize']                  = prot.UplDocumentSize;
 	prot['UplDocumentExt']                   = prot.UplDocumentExt;
 	prot['UplDocumentFileCount']             = prot.UplDocumentFileCount;
 	prot['CustomSortMoreOneSelectedError']   = prot.CustomSortMoreOneSelectedError;
 	prot['CustomSortNotOriginalSelectError'] = prot.CustomSortNotOriginalSelectError;
+	prot['RemoveDuplicates']                 = prot.RemoveDuplicates;
 	window['Asc']['c_oAscAsyncAction']       = window['Asc'].c_oAscAsyncAction = c_oAscAsyncAction;
 	prot                                     = c_oAscAsyncAction;
 	prot['Open']                             = prot.Open;
@@ -2788,6 +2821,16 @@
 	prot['insertAsNestedTable'] = prot.insertAsNestedTable;
 	prot['overwriteCells'] = prot.overwriteCells;
 	prot['useTextImport'] = prot.useTextImport;
+	prot['comments'] = prot.comments;
+	prot['columnWidth'] = prot.columnWidth;
+
+	window['Asc']['c_oSpecialPasteOperation'] = window['Asc'].c_oSpecialPasteOperation = c_oSpecialPasteOperation;
+	prot = c_oSpecialPasteOperation;
+	prot['none'] = prot.none;
+	prot['add'] = prot.add;
+	prot['subtract'] = prot.subtract;
+	prot['multiply'] = prot.multiply;
+	prot['divide'] = prot.divide;
 
 	window['Asc']['c_oAscNumberingFormat'] = window['Asc'].c_oAscNumberingFormat = c_oAscNumberingFormat;
 	prot = c_oAscNumberingFormat;
@@ -2800,6 +2843,9 @@
 	prot['UpperLetter'] = c_oAscNumberingFormat.UpperLetter;
 	prot['DecimalZero'] = c_oAscNumberingFormat.DecimalZero;
 	prot['DecimalEnclosedCircle'] = c_oAscNumberingFormat.DecimalEnclosedCircle;
+	prot['ChineseCounting'] = c_oAscNumberingFormat.ChineseCounting;
+	prot['ChineseCountingThousand'] = c_oAscNumberingFormat.ChineseCountingThousand;
+	prot['ChineseLegalSimplified'] = c_oAscNumberingFormat.ChineseLegalSimplified;
 
 	window['Asc']['c_oAscNumberingSuff'] = window['Asc'].c_oAscNumberingSuff = c_oAscNumberingSuff;
 	prot = c_oAscNumberingSuff;
@@ -2918,5 +2964,11 @@
 	prot['DropDownList'] = c_oAscContentControlSpecificType.DropDownList;
 	prot['DateTime']     = c_oAscContentControlSpecificType.DateTime;
 	prot['TOC']          = c_oAscContentControlSpecificType.TOC;
+
+	window["AscCommon"].document_compatibility_mode_Word11  = document_compatibility_mode_Word11;
+	window["AscCommon"].document_compatibility_mode_Word12  = document_compatibility_mode_Word12;
+	window["AscCommon"].document_compatibility_mode_Word14  = document_compatibility_mode_Word14;
+	window["AscCommon"].document_compatibility_mode_Word15  = document_compatibility_mode_Word15;
+	window["AscCommon"].document_compatibility_mode_Current = document_compatibility_mode_Current;
 
 })(window);

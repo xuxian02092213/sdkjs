@@ -290,7 +290,10 @@ function (window, undefined) {
 	cCOLUMN.prototype.returnValueType = AscCommonExcel.cReturnFormulaType.area_to_ref;
 	cCOLUMN.prototype.Calculate = function (arg) {
 		var bbox;
-		if (0 === arg.length) {
+		var opt_col = arguments[6];
+		if (opt_col !== undefined) {
+			return new cNumber(opt_col + 1);
+		} else if (0 === arg.length) {
 			bbox = arguments[1];
 		} else {
 			var arg0 = arg[0];
@@ -498,6 +501,20 @@ function (window, undefined) {
 			return new cError(cErrorType.wrong_value_type);
 		}
 
+		//TODO в дальнейшем необходимо продумать преобразования аргументов на основе argumentsType!!!
+		if (cElementType.array === arg1.type) {
+			arg1 = arg1.getElementRowCol(0,0);
+			if (cElementType.error === arg1.type) {
+				return new cError(cErrorType.wrong_value_type);
+			}
+		}
+		if (cElementType.array === arg2.type) {
+			arg2 = arg1.getElementRowCol(0,0);
+			if (cElementType.error === arg2.type) {
+				return new cError(cErrorType.wrong_value_type);
+			}
+		}
+
 		if(arg[3] && cElementType.empty !== arg[3].type && arg3 > 1) {
 			return new cError(cErrorType.bad_reference);
 		}
@@ -509,9 +526,45 @@ function (window, undefined) {
 			return new cError(cErrorType.wrong_value_type);
 		}
 
+		var generateArray = function (_from, row, col) {
+			var ret = null;
+			var _colCount = _from.getCountElementInRow();
+			var _rowCount = _from.rowCount;
+			var i;
+			if (undefined !== row) {
+				if (_rowCount < row) {
+					return null;
+				}
+				ret = new cArray();
+				for (i = 0; i < _colCount; i++) {
+					ret.addElement(_from.array[row - 1][i])
+				}
+			} else if (undefined !== col) {
+				if (_colCount < col) {
+					return null;
+				}
+
+				ret = new cArray();
+				for (i = 0; i < _rowCount; i++) {
+					ret.addRow();
+					ret.addElement(_from.array[i][col - 1])
+				}
+			}
+			return ret;
+		};
+
 		AscCommonExcel.executeInR1C1Mode(false, function () {
 			if (cElementType.array === arg0.type) {
-				if(undefined === arg[2] && 1 === arg0.rowCount) {//если последний аргумент опущен, и выделенa 1 строка
+				if ((!arg[1] || arg1 === 0) && (!arg[2] || arg2 === 0)) {
+					//возвращаем массив
+					res = arg0;
+				} else if (!arg[2] || arg2 === 0) {
+					//возращаем массив из arg1 строки
+					res = generateArray(arg0, arg1);
+				} else if (!arg[1] || arg1 === 0) {
+					//возращаем массив из arg2 столбца
+					res = generateArray(arg0, undefined, arg2);
+				} else if(undefined === arg[2] && 1 === arg0.rowCount) {//если последний аргумент опущен, и выделенa 1 строка
 					res = arg0.getValue2(0, (0 === arg1) ? 0 : arg1 - 1);
 				} else if(undefined === arg[2] && 1 === arg0.getCountElementInRow()) {//если последний аргумент опущен, и выделен 1 столбец
 					res = arg0.getValue2((0 === arg1) ? 0 : arg1 - 1, 0);
@@ -1539,7 +1592,10 @@ function (window, undefined) {
 	cROW.prototype.returnValueType = AscCommonExcel.cReturnFormulaType.area_to_ref;
 	cROW.prototype.Calculate = function (arg) {
 		var bbox;
-		if (0 === arg.length) {
+		var opt_row = arguments[5];
+		if (opt_row !== undefined) {
+			return new cNumber(opt_row + 1);
+		} else if (0 === arg.length) {
 			bbox = arguments[1];
 		} else {
 			var arg0 = arg[0];

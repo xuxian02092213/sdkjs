@@ -55,6 +55,7 @@ function (window, undefined) {
 	var cBaseFunction = AscCommonExcel.cBaseFunction;
 	var checkTypeCell = AscCommonExcel.checkTypeCell;
 	var cFormulaFunctionGroup = AscCommonExcel.cFormulaFunctionGroup;
+	var argType = Asc.c_oAscFormulaArgumentType;
 
 	var _func = AscCommonExcel._func;
 	var matching = AscCommonExcel.matching;
@@ -3773,6 +3774,7 @@ function (window, undefined) {
 	cAVERAGE.prototype.name = 'AVERAGE';
 	cAVERAGE.prototype.argumentsMin = 1;
 	cAVERAGE.prototype.returnValueType = AscCommonExcel.cReturnFormulaType.array;
+	cAVERAGE.prototype.inheritFormat = true;
 	cAVERAGE.prototype.Calculate = function (arg) {
 		var count = 0, sum = new cNumber(0);
 		for (var i = 0; i < arg.length; i++) {
@@ -3904,6 +3906,7 @@ function (window, undefined) {
 	cAVERAGEIF.prototype.argumentsMin = 2;
 	cAVERAGEIF.prototype.argumentsMax = 3;
 	cAVERAGEIF.prototype.arrayIndexes = {0: 1, 2: 1};
+	cAVERAGEIF.prototype.argumentsType = [argType.reference, argType.any, argType.reference];
 	cAVERAGEIF.prototype.Calculate = function (arg) {
 		var arg0 = arg[0], arg1 = arg[1], arg2 = arg[2] ? arg[2] : arg[0], _sum = 0, _count = 0, matchingInfo, ws;
 		if ((cElementType.cell !== arg0.type && cElementType.cell3D !== arg0.type && cElementType.cellsRange !==
@@ -7643,6 +7646,7 @@ function (window, undefined) {
 	cMAX.prototype.name = 'MAX';
 	cMAX.prototype.argumentsMin = 1;
 	cMAX.prototype.returnValueType = AscCommonExcel.cReturnFormulaType.array;
+	cMAX.prototype.inheritFormat = true;
 	cMAX.prototype.Calculate = function (arg) {
 		var v, element, argIVal, max = Number.NEGATIVE_INFINITY;
 		for (var i = 0; i < arg.length; i++) {
@@ -8018,6 +8022,7 @@ function (window, undefined) {
 	cMEDIAN.prototype.name = 'MEDIAN';
 	cMEDIAN.prototype.argumentsMin = 1;
 	cMEDIAN.prototype.returnValueType = AscCommonExcel.cReturnFormulaType.array;
+	cMEDIAN.prototype.inheritFormat = true;
 	cMEDIAN.prototype.Calculate = function (arg) {
 
 		function median(x) {
@@ -8091,6 +8096,7 @@ function (window, undefined) {
 	cMIN.prototype.name = 'MIN';
 	cMIN.prototype.argumentsMin = 1;
 	cMIN.prototype.returnValueType = AscCommonExcel.cReturnFormulaType.array;
+	cMIN.prototype.inheritFormat = true;
 	cMIN.prototype.Calculate = function (arg) {
 		var v, element, argIVal, min = Number.POSITIVE_INFINITY;
 		for (var i = 0; i < arg.length; i++) {
@@ -8254,6 +8260,7 @@ function (window, undefined) {
 	cMODE.prototype.name = 'MODE';
 	cMODE.prototype.argumentsMin = 1;
 	cMODE.prototype.returnValueType = AscCommonExcel.cReturnFormulaType.array;
+	cMODE.prototype.inheritFormat = true;
 	cMODE.prototype.Calculate = function (arg) {
 
 		function mode(x) {

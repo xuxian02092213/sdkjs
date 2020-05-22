@@ -111,6 +111,9 @@ var para_FieldChar                 = 0x0045;
 var para_InstrText                 = 0x0046;
 var para_Bookmark                  = 0x0047;
 var para_RevisionMove              = 0x0048;
+var para_EndnoteReference          = 0x0049; // Ссылка на сноску
+var para_EndnoteRef                = 0x004a; // Номер сноски (должен быть только внутри сноски)
+
 
 var break_Line   = 0x01;
 var break_Page   = 0x02;
@@ -533,7 +536,7 @@ ParaSpace.prototype.Measure = function(Context, TextPr)
 	this.Set_FontKoef_SmallCaps(true != TextPr.Caps && true === TextPr.SmallCaps ? true : false);
 
 	// Разрешенные размеры шрифта только либо целое, либо целое/2. Даже после применения FontKoef, поэтому
-	// мы должны подкрутить коэффициент так, чтобы после домножения на него, у на получался разрешенный размер.
+	// мы должны подкрутить коэффициент так, чтобы после домножения на него, у нас получался разрешенный размер
 	var FontKoef = this.Get_FontKoef();
 	var FontSize = TextPr.FontSize;
 	if (1 !== FontKoef)
@@ -541,7 +544,7 @@ ParaSpace.prototype.Measure = function(Context, TextPr)
 
 	Context.SetFontSlot(fontslot_ASCII, FontKoef);
 
-	var Temp = Context.MeasureCode(0x20);
+	var Temp  = Context.MeasureCode(0x20);
 
 	var ResultWidth  = (Math.max((Temp.Width + TextPr.Spacing), 0) * 16384) | 0;
 	this.Width       = ResultWidth;
@@ -601,15 +604,13 @@ ParaSpace.prototype.CanStartAutoCorrect = function()
 {
 	return true;
 };
-ParaSpace.prototype.CheckCondensedWidth = function(isCondensedSpaces)
+ParaSpace.prototype.SetCondensedWidth = function(nKoef)
 {
-	// TODO: Коэффициент 3/4 получен опытным путем, возможно есть параметр в шрифте соответствующий, но
-	// для шрифтов, которые я просмотрел был именно такой коэффициент
-
-	if (isCondensedSpaces)
-		this.Width = this.WidthOrigin * 0.75;
-	else
-		this.Width = this.WidthOrigin;
+	this.Width = this.WidthOrigin * nKoef;
+};
+ParaSpace.prototype.ResetCondensedWidth = function()
+{
+	this.Width = this.WidthOrigin;
 };
 
 
@@ -2057,6 +2058,20 @@ ParaSeparator.prototype.UpdateWidth = function(PRS)
 	this.Width        = nWidth;
 	this.WidthVisible = nWidth;
 };
+ParaSeparator.prototype.SaveRecalculateObject = function(isCopy)
+{
+	return {
+		Width : this.Width
+	};
+};
+ParaSeparator.prototype.LoadRecalculateObject = function(oRecalcObj)
+{
+	this.Width        = oRecalcObj.Width;
+	this.WidthVisible = oRecalcObj.Width;
+};
+ParaSeparator.PrepareRecalculateObject = function()
+{
+};
 
 /**
  * Класс представляющий собой длинный разделитель (который в основном используется для сносок).
@@ -2111,6 +2126,20 @@ ParaContinuationSeparator.prototype.UpdateWidth = function(PRS)
 
 	this.Width        = nWidth;
 	this.WidthVisible = nWidth;
+};
+ParaContinuationSeparator.prototype.SaveRecalculateObject = function(isCopy)
+{
+	return {
+		Width : this.Width
+	};
+};
+ParaContinuationSeparator.prototype.LoadRecalculateObject = function(oRecalcObj)
+{
+	this.Width        = oRecalcObj.Width;
+	this.WidthVisible = oRecalcObj.Width;
+};
+ParaContinuationSeparator.PrepareRecalculateObject = function()
+{
 };
 
 
@@ -2241,6 +2270,117 @@ ParaPageCount.prototype.GetParent = function()
 {
 	return this.Parent;
 };
+/**
+ * Класс представляющий ссылку на сноску
+ * @param {CFootEndnote} oEndnote - Ссылка на сноску
+ * @param {string} sCustomMark
+ * @constructor
+ * @extends {ParaFootnoteReference}
+ */
+function ParaEndnoteReference(oEndnote, sCustomMark)
+{
+	ParaFootnoteReference.call(this, oEndnote, sCustomMark);
+}
+ParaEndnoteReference.prototype = Object.create(ParaFootnoteReference.prototype);
+ParaEndnoteReference.prototype.constructor = ParaEndnoteReference;
+
+ParaEndnoteReference.prototype.Type = para_EndnoteReference;
+ParaEndnoteReference.prototype.Get_Type = function()
+{
+	return para_EndnoteReference;
+};
+ParaEndnoteReference.prototype.Copy = function(oPr)
+{
+	var oEndnote;
+	if (oPr && oPr.Comparison)
+	{
+		oEndnote = oPr.Comparison.createEndNote();
+	}
+	else
+	{
+		oEndnote = this.Footnote.Parent.CreateEndnote();
+	}
+	oEndnote.Copy2(this.Footnote, oPr);
+
+	var oRef = new ParaEndnoteReference(oEndnote);
+
+	oRef.Number    = this.Number;
+	oRef.NumFormat = this.NumFormat;
+
+	return oRef;
+};
+ParaEndnoteReference.prototype.UpdateNumber = function(PRS, isKeepNumber)
+{
+	if (this.Footnote && true !== PRS.IsFastRecalculate() && PRS.TopDocument instanceof CDocument)
+	{
+		var nPageAbs    = PRS.GetPageAbs();
+		var nColumnAbs  = PRS.GetColumnAbs();
+		var nAdditional = PRS.GetEndnoteReferenceCount(this);
+		var oSectPr     = PRS.GetSectPr();
+		var nNumFormat  = oSectPr.GetEndnoteNumFormat();
+
+		var oLogicDocument      = this.Footnote.GetLogicDocument();
+		var oEndnotesController = oLogicDocument.GetEndnotesController();
+
+		if (!isKeepNumber)
+		{
+			this.NumFormat = nNumFormat;
+			this.Number    = oEndnotesController.GetEndnoteNumberOnPage(nPageAbs, nColumnAbs, oSectPr) + nAdditional;
+
+			// Если данная сноска не участвует в нумерации, просто уменьшаем ей номер на 1, для упрощения работы
+			if (this.IsCustomMarkFollows())
+				this.Number--;
+		}
+
+		this.private_Measure();
+		this.Footnote.SetNumber(this.Number, oSectPr, this.IsCustomMarkFollows());
+	}
+	else
+	{
+		this.Number    = 1;
+		this.NumFormat = Asc.c_oAscNumberingFormat.LowerRoman;
+		this.private_Measure();
+	}
+};
+
+/**
+ * Класс представляющий номер сноски внутри сноски.
+ * @param {CFootEndnote} oEndnote - Ссылка на сноску.
+ * @constructor
+ * @extends {ParaEndnoteReference}
+ */
+function ParaEndnoteRef(oEndnote)
+{
+	ParaEndnoteReference.call(this, oEndnote);
+}
+ParaEndnoteRef.prototype = Object.create(ParaEndnoteReference.prototype);
+ParaEndnoteRef.prototype.constructor = ParaEndnoteRef;
+
+ParaEndnoteRef.prototype.Type = para_EndnoteRef;
+ParaEndnoteRef.prototype.Get_Type = function()
+{
+	return para_EndnoteRef;
+};
+ParaEndnoteRef.prototype.Copy = function()
+{
+	return new ParaEndnoteRef(this.GetFootnote());
+};
+ParaEndnoteRef.prototype.UpdateNumber = function(oEndnote)
+{
+	this.Footnote = oEndnote;
+	if (this.Footnote && this.Footnote instanceof CFootEndnote)
+	{
+		this.Number    = this.Footnote.GetNumber();
+		this.NumFormat = this.Footnote.GetReferenceSectPr().GetEndnoteNumFormat();
+		this.private_Measure();
+	}
+	else
+	{
+		this.Number    = 1;
+		this.NumFormat = Asc.c_oAscNumberingFormat.LowerRoman;
+		this.private_Measure();
+	}
+};
 
 function ParagraphContent_Read_FromBinary(Reader)
 {
@@ -2280,6 +2420,8 @@ function ParagraphContent_Read_FromBinary(Reader)
 		case para_FieldChar             : Element = new ParaFieldChar(); break;
 		case para_InstrText             : Element = new ParaInstrText(); break;
 		case para_RevisionMove          : Element = new CRunRevisionMove(); break;
+		case para_EndnoteReference      : Element = new ParaEndnoteReference(); break;
+		case para_EndnoteRef            : Element = new ParaEndnoteRef(); break;
 	}
 
 	if (null != Element)

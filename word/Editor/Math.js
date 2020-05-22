@@ -1559,9 +1559,9 @@ ParaMath.prototype.Remove = function(Direction, bOnAddText)
     }
 };
 
-ParaMath.prototype.GetSelectContent = function()
+ParaMath.prototype.GetSelectContent = function(isAll)
 {
-    return this.Root.GetSelectContent();
+    return this.Root.GetSelectContent(isAll);
 };
 
 ParaMath.prototype.GetCurrentParaPos = function()
@@ -1671,18 +1671,21 @@ ParaMath.prototype.GetSelectedElementsInfo = function(Info, ContentPos, Depth)
 
 ParaMath.prototype.GetSelectedText = function(bAll, bClearText, oPr)
 {
-	if (true === bAll || true === this.IsSelectionUse()) {
+	if (true === bAll || true === this.IsSelectionUse())
+	{
 		if (true === bClearText)
 			return null;
 
-		var res = "";
-        var selectedContent = this.GetSelectContent();
-        if (selectedContent && selectedContent.Content && selectedContent.Content.GetTextContent) {
-            var textContent = selectedContent.Content.GetTextContent(!bAll);
-            if (textContent && textContent.str) {
-                res = textContent.str;
-            }
-        }
+		var res             = "";
+		var selectedContent = this.GetSelectContent(bAll);
+		if (selectedContent && selectedContent.Content && selectedContent.Content.GetTextContent)
+		{
+			var textContent = selectedContent.Content.GetTextContent(!bAll);
+			if (textContent && textContent.str)
+			{
+				res = textContent.str;
+			}
+		}
 		return res;
 	}
 	return "";
@@ -2387,6 +2390,9 @@ ParaMath.prototype.Recalculate_Range_Spaces = function(PRSA, _CurLine, _CurRange
 ParaMath.prototype.Recalculate_PageEndInfo = function(PRSI, _CurLine, _CurRange)
 {
 
+};
+ParaMath.prototype.RecalculateEndInfo = function(oPRSI)
+{
 };
 ParaMath.prototype.SaveRecalculateObject = function(Copy)
 {
@@ -3411,6 +3417,21 @@ ParaMath.prototype.IsStopCursorOnEntryExit = function()
 ParaMath.prototype.RemoveTabsForTOC = function(isTab)
 {
 	return isTab;
+};
+/**
+ * Проверяем, что данный класс лежит в плейсхолдере специального контейнера для формул
+ * @return {boolean}
+ */
+ParaMath.prototype.IsParentEquationPlaceholder = function()
+{
+	var arrContentControl = this.GetParentContentControls();
+	for (var nIndex = 0, nCount = arrContentControl.length; nIndex < nCount; ++nIndex)
+	{
+		if (arrContentControl[nIndex].IsContentControlEquation() && arrContentControl[nIndex].IsPlaceHolder())
+			return true;
+	}
+
+	return false;
 };
 
 function MatGetKoeffArgSize(FontSize, ArgSize)

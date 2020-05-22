@@ -886,7 +886,7 @@
 				return result;
 			},
 
-			getAddFormatTableOptions: function (activeCells, userRange) {
+			getAddFormatTableOptions: function (activeCells, userRange, isPivot) {
 				var res;
 
 				if (userRange) {
@@ -904,28 +904,45 @@
 					bIsInFilter = null;
 				}
 
-				if (null === bIsInFilter) {
-					if (activeCells.r1 == activeCells.r2 && activeCells.c1 == activeCells.c2 && !userRange)//если ячейка выделенная одна
-					{
-						addRange = this.expandRange(activeCells);
-					} else {
-						addRange = activeCells;
-					}
-				} else//range внутри а/ф или ф/т
-				{
-					if (bIsInFilter.isAutoFilter()) {
-						addRange = bIsInFilter.Ref;
-					} else {
-						res = false;
-					}
-				}
-
-				if (false !== res) {
+				if (isPivot) {
 					res = new AddFormatTableOptions();
+					res.asc_setIsTitle(false);
+					if (bIsInFilter && !bIsInFilter.isAutoFilter() && bIsInFilter.Ref.containsRange(activeCells)) {
+						res.asc_setRange(bIsInFilter.DisplayName);
+					} else {
+						if (activeCells.r1 == activeCells.r2 && activeCells.c1 == activeCells.c2 && !userRange)//если ячейка выделенная одна
+						{
+							addRange = this.expandRange(activeCells);
+						} else {
+							addRange = activeCells;
+						}
+						CT_pivotTableDefinition.prototype.prepareDataRange(this.worksheet, addRange);
+						res.asc_setRange(AscCommon.parserHelp.get3DRef(this.worksheet.getName(), addRange.getAbsName()));
+					}
+				} else {
+					if (null === bIsInFilter || isPivot) {
+						if (activeCells.r1 == activeCells.r2 && activeCells.c1 == activeCells.c2 && !userRange)//если ячейка выделенная одна
+						{
+							addRange = this.expandRange(activeCells);
+						} else {
+							addRange = activeCells;
+						}
+					} else//range внутри а/ф или ф/т
+					{
+						if (bIsInFilter.isAutoFilter()) {
+							addRange = bIsInFilter.Ref;
+						} else {
+							res = false;
+						}
+					}
 
-					var bIsTitle = this._isAddNameColumn(addRange);
-					res.asc_setIsTitle(bIsTitle);
-					res.asc_setRange(addRange.getAbsName());
+					if (false !== res) {
+						res = new AddFormatTableOptions();
+
+						var bIsTitle = this._isAddNameColumn(addRange);
+						res.asc_setIsTitle(bIsTitle);
+						res.asc_setRange(addRange.getAbsName());
+					}
 				}
 
 				return res;
@@ -2817,9 +2834,10 @@
 				}
 
 				if (worksheet.TableParts) {
+					//TODO проверить, возможно всегда стоит оборачивать в r1c1mode = false
 					worksheet.workbook.dependencyFormulas.buildDependency();
-					//without lockRecal each setValue call calculation
 					worksheet.workbook.dependencyFormulas.lockRecal();
+					
 					for (var i = 0; i < worksheet.TableParts.length; i++) {
 						var filter = worksheet.TableParts[i];
 
@@ -2840,15 +2858,20 @@
 								cell = worksheet.getCell3(ref.r1, j);
 								val = props ? props.val : cell.getValueWithFormat();
 
-								//проверка на повторение уже существующих заголовков
-								if (checkRepeateColumnName(val, filter.TableColumns, j - tableRange.c1)) {
-									val = "";
-								}
-
 								//если не пустая изменяем TableColumns
 								var oldVal = filter.TableColumns[j - tableRange.c1].Name;
 								var newVal = null;
-								if (val != "" && intersection.c1 <= j && intersection.c2 >= j) {
+								//проверка на повторение уже существующих заголовков
+								if (val !== "" && checkRepeateColumnName(val, filter.TableColumns, j - tableRange.c1)) {
+									filter.TableColumns[j - tableRange.c1].Name = "";
+									generateName = this._generateNextColumnName(filter.TableColumns, val);
+									if (!bUndo) {
+										cell.setValue(generateName);
+										cell.setType(CellValueType.String);
+									}
+									filter.TableColumns[j - tableRange.c1].Name = generateName;
+									newVal = generateName;
+								} else if (val != "" && intersection.c1 <= j && intersection.c2 >= j) {
 									filter.TableColumns[j - tableRange.c1].Name = val;
 									if (!bUndo) {
 										//если пытаемся вбить формулу в заголовок - оставляем только результат
@@ -4455,10 +4478,10 @@
 						isSequence = true;
 				}
 
-				var name;
+				var name, i;
 				if(indexInsertColumn == undefined || !isSequence)
 				{
-					for(var i = 0; i < tableColumns.length; i++)
+					for(i = 0; i < tableColumns.length; i++)
 					{
 						if(tableColumns[i].Name)
 							name = tableColumns[i].Name.split("Column");
@@ -4477,18 +4500,37 @@
 					if(name && name[1] && !isNaN(parseFloat(name[1])))
 						index = parseFloat(name[1]) + 1;
 					
-					for(var i = 0; i < tableColumns.length; i++)
+					for(i = 0; i < tableColumns.length; i++)
 					{
 						if(tableColumns[i].Name)
 							name = tableColumns[i].Name.split("Column");
 						if(name && name[1] && !isNaN(parseFloat(name[1])) && index == parseFloat(name[1]))
 						{
-							index = parseInt((index - 1) + "2"); 
+							index = parseInt((index - 1) + "2");
 							i = -1;
 						}
 					}
 					return "Column" + index;
 				}
+			},
+
+			_generateNextColumnName: function(tableColumns, val)
+			{
+				var tableColumnMap = [];
+				for(var i = 0 ; i < tableColumns.length; i++) {
+					tableColumnMap[tableColumns[i].Name] = 1;
+				}
+				var res = val;
+				var index = 2;
+				while(true) {
+					if(tableColumnMap[res]) {
+						res = val + index;
+					} else {
+						break;
+					}
+					index++;
+				}
+				return res;
 			},
 			
 			//TODO убрать начеркивание
@@ -4997,66 +5039,56 @@
 				
 				return {isEmptyCell: isEmptyCell, isEnd: isEnd, cloneActiveRange: cloneActiveRange};
 			},
-			
-			_isEmptyCellsUnderRange: function(range, exception, checkFilter)
-			{
+
+			_isEmptyCellsUnderRange: function (range, exception, checkFilter) {
 				//если есть ячейки с непустыми значениями под активной областью, то возвращаем false
 				var cell, isEmptyCell, result = true;
 				var worksheet = this.worksheet;
-				
-				for(var i = range.c1; i <= range.c2; i++)
-				{
-					if(exception && exception.c1 === i && exception.r1 === range.r2 + 1)
-					{
+
+				for (var i = range.c1; i <= range.c2; i++) {
+					if (exception && exception.c1 === i && exception.r1 === range.r2 + 1) {
 						continue;
 					}
 
 					cell = worksheet.getRange3(range.r2 + 1, i, range.r2 + 1, i);
 					isEmptyCell = cell.isNullText();
-					if(!isEmptyCell)
-					{
+					if (!isEmptyCell) {
 						result = false;
 						break;
 					}
-					if(checkFilter)
-					{
+					if (checkFilter) {
 						var autoFilter = worksheet.AutoFilter;
-						if((autoFilter && autoFilter.Ref.containsRange(cell.bbox)) || this._isTablePartsContainsRange(cell.bbox))
-						{
+						if ((autoFilter && autoFilter.Ref.containsRange(cell.bbox)) ||
+							this._isTablePartsContainsRange(cell.bbox)) {
 							result = false;
 							break;
 						}
 					}
 				}
-				
+
 				return result;
 			},
 
-			_isEmptyCellsRightRange: function(range, exception, checkFilter)
-			{
+			_isEmptyCellsRightRange: function (range, exception, checkFilter) {
 				//если есть ячейки с непустыми значениями под активной областью, то возвращаем false
 				var cell, isEmptyCell, result = true;
 				var worksheet = this.worksheet;
 
-				for(var i = range.r1; i <= range.r2; i++)
-				{
-					if(exception && exception.r1 === i && exception.c1 === range.c2 + 1)
-					{
+				for (var i = range.r1; i <= range.r2; i++) {
+					if (exception && exception.r1 === i && exception.c1 === range.c2 + 1) {
 						continue;
 					}
 
 					cell = worksheet.getRange3(i, range.c2 + 1, i, range.c2 + 1);
 					isEmptyCell = cell.isNullText();
-					if(!isEmptyCell)
-					{
+					if (!isEmptyCell) {
 						result = false;
 						break;
 					}
-					if(checkFilter)
-					{
+					if (checkFilter) {
 						var autoFilter = worksheet.AutoFilter;
-						if((autoFilter && autoFilter.Ref.containsRange(cell.bbox)) || this._isTablePartsContainsRange(cell.bbox))
-						{
+						if ((autoFilter && autoFilter.Ref.containsRange(cell.bbox)) ||
+							this._isTablePartsContainsRange(cell.bbox)) {
 							result = false;
 							break;
 						}
@@ -5065,73 +5097,74 @@
 
 				return result;
 			},
-			
-			_isPartTablePartsUnderRange: function(range)
-			{
+
+			_isPartTablePartsUnderRange: function (range) {
 				var worksheet = this.worksheet;
 				var result = false;
-				
-				if(worksheet.TableParts && worksheet.TableParts.length)
-				{
-					for(var i = 0; i < worksheet.TableParts.length; i++)
-					{
+
+				if (worksheet.TableParts && worksheet.TableParts.length) {
+					for (var i = 0; i < worksheet.TableParts.length; i++) {
 						var tableRef = worksheet.TableParts[i].Ref;
-						if(tableRef.r1 >= range.r2)
-						{
-							if(tableRef.c1 < range.c1 && tableRef.c2 >= range.c1 && tableRef.c2 <= range.c2)
-							{
+						if (tableRef.r1 >= range.r2) {
+							if (tableRef.c1 < range.c1 && tableRef.c2 >= range.c1 && tableRef.c2 <= range.c2) {
 								result = true;
 								break;
-							}
-							else if(tableRef.c1 >= range.c1 && tableRef.c1 <= range.c2 && tableRef.c2 > range.c2)
-							{
+							} else if (tableRef.c1 >= range.c1 && tableRef.c1 <= range.c2 && tableRef.c2 > range.c2) {
 								result = true;
 								break;
-							}
-							else if((tableRef.c1 <= range.c1 && tableRef.c2 > range.c2) || (tableRef.c1 < range.c1 && tableRef.c2 >= range.c2))
-							{
+							} else if ((tableRef.c1 <= range.c1 && tableRef.c2 > range.c2) ||
+								(tableRef.c1 < range.c1 && tableRef.c2 >= range.c2)) {
 								result = true;
 								break;
 							}
 						}
 					}
 				}
-				
+
 				return result;
 			},
-			
-			isPartTablePartsRightRange: function(range)
-			{
+
+			isPartTablePartsRightRange: function (range) {
 				var worksheet = this.worksheet;
 				var result = false;
-				
-				if(worksheet.TableParts && worksheet.TableParts.length)
-				{
-					for(var i = 0; i < worksheet.TableParts.length; i++)
-					{
+
+				if (worksheet.TableParts && worksheet.TableParts.length) {
+					for (var i = 0; i < worksheet.TableParts.length; i++) {
 						var tableRef = worksheet.TableParts[i].Ref;
-						
-						if(tableRef.c1 >= range.c2)
-						{
-							if(tableRef.r1 < range.r1 && tableRef.r2 > range.r1 && tableRef.r2 <= range.r2)
-							{
+
+						if (tableRef.c1 >= range.c2) {
+							if (tableRef.r1 < range.r1 && tableRef.r2 > range.r1 && tableRef.r2 <= range.r2) {
 								result = true;
 								break;
-							}
-							else if(tableRef.r1 >= range.r1 && tableRef.r1 < range.r2 && tableRef.r2 > range.r2)
-							{
+							} else if (tableRef.r1 >= range.r1 && tableRef.r1 < range.r2 && tableRef.r2 > range.r2) {
 								result = true;
 								break;
-							}
-							else if((tableRef.r1 <= range.r1 && tableRef.r2 > range.r2) || (tableRef.r1 < range.r1 && tableRef.r2 >= range.r2))
-							{
+							} else if ((tableRef.r1 <= range.r1 && tableRef.r2 > range.r2) ||
+								(tableRef.r1 < range.r1 && tableRef.r2 >= range.r2)) {
 								result = true;
 								break;
 							}
 						}
 					}
 				}
-				
+
+				return result;
+			},
+
+			isPartFilterUnderRange: function (range) {
+				var worksheet = this.worksheet;
+				var result = false;
+
+				if (worksheet.AutoFilter) {
+					var ref = worksheet.AutoFilter.Ref;
+					var allColRef = new Asc.Range(range.c1, range.r1, range.c2, AscCommon.gc_nMaxRow0);
+
+					if (allColRef.intersection(ref) && !allColRef.containsRange(ref)) {
+						result = true;
+					}
+
+				}
+
 				return result;
 			},
 
@@ -5333,6 +5366,20 @@
 			{
 				var tempRange =  new Asc.Range(ar.c1, ar.r1, ar.c2, ar.r2);
 				var addNameColumn, filterRange, bIsManualOptions = false;
+				var ws = this.worksheet;
+
+				var _isOneCell = function(_range) {
+					var res = null;
+					if (_range.isOneCell()) {
+						res = true;
+					} else if(!bTable) {
+						var merged = ws.getMergedByCell(_range.r1, _range.c1);
+						if(merged && merged.isEqual(_range)) {
+							res = true;
+						}
+					}
+					return res;
+				};
 
 				if(addFormatTableOptionsObj === false)
 				{
@@ -5361,7 +5408,7 @@
 				{
 					filterRange = tablePartsContainsRange.Ref.clone();
 				}
-				else if(tempRange.isOneCell() && !bIsManualOptions)
+				else if(_isOneCell(tempRange) && !bIsManualOptions)
 				{
 					//filterRange = this._getAdjacentCellsAF(tempRange, this.worksheet);
 					filterRange = this.expandRange(tempRange);
@@ -5440,7 +5487,8 @@
 		prot["asc_getMonth"]					= prot.asc_getMonth;
 		prot["asc_getDay"]						= prot.asc_getDay;
 		prot["asc_getRepeats"]					= prot.asc_getRepeats;
-		
+		prot["asc_getVal"]						= prot.asc_getVal;
+
 		window["AscCommonExcel"].AddFormatTableOptions = AddFormatTableOptions;
 		prot									= AddFormatTableOptions.prototype;
 		prot["asc_getRange"]					= prot.asc_getRange;

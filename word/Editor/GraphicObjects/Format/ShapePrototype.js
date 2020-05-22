@@ -711,12 +711,6 @@ CShape.prototype.applyParentTransform = function(transform)
 CShape.prototype.recalculateShapeStyleForParagraph = function()
 {
     this.textStyleForParagraph = {TextPr: g_oDocumentDefaultTextPr.Copy(), ParaPr: g_oDocumentDefaultParaPr.Copy()};
-    var styles = this.Get_Styles();
-    if(styles)
-    {
-        this.textStyleForParagraph.ParaPr.Merge( styles.Default.ParaPr.Copy() );
-        this.textStyleForParagraph.TextPr.Merge( styles.Default.TextPr.Copy() );
-    }
     if(this.style && this.style.fontRef)
     {
         //this.textStyleForParagraph.ParaPr.Spacing.Line = 1;
@@ -741,6 +735,12 @@ CShape.prototype.recalculateShapeStyleForParagraph = function()
         shape_text_pr.FontRef = this.style.fontRef.createDuplicate();
         this.textStyleForParagraph.TextPr.Merge(shape_text_pr);
     }
+    var styles = this.Get_Styles();
+    if(styles)
+    {
+        this.textStyleForParagraph.ParaPr.Merge( styles.Default.ParaPr.Copy() );
+        this.textStyleForParagraph.TextPr.Merge( styles.Default.TextPr.Copy() );
+    }
 };
 CShape.prototype.Get_ShapeStyleForPara = function()
 {
@@ -756,6 +756,17 @@ CShape.prototype.Refresh_RecalcData = function(data)
 {
     this.recalcTxBoxContent();
     this.recalcTransformText();
+    if(AscCommon.isRealObject(data))
+    {
+        switch (data.Type)
+        {
+            case AscDFH.historyitem_ShapeSetBodyPr:
+            {
+                this.handleUpdateExtents();
+                break;
+            }
+        }
+    }
     this.Refresh_RecalcData2();
 };
 

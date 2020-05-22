@@ -107,7 +107,10 @@ var c_oAscSelectionDialogType = {
   FormatTable: 1,
   Chart: 2,
   FormatTableChangeRange: 4,
-  CustomSort: 5
+  CustomSort: 5,
+  PivotTableData: 6,
+  PivotTableReport: 7,
+  PrintTitles: 8
 };
 
 var c_oAscScrollType = {
@@ -447,6 +450,26 @@ var c_oAscPopUpSelectorType = {
       custom: 14
   };
 
+  var c_oAscPrintTitlesRangeType = {
+      first: 0,
+      frozen: 1,
+      current: 2
+  };
+
+  var c_oAscFormulaArgumentType = {
+    number: 0,
+    text: 1,
+    reference: 2,
+    any: 3,
+    logical: 4
+  };
+
+  var c_oAscSelectionForCFType = {
+    selection: 1,
+    worksheet: 2,
+    table: 3,
+    pivot: 4
+  };
 
   var c_kMaxPrintPages = 1500;
 
@@ -538,6 +561,9 @@ var c_oAscPopUpSelectorType = {
   prot['Chart'] = prot.Chart;
   prot['FormatTableChangeRange'] = prot.FormatTableChangeRange;
   prot['CustomSort'] = prot.CustomSort;
+  prot['PivotTableData'] = prot.PivotTableData;
+  prot['PivotTableReport'] = prot.PivotTableReport;
+  prot['PrintTitles'] = prot.PrintTitles;
   window['Asc']['c_oAscHyperlinkType'] = window['Asc'].c_oAscHyperlinkType = c_oAscHyperlinkType;
   prot = c_oAscHyperlinkType;
   prot['WebLink'] = prot.WebLink;
@@ -706,5 +732,26 @@ var c_oAscPopUpSelectorType = {
   prot['userPageDate'] = prot.userPageDate;
   prot['preparedUserDatePage'] = prot.preparedUserDatePage;
   prot['custom'] = prot.custom;
+
+  window['Asc']['c_oAscPrintTitlesRangeType'] = window['Asc'].c_oAscPrintTitlesRangeType = c_oAscPrintTitlesRangeType;
+  prot = c_oAscPrintTitlesRangeType;
+  prot['first'] = prot.first;
+  prot['frozen'] = prot.frozen;
+  prot['current'] = prot.current;
+
+  window['Asc']['c_oAscFormulaArgumentType'] = window['Asc'].c_oAscFormulaArgumentType = c_oAscFormulaArgumentType;
+  prot = c_oAscPrintTitlesRangeType;
+  prot['number'] = prot.number;
+  prot['text'] = prot.text;
+  prot['reference'] = prot.reference;
+  prot['any'] = prot.any;
+  prot['logical'] = prot.logical;
+
+  window['Asc']['c_oAscSelectionForCFType'] = window['Asc'].c_oAscSelectionForCFType = c_oAscSelectionForCFType;
+  prot = c_oAscSelectionForCFType;
+  prot['selection'] = prot.selection;
+  prot['worksheet'] = prot.worksheet;
+  prot['table'] = prot.table;
+  prot['pivot'] = prot.pivot;
 
 })(window);

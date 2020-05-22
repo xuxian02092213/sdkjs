@@ -30,6 +30,8 @@
  *
  */
 
+var _internalStorage = {};
+
 function asc_menu_ReadColor(_params, _cursor) {
     var _color = new Asc.asc_CColor();
     var _continue = true;
@@ -2738,18 +2740,16 @@ function asc_WriteCFont(i, c, s) {
     if (i !== -1) s['WriteByte'](i);
     
     s['WriteByte'](0);
-    s['WriteString2'](c.asc_getName());
-    s['WriteDouble2'](c.asc_getSize());
-    s['WriteBool'](c.asc_getBold());
-    s['WriteBool'](c.asc_getItalic());
-    s['WriteBool'](c.asc_getUnderline());
-    s['WriteBool'](c.asc_getStrikeout());
-    s['WriteBool'](c.asc_getSubscript());
-    s['WriteBool'](c.asc_getSuperscript());
-    
-    if (c.asc_getColor()) {
-        asc_menu_WriteColor(1, c.asc_getColor(), s);
-    }
+    s['WriteString2'](c.asc_getFontName());
+    s['WriteDouble2'](c.asc_getFontSize());
+    s['WriteBool'](c.asc_getFontBold());
+    s['WriteBool'](c.asc_getFontItalic());
+    s['WriteBool'](c.asc_getFontUnderline());
+    s['WriteBool'](c.asc_getFontStrikeout());
+    s['WriteBool'](c.asc_getFontSubscript());
+    s['WriteBool'](c.asc_getFontSuperscript());
+
+    asc_menu_WriteColor(1, c.asc_getFontColor(), s);
     
     s['WriteByte'](255);
 }
@@ -2886,67 +2886,80 @@ function asc_WriteFormatTableInfo(i, c, s) {
 
 function asc_WriteCCellInfo(c, s) {
     if (!c) return;
-    
-    if (null !== c.asc_getText()) {
+    var xfs = c.asc_getXfs();
+
+    var v = c.asc_getText();
+    if (null !== v) {
         s['WriteByte'](2);
-        s['WriteString2'](c.asc_getText());
+        s['WriteString2'](v);
     }
-    
-    if (null !== c.asc_getHorAlign()) {
+
+    v = xfs.asc_getHorAlign();
+    if (null !== v) {
         s['WriteByte'](3);
-        s['WriteLong'](c.asc_getHorAlign());
+        s['WriteLong'](v);
     }
-    
-    if (null !== c.asc_getVertAlign()) {
+
+    v = xfs.asc_getVertAlign();
+    if (null !== v) {
         s['WriteByte'](4);
-        s['WriteLong'](c.asc_getVertAlign());
+        s['WriteLong'](v);
     }
     
-    if (null !== c.asc_getFlags()) {
-        s['WriteByte'](5);
-        s['WriteBool'](c.asc_getFlags().asc_getMerge());
-        s['WriteBool'](c.asc_getFlags().asc_getShrinkToFit());
-        s['WriteBool'](c.asc_getFlags().asc_getWrapText());
-        s['WriteLong'](c.asc_getFlags().asc_getSelectionType());
-        s['WriteBool'](c.asc_getFlags().asc_getLockText());
-    }
+    s['WriteByte'](5);
+    s['WriteBool'](c.asc_getMerge());
+    s['WriteBool'](xfs.asc_getShrinkToFit());
+    s['WriteBool'](xfs.asc_getWrapText());
+    s['WriteLong'](c.asc_getSelectionType());
+    s['WriteBool'](c.asc_getLockText());
     
-    asc_WriteCFont(6, c.asc_getFont(), s);
-    asc_menu_WriteColor(8, c.asc_getFill().asc_getColor(), s);
+    asc_WriteCFont(6, xfs, s);
+    asc_menu_WriteColor(8, xfs.asc_getFillColor(), s);
     asc_WriteCBorders(9, c.asc_getBorders(), s);
-    
-    if (null !== c.asc_getInnerText()) {
+
+    v = c.asc_getInnerText();
+    if (null !== v) {
         s['WriteByte'](15);
-        s['WriteString2'](c.asc_getInnerText());
+        s['WriteString2'](v);
     }
-    
-    if (null !== c.asc_getNumFormat()) {
+
+    v = xfs.asc_getNumFormat();
+    if (null !== v) {
         s['WriteByte'](16);
-        s['WriteString2'](c.asc_getNumFormat());
+        s['WriteString2'](v);
     }
     
     asc_WriteCHyperLink(17, c.asc_getHyperlink(), s);
     
     s['WriteByte'](18);
     s['WriteBool'](c.asc_getLocked());
-    
-    if (null != c.asc_getStyleName()) {
+
+    v = c.asc_getStyleName();
+    if (null != v) {
         s['WriteByte'](21);
-        s['WriteString2'](c.asc_getStyleName());
+        s['WriteString2'](v);
     }
-    
-    if (null != c.asc_getNumFormatInfo()) {
+
+    v = xfs.asc_getNumFormatInfo();
+    if (null != v) {
         s['WriteByte'](22);
-        s['WriteLong'](c.asc_getNumFormatInfo().asc_getType());
+        s['WriteLong'](v.asc_getType());
     }
-    
-    if (null != c.asc_getAngle()) {
+
+    v = xfs.asc_getAngle();
+    if (null != v) {
         s['WriteByte'](23);
-        s['WriteDouble2'](c.asc_getAngle());
+        s['WriteDouble2'](v);
     }
-    
-    if (c.asc_getAutoFilterInfo()) { asc_WriteAutoFilterInfo(30, c.asc_getAutoFilterInfo(), s); }
-    if (c.asc_getFormatTableInfo()) { asc_WriteFormatTableInfo(31, c.asc_getFormatTableInfo(), s); }
+
+    v = c.asc_getAutoFilterInfo();
+    if (v) {
+        asc_WriteAutoFilterInfo(30, v, s);
+    }
+    v = c.asc_getFormatTableInfo();
+    if (v) {
+        asc_WriteFormatTableInfo(31, v, s);
+    }
     
     s['WriteByte'](255);
 }
@@ -3052,7 +3065,7 @@ function asc_WriteAutoFiltersOptions(c, s) {
     }
     
     if (c.asc_getValues() && c.asc_getValues().length > 0) {
-        var count = c.asc_getValues().length
+        var count = c.asc_getValues().length;
         
         s['WriteByte'](5);
         s['WriteLong'](count);
@@ -3190,7 +3203,7 @@ function OfflineEditor () {
                 this.frozenPlaces[i].setTransform(shapeCtx, shapeOverlayCtx, autoShapeTrack);
                 
                 // Clip
-                this.frozenPlaces[i].clip(shapeOverlayCtx);
+                this.frozenPlaces[i].clip(shapeOverlayCtx, this.worksheet.rangeToRectRel(this.frozenPlaces[i].range, 0));
                 
                 if (null == drawingDocument.m_oDocumentRenderer) {
                     if (drawingDocument.m_bIsSelection) {
@@ -3405,7 +3418,7 @@ function OfflineEditor () {
             
             AscCommon.g_oTextMeasurer.Flush();
             
-            this.objectRender.showDrawingObjectsEx(false);
+            this.objectRender.showDrawingObjectsEx();
             
             this.cellsLeft = cellsLeft_Local;
             this.cellsTop = cellsTop_Local;
@@ -3508,7 +3521,6 @@ function OfflineEditor () {
         };
         
         AscCommonExcel.WorksheetView.prototype.__changeSelectionPoint = function (x, y, isCoord, isSelectMode, isReverse) {
-            
             var isChangeSelectionShape = false;
             if (isCoord) {
                 isChangeSelectionShape = this._endSelectionShape();
@@ -3535,9 +3547,6 @@ function OfflineEditor () {
             var newRange = isCoord ? this._calcSelectionEndPointByXY(x, y) :
             this._calcSelectionEndPointByOffset(x, y);
             var isEqual = newRange.isEqual(ar);
-            if (isEqual && !isCoord) {
-                // При движении стрелками можем попасть на замерженную ячейку
-            }
             if (!isEqual || isChangeSelectionShape) {
                 
                 if (newRange.c1 > col || newRange.c2 < col)  {
@@ -3560,7 +3569,7 @@ function OfflineEditor () {
                     selection.activeCell.row = newRange.r1;
                 }
                 
-                if (!this.isCellEditMode) {
+                if (!this.handlers.trigger('getCellEditMode')) {
                     if (!this.isSelectionDialogMode) {
                         this.handlers.trigger("selectionNameChanged", this.getSelectionName(/*bRangeText*/true));
                         if (!isSelectMode) {
@@ -3609,6 +3618,10 @@ function OfflineEditor () {
                 var type = 0, left = 0, right = 0, top = 0, bottom = 0;
                 var addt, addl, addr, addb, colsCount = this.nColsCount - 1, rowsCount = this.nRowsCount - 1;
                 var defaultRowHeight = AscCommonExcel.oDefaultMetrics.RowHeight;
+
+                if (colsCount < 1 || rowsCount < 1) {
+                    return [];
+                }
                 
                 for (i = 0; i < arrRanges.length; ++i) {
                     type = (arrRanges[i].getType == undefined) ? 0 : arrRanges[i].getType();
@@ -3627,12 +3640,12 @@ function OfflineEditor () {
                         if (addl > 0)
                             left = this._getColLeft(colsCount - 1) + this.defaultColWidthPx * addl - offsetX;
                         else
-                            left = this._getColLeft(Math.max(0,arrRanges[i].c1,0)) - offsetX;
+                            left = this._getColLeft(Math.max(0,arrRanges[i].c1)) - offsetX;
                         
                         if (addt > 0)
                             top = this._getRowTop(rowsCount - 1) + addt * defaultRowHeight - offsetY;
                         else
-                            top = this._getRowTop(Math.max(0,arrRanges[i].r1,0)) - offsetY;
+                            top = this._getRowTop(Math.max(0,arrRanges[i].r1)) - offsetY;
                         
                         if (addr > 0)
                             right = this._getColLeft(colsCount - 1) + this.defaultColWidthPx * addr - offsetX;
@@ -3737,6 +3750,10 @@ function OfflineEditor () {
             var type = 0, left = 0, right = 0, top = 0, bottom = 0;
             var addt, addl, addr, addb, colsCount = this.nColsCount - 1, rowsCount = this.nRowsCount - 1;
             var defaultRowHeight = AscCommonExcel.oDefaultMetrics.RowHeight;
+
+            if (colsCount < 1 || rowsCount < 1) {
+                return [];
+            }
             
             for (i = 0; i < arrRanges.length; ++i) {
                 type = (arrRanges[i].getType == undefined) ? 0 : arrRanges[i].getType();
@@ -3755,7 +3772,7 @@ function OfflineEditor () {
                     if (addl > 0)
                         left = this._getColLeft(colsCount - 1) + this.defaultColWidthPx * addl - offsetX;
                     else
-                        left = this._getColLeft(Math.max(0,arrRanges[i].c1,0)) - offsetX;
+                        left = this._getColLeft(Math.max(0,arrRanges[i].c1)) - offsetX;
                     
                     if (addt > 0)
                         top = this._getRowTop(rowsCount - 1) + addt * defaultRowHeight - offsetY;
@@ -3906,6 +3923,9 @@ function OfflineEditor () {
         docInfo.put_Format("xlsx");
         docInfo.put_UserInfo(userInfo);
         docInfo.put_Token(this.initSettings["token"]);
+
+        _internalStorage.externalUserInfo = userInfo;
+        _internalStorage.externalDocInfo = docInfo;
         
         var permissions = this.initSettings["permissions"];
         if (undefined != permissions && null != permissions && permissions.length > 0) {
@@ -4039,10 +4059,10 @@ function OfflineEditor () {
                                   window["native"]["OnCallMenuEvent"](2310, stream); // ASC_SPREADSHEETS_EVENT_TYPE_EDITOR_SELECTION_NAME_CHANGED
                                   });
         
-        _api.asc_registerCallback("asc_onEditorSelectionChanged", function(font) {
+        _api.asc_registerCallback("asc_onEditorSelectionChanged", function(xfs) {
                                   var stream = global_memory_stream_menu;
                                   stream["ClearNoAttack"]();
-                                  asc_WriteCFont(-1, font, stream);
+                                  asc_WriteCFont(-1, xfs, stream);
                                   window["native"]["OnCallMenuEvent"](2403, stream); // ASC_SPREADSHEETS_EVENT_TYPE_EDITOR_SELECTION_CHANGED
                                   });
         
@@ -4156,6 +4176,20 @@ function OfflineEditor () {
                                   stream["WriteString2"](JSON.stringify(options));
                                   window["native"]["OnCallMenuEvent"](22000, stream); // ASC_MENU_EVENT_TYPE_ADVANCED_OPTIONS
                                   });
+
+        // Comments
+
+        _api.asc_registerCallback("asc_onAddComment", onApiAddComment);
+        _api.asc_registerCallback("asc_onAddComments", onApiAddComments);
+        _api.asc_registerCallback("asc_onRemoveComment", onApiRemoveComment);
+        _api.asc_registerCallback("asc_onChangeComments", onApiChangeComments);
+        _api.asc_registerCallback("asc_onRemoveComments", onApiRemoveComments);
+        _api.asc_registerCallback("asc_onChangeCommentData", onApiChangeCommentData);
+        _api.asc_registerCallback("asc_onLockComment", onApiLockComment);
+        _api.asc_registerCallback("asc_onUnLockComment", onApiUnLockComment);
+        _api.asc_registerCallback("asc_onShowComment", onApiShowComment);
+        _api.asc_registerCallback("asc_onHideComment", onApiHideComment);
+        _api.asc_registerCallback("asc_onUpdateCommentPosition", onApiUpdateCommentPosition);
     };
     this.updateFrozen = function () {
         var ws = _api.wb.getWorksheet();
@@ -4537,7 +4571,7 @@ function OfflineEditor () {
         var stream = global_memory_stream_menu;
         stream["ClearNoAttack"]();
         
-        var SelectedObjects = [], selectType = info.asc_getFlags().asc_getSelectionType();
+        var SelectedObjects = [], selectType = info.asc_getSelectionType();
         if (selectType == Asc.c_oAscSelectionType.RangeImage || selectType == Asc.c_oAscSelectionType.RangeShape ||
             selectType == Asc.c_oAscSelectionType.RangeChart || selectType == Asc.c_oAscSelectionType.RangeChartText ||
             selectType == Asc.c_oAscSelectionType.RangeShapeText)
@@ -4545,9 +4579,7 @@ function OfflineEditor () {
             SelectedObjects = _api.asc_getGraphicObjectProps();
             
             var count = SelectedObjects.length;
-            var naturalCount = count;
-            
-            stream["WriteLong"](naturalCount);
+            stream["WriteLong"](count);
             
             for (var i = 0; i < count; i++)
             {
@@ -5260,7 +5292,6 @@ window["native"]["offline_cell_editor_open"] = function(x, y, width, height, rat
         var selectionRange = ws.model.selectionRange.clone();
         
         t.setCellEditMode(true);
-        ws.setCellEditMode(true);
         ws.openCellEditor(t.cellEditor, /*cursorPos*/undefined, isFocus, isClearCell,
                           /*isHideCursor*/isHideCursor, /*isQuickInput*/isQuickInput, selectionRange);
         //t.input.disabled = false;
@@ -6362,7 +6393,7 @@ window["native"]["offline_apply_event"] = function(type,params) {
             _stream = global_memory_stream_menu;
             _stream["ClearNoAttack"]();
             
-            var merged = _api.asc_getCellInfo().asc_getFlags().asc_getMerge();
+            var merged = _api.asc_getCellInfo().asc_getMerge();
             
             if (!merged && _api.asc_mergeCellsDataLost(params)) {
                 _stream["WriteBool"](true);
@@ -6577,7 +6608,7 @@ window["native"]["offline_apply_event"] = function(type,params) {
         {
             if (undefined !== params) {
                 var indexScheme = parseInt(params);
-                _api.asc_ChangeColorScheme(indexScheme);
+                _api.asc_ChangeColorSchemeByIdx(indexScheme);
             }
             break;
         }
@@ -6875,12 +6906,337 @@ window["native"]["offline_apply_event"] = function(type,params) {
             _api.asc_setDocumentPassword(params[0]);
             break;
         }
+
+        case 23101: // ASC_MENU_EVENT_TYPE_DO_SELECT_COMMENT
+            {
+                var json = JSON.parse(params[0]);
+                if (json && json["id"]) {
+                    if (_api.asc_selectComment) {
+                        _api.asc_selectComment(json["id"]);
+                    }
+                    if (_api.asc_showComment) {
+                        _api.asc_showComment(json["id"], false);
+                    }
+                }
+                break;
+            }
+
+        case 23103: // ASC_MENU_EVENT_TYPE_DO_SELECT_COMMENTS
+            {
+                var json = JSON.parse(params[0]);
+                if (json) {
+                    if (_api.asc_showComments) {
+                        _api.asc_showComments(json["resolved"] === true);
+                    }
+                }
+                break;
+            }
+
+        case 23104: // ASC_MENU_EVENT_TYPE_DO_DESELECT_COMMENTS
+            {
+                if (_api.asc_hideComments) {
+                    _api.asc_hideComments();
+                }
+                break;
+            }
+
+        case 23105: // ASC_MENU_EVENT_TYPE_DO_ADD_COMMENT
+            {
+                var json = JSON.parse(params[0]);
+                if (json) {
+                    var buildCommentData = function () {
+                        if (typeof Asc.asc_CCommentDataWord !== 'undefined') {
+                            return new Asc.asc_CCommentDataWord(null);
+                        }
+                        return new Asc.asc_CCommentData(null);
+                    };
+
+                    var comment = buildCommentData();
+                    var now = new Date();
+                    var timeZoneOffsetInMs = (new Date()).getTimezoneOffset() * 60000;
+                    var currentUserId = _internalStorage.externalUserInfo.asc_getId();
+                    var currentUserName = _internalStorage.externalUserInfo.asc_getFullName();
+
+                    if (comment) {
+                        comment.asc_putText(json["text"]);
+                        comment.asc_putTime((now.getTime() - timeZoneOffsetInMs).toString());
+                        comment.asc_putOnlyOfficeTime(now.getTime().toString());
+                        comment.asc_putUserId(currentUserId);
+                        comment.asc_putUserName(currentUserName);
+                        comment.asc_putSolved(false);
+
+                        if (comment.asc_putDocumentFlag) {
+                            comment.asc_putDocumentFlag(json["unattached"]);
+                        }
+
+                        _api.asc_addComment(comment);
+                    }
+                }
+                break;
+            }
+
+        case 23106: // ASC_MENU_EVENT_TYPE_DO_REMOVE_COMMENT
+            {
+                var json = JSON.parse(params[0]);
+                if (json && json["id"]) { // id - String
+                    if (_api.asc_removeComment) {
+                        _api.asc_removeComment(json["id"]);
+                    }
+                }
+                break;
+            }
+
+        case 23107: // ASC_MENU_EVENT_TYPE_DO_REMOVE_ALL_COMMENTS
+            {
+                var json = JSON.parse(params[0]),
+                    type = json["type"],
+                    canEditComments = json["canEditComments"];
+                if (json && type) {
+                    if (_api.asc_RemoveAllComments) {
+                        _api.asc_RemoveAllComments(type == 'my' || !(canEditComments === true), type == 'current'); // 1 param = true if remove only my comments, 2 param - remove current comments
+                    }
+                }
+                break;
+            }
+
+        case 23108: // ASC_MENU_EVENT_TYPE_DO_CHANGE_COMMENT
+            {
+                var json = JSON.parse(params[0]),
+                    commentId = json["id"],
+                    comment = json["comment"],
+                    updateAuthor = json["updateAuthor"] || false;
+
+                if (json && commentId) {
+                    var timeZoneOffsetInMs = (new Date()).getTimezoneOffset() * 60000;
+                    var currentUserId = _internalStorage.externalUserInfo.asc_getId();
+                    var currentUserName = _internalStorage.externalUserInfo.asc_getFullName();
+                    var buildCommentData = function () {
+                        if (typeof Asc.asc_CCommentDataWord !== 'undefined') {
+                            return new Asc.asc_CCommentDataWord(null);
+                        }
+                        return new Asc.asc_CCommentData(null);
+                    };
+                    var ooDateToString = function (date) {
+                        if (Object.prototype.toString.call(date) === '[object Date]')
+                            return (date.getTime()).toString();
+                        return "";
+                    };
+                    var utcDateToString = function (date) {
+                        if (Object.prototype.toString.call(date) === '[object Date]')
+                            return (date.getTime() - timeZoneOffsetInMs).toString();
+                        return "";
+                    };
+                    var ascComment = buildCommentData();
+
+                    if (ascComment && comment && _api.asc_changeComment) {
+                        var sTime = new Date(parseInt(comment["date"]));
+                        ascComment.asc_putText(comment["text"]);
+                        ascComment.asc_putQuoteText(comment["quoteText"]);
+                        ascComment.asc_putTime(utcDateToString(sTime));
+                        ascComment.asc_putOnlyOfficeTime(ooDateToString(sTime));
+                        ascComment.asc_putUserId(updateAuthor ? currentUserId : comment["userId"]);
+                        ascComment.asc_putUserName(updateAuthor ? currentUserName : comment["userName"]);
+                        ascComment.asc_putSolved(comment["solved"]);
+                        ascComment.asc_putGuid(comment["id"]);
+
+                        if (ascComment.asc_putDocumentFlag !== undefined) {
+                            ascComment.asc_putDocumentFlag(comment["unattached"]);
+                        }
+
+                        var replies = comment["replies"];
+
+                        if (replies && replies.length) {
+                            replies.forEach(function (reply) {
+                                var addReply = buildCommentData();   //  new asc_CCommentData(null);
+                                if (addReply) {
+                                    var sTime = new Date(parseInt(reply["date"]));
+                                    addReply.asc_putText(reply["text"]);
+                                    addReply.asc_putTime(utcDateToString(sTime));
+                                    addReply.asc_putOnlyOfficeTime(ooDateToString(sTime));
+                                    addReply.asc_putUserId(reply["userId"]);
+                                    addReply.asc_putUserName(reply["userName"]);
+
+                                    ascComment.asc_addReply(addReply);
+                                }
+                            });
+                        }
+                        _api.asc_changeComment(commentId, ascComment);
+                    }
+                }
+                break;
+            }
             
         default:
             break;
     }
     
     return _return;
+}
+
+// Comments
+
+function postDataAsJSONString(data, eventId) {
+    var stream = global_memory_stream_menu;
+    stream["ClearNoAttack"]();
+    if (data !== undefined && data !== null) {
+        stream["WriteString2"](JSON.stringify(data));
+    }
+    window["native"]["OnCallMenuEvent"](eventId, stream);
+}
+
+function stringOOToLocalDate (date) {
+    if (typeof date === 'string')
+        return parseInt(date);
+    return 0;
+}
+
+function stringUtcToLocalDate(date) {
+    if (typeof date === 'string')
+        return parseInt(date) + (new Date()).getTimezoneOffset() * 60000;
+    return 0;
+}
+
+function readSDKComment(id, data) {
+    var date = data.asc_getOnlyOfficeTime()
+            ? new Date(stringOOToLocalDate(data.asc_getOnlyOfficeTime()))
+            : (data.asc_getTime() == '') ? new Date() : new Date(stringUtcToLocalDate(data.asc_getTime())),
+        groupname = id.substr(0, id.lastIndexOf('_') + 1).match(/^(doc|sheet[0-9_]+)_/);
+
+    return {
+        id          : id,
+        guid        : data.asc_getGuid(),
+        userId      : data.asc_getUserId(),
+        userName    : data.asc_getUserName(),
+        date        : date.getTime().toString(),
+        quoteText   : data.asc_getQuoteText(),
+        text        : data.asc_getText(),
+        solved      : data.asc_getSolved(),
+        unattached  : (data.asc_getDocumentFlag === undefined) ? false : data.asc_getDocumentFlag(),
+        groupName   : (groupname && groupname.length>1) ? groupname[1] : null,
+        replies     : readSDKReplies(data)
+    };
+}
+
+function readSDKReplies (data) {
+    var i = 0,
+        replies = [],
+        date = null;
+    var repliesCount = data.asc_getRepliesCount();
+    if (repliesCount) {
+        for (i = 0; i < repliesCount; ++i) {
+            var reply = data.asc_getReply(i);
+            date = (reply.asc_getOnlyOfficeTime()) 
+                ? new Date(stringOOToLocalDate(reply.asc_getOnlyOfficeTime()))
+                : ((reply.asc_getTime() == '') ? new Date() : new Date(stringUtcToLocalDate(reply.asc_getTime())));
+            replies.push({
+                userId      : reply.asc_getUserId(),
+                userName    : reply.asc_getUserName(),
+                text        : reply.asc_getText(),
+                date        : date.getTime().toString()
+            });
+        }
+    }
+    return replies;
+}
+
+function onApiAddComment(id, data) {
+    setTimeout(function () {
+        var comment = readSDKComment(id, data) || {};
+        postDataAsJSONString(comment, 23001); // ASC_MENU_EVENT_TYPE_ADD_COMMENT
+    }, 5);
+}
+
+function onApiAddComments(data) {
+    setTimeout(function() {
+        var comments = [];
+        for (var i = 0; i < data.length; ++i) {
+            comments.push(readSDKComment(data[i].asc_getId(), data[i]));
+        }
+        postDataAsJSONString(comments, 23002); // ASC_MENU_EVENT_TYPE_ADD_COMMENTS
+    }, 5);
+}
+
+function onApiRemoveComment(id) {
+    var data = {
+        "id": id
+    };
+    postDataAsJSONString(data, 23003); // ASC_MENU_EVENT_TYPE_REMOVE_COMMENT
+}
+
+function onApiChangeComments(data) {
+    var comments = [];
+    for (var i = 0; i < data.length; ++i) {
+        comments.push(readSDKComment(data[i].asc_getId(), data[i]));
+    }
+    postDataAsJSONString(comments, 23004); // ASC_MENU_EVENT_TYPE_CHANGE_COMMENTS
+}
+
+function onApiRemoveComments(data) {
+    var ids = [];
+    for (var i = 0; i < data.length; ++i) {
+        ids.push({
+            "id": data[i]
+        });
+    }
+    postDataAsJSONString(ids, 23005); // ASC_MENU_EVENT_TYPE_REMOVE_COMMENTS
+}
+
+function onApiChangeCommentData(id, data) {
+    var comment = readSDKComment(id, data) || {},
+        change = {
+            "id": id,
+            "comment": comment
+        };
+
+    postDataAsJSONString(change, 23006); // ASC_MENU_EVENT_TYPE_CHANGE_COMMENTDATA
+}
+
+function onApiLockComment(id, userId) {
+    var data = {
+        "id": id,
+        "userId": userId
+    };
+    postDataAsJSONString(data, 23007); // ASC_MENU_EVENT_TYPE_LOCK_COMMENT
+}
+
+function onApiUnLockComment(id) {
+    var data = {
+        "id": id
+    };
+    postDataAsJSONString(data, 23008); // ASC_MENU_EVENT_TYPE_UNLOCK_COMMENT
+}
+
+function onApiShowComment(uids, posX, posY, leftX, opts, hint) {
+    var data = {
+        "uids": uids,
+        "posX": posX,
+        "posY": posY,
+        "leftX": leftX,
+        "opts": opts,
+        "hint": hint
+    };
+    postDataAsJSONString(data, 23009); // ASC_MENU_EVENT_TYPE_SHOW_COMMENT
+}
+
+function onApiHideComment(hint) {
+    var data = {
+        "hint": hint
+    };
+    postDataAsJSONString(data, 23010); // ASC_MENU_EVENT_TYPE_HIDE_COMMENT
+}
+
+function onApiUpdateCommentPosition(uids, posX, posY, leftX) {
+    var data = {
+        "uids": uids,
+        "posX": posX,
+        "posY": posY,
+        "leftX": leftX
+    };
+    postDataAsJSONString(data, 23011); // ASC_MENU_EVENT_TYPE_UPDATE_COMMENT_POSITION
+}
+
+function onDocumentPlaceChanged() {
+    postDataAsJSONString(null, 23012); // ASC_MENU_EVENT_TYPE_DOCUMENT_PLACE_CHANGED
 }
 
 window["Asc"]["spreadsheet_api"].prototype.asc_setDocumentPassword = function(password)

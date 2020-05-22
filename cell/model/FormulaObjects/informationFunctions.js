@@ -137,8 +137,12 @@
 
 			var cell, bbox;
 			if(arg1) {
-				if (cElementType.cell === arg1.type || cElementType.cell3D === arg1.type ||
-					cElementType.cellsRange === arg1.type || cElementType.cellsRange3D === arg1.type) {
+				var isRangeArg1 = cElementType.cellsRange === arg1.type || cElementType.cellsRange3D === arg1.type;
+				if (isRangeArg1 || cElementType.cell === arg1.type || cElementType.cell3D === arg1.type) {
+					var _tempValue = isRangeArg1 ? arg1.getValueByRowCol(0,0) : arg1.getValue();
+					if (_tempValue instanceof cError) {
+						return _tempValue;
+					}
 					bbox = arg1.getRange();
 					bbox = bbox && bbox.bbox;
 				} else {
@@ -168,7 +172,16 @@
 					break;
 				}
 				case "FILENAME": {
-					res = new cEmpty();
+					//TODO без пути
+					var docInfo = window["Asc"]["editor"].DocInfo;
+					var fileName = docInfo ? docInfo.get_Title() : "";
+					var _ws = arg1.getWS();
+					var sheetName = _ws ? _ws.getName() : null;
+					if (sheetName) {
+						res = new cString("[" + fileName + "]" + sheetName);
+					} else {
+						res = new cEmpty();
+					}
 					break;
 				}
 				case "COORD": {

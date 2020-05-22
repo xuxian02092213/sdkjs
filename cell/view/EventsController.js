@@ -307,7 +307,7 @@
 			var ctrlKey = !AscCommon.getAltGr(event) && (event.metaKey || event.ctrlKey);
 
 			// Для формулы не нужно выходить из редактирования ячейки
-			if (!this.canEdit() || t.isFormulaEditMode || t.isSelectionDialogMode) {return true;}
+			if (t.isFormulaEditMode || t.isSelectionDialogMode) {return true;}
 
 			if (this.targetInfo && (this.targetInfo.target === AscCommonExcel.c_oTargetType.GroupRow ||
 				this.targetInfo.target === AscCommonExcel.c_oTargetType.GroupCol)) {
@@ -324,7 +324,7 @@
 
 			var coord = t._getCoordinates(event);
 			var graphicsInfo = t.handlers.trigger("getGraphicsInfo", coord.x, coord.y);
-			if (graphicsInfo )
+			if (graphicsInfo)
 				return;
 
 			setTimeout(function () {
@@ -554,7 +554,7 @@
 		 * @param event {MouseEvent}
 		 * @param callback {Function}
 		 */
-		asc_CEventsController.prototype._changeFillHandle = function (event, callback) {
+		asc_CEventsController.prototype._changeFillHandle = function (event, callback, tableIndex) {
 			var t = this;
 			// Обновляемся в режиме автозаполнения
 			var coord = this._getCoordinates(event);
@@ -563,7 +563,7 @@
 					if (!d) return;
 					t.scroll(d);
 					asc_applyFunction(callback);
-				});
+				}, tableIndex);
 		};
 
 		/** @param event {MouseEvent} */
@@ -778,6 +778,19 @@
 					t.handlers.trigger("editCell", /*isFocus*/true, /*isClearCell*/false, /*isHideCursor*/undefined,
 						/*isQuickInput*/false);
 					return result;
+
+				case 186: // add current date or time Ctrl + (Shift) + ;
+					if (!canEdit || t.getCellEditMode() || t.isSelectionDialogMode) {
+						return true;
+					}
+					if (ctrlKey) {
+						// При нажатии символа, фокус не ставим. Очищаем содержимое ячейки
+						this.handlers.trigger("editCell", /*isFocus*/false, /*isClearCell*/true, /*isHideCursor*/undefined,
+							/*isQuickInput*/true, /*callback*/undefined);
+						return result;
+					}
+					t.skipKeyPress = false;
+					return true;
 
 				case 8: // backspace
 					if (!canEdit || t.getCellEditMode() || t.isSelectionDialogMode) {
@@ -1117,6 +1130,10 @@
 								t.handlers.trigger("stopCellEditing");
 							}
 
+							var wb = window["Asc"]["editor"].wb;
+							if (t.targetInfo) {
+								wb._onUpdateWorksheet(t.targetInfo.coordX, t.targetInfo.coordY, false);
+							}
 							t.scroll(d);
 						});
 				}
@@ -1179,7 +1196,8 @@
 			if (16 === event.which) {
 				this.handlers.trigger("updateSelectionName");
 			}
-
+			this.handlers.trigger("graphicObjectWindowKeyUp", event)
+			
 			return true;
 		};
 
@@ -1420,7 +1438,7 @@
 					} else if (t.targetInfo.target === c_oTargetType.FillHandle && this.canEdit()) {
 						// В режиме автозаполнения
 						this.isFillHandleMode = true;
-						t._changeFillHandle(event);
+						t._changeFillHandle(event, null, t.targetInfo.tableIndex);
 						return;
 					} else if (t.targetInfo.target === c_oTargetType.MoveRange && this.canEdit()) {
 						// В режиме перемещения диапазона
@@ -1518,7 +1536,7 @@
 				if (this.targetInfo && this.targetInfo.target === c_oTargetType.FillHandle && this.canEdit()) {
 					// В режиме автозаполнения
 					this.isFillHandleMode = true;
-					this._changeFillHandle(event);
+					this._changeFillHandle(event, null, t.targetInfo.tableIndex);
 				} else {
 					this.isSelectMode = true;
 					this.handlers.trigger("changeSelection", /*isStartPoint*/true, coord.x, coord.y, /*isCoord*/true,
@@ -1663,10 +1681,11 @@
     	/** @param event {MouseEvent} */
 		asc_CEventsController.prototype._onMouseLeave = function (event) {
 			var t = this;
+			var coord = t._getCoordinates(event);
 			this.hasCursor = false;
 			if (!this.isSelectMode && !this.isResizeMode && !this.isMoveResizeRange) {
 				this.targetInfo = undefined;
-				this.handlers.trigger("updateWorksheet");
+				this.handlers.trigger("updateWorksheet", coord.x, coord.y);
 			}
 			if (this.isMoveRangeMode) {
 				t.moveRangeTimerId = window.setTimeout(function(){t._moveRangeHandle2(event)},0);

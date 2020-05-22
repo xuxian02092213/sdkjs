@@ -45,6 +45,18 @@ function CSdtPr()
 	this.Label = undefined;
 	this.Lock  = undefined;
 
+	// section property
+	this.SectionBreak = undefined;
+	this.PageSizeW	  = undefined;
+	this.PageSizeH	  = undefined;
+	this.Orient 	  = undefined;
+
+	// Margins 
+	this.MarginT	 		 = undefined;
+	this.MarginL	 		 = undefined;
+	this.MarginR	 		 = undefined;
+	this.MarginB	 		 = undefined;
+
 	this.DocPartObj = {
 		Gallery  : undefined,
 		Category : undefined,
@@ -59,8 +71,15 @@ function CSdtPr()
 	this.ComboBox = undefined;
 	this.DropDown = undefined;
 	this.Date     = undefined;
+	this.Equation = false;
 
 	this.TextPr = new CTextPr();
+
+	this.Placeholder   = undefined;
+	this.ShowingPlcHdr = false;
+
+	this.Text      = false;
+	this.Temporary = false;
 }
 
 CSdtPr.prototype.Copy = function()
@@ -89,7 +108,15 @@ CSdtPr.prototype.Copy = function()
 	if (this.Date)
 		oPr.Date = this.Date.Copy();
 
+
 	oPr.TextPr = this.TextPr.Copy();
+
+	oPr.Placeholder   = this.Placeholder;
+	oPr.ShowingPlcHdr = this.ShowingPlcHdr;
+
+	oPr.Equation  = this.Equation;
+	oPr.Text      = this.Text;
+	oPr.Temporary = this.Temporary;
 
 	return oPr;
 };
@@ -191,6 +218,35 @@ CSdtPr.prototype.Write_ToBinary = function(Writer)
 		Flags |= 16384;
 	}
 
+	if (undefined !== this.Placeholder)
+	{
+		Writer.WriteString2(this.Placeholder);
+		Flags |= 32768;
+	}
+
+	if (undefined !== this.ShowingPlcHdr)
+	{
+		Writer.WriteBool(this.ShowingPlcHdr);
+		Flags |= 65536;
+	}
+
+	if (undefined !== this.Equation)
+	{
+		Writer.WriteBool(this.Equation);
+		Flags |= 131072;
+	}
+
+	if (undefined !== this.Text)
+	{
+		Writer.WriteBool(this.Text);
+		Flags |= 262144;
+	}
+
+	if (undefined !== this.Temporary)
+	{
+		Writer.WriteBool(this.Temporary);
+		Flags |= 524288;
+	}
 
 	var EndPos = Writer.GetCurPosition();
 	Writer.Seek(StartPos);
@@ -263,6 +319,21 @@ CSdtPr.prototype.Read_FromBinary = function(Reader)
 		this.Date = new CSdtDatePickerPr();
 		this.Date.ReadToBinary(Reader);
 	}
+
+	if (Flags & 32768)
+		this.Placeholder = Reader.GetString2();
+
+	if (Flags & 65536)
+		this.ShowingPlcHdr = Reader.GetBool();
+
+	if (Flags & 131072)
+		this.Equation = Reader.GetBool();
+
+	if (Flags & 262144)
+		this.Text = Reader.GetBool();
+
+	if (Flags & 524288)
+		this.Temporary = Reader.GetBool();
 };
 CSdtPr.prototype.IsBuiltInDocPart = function()
 {
@@ -282,6 +353,19 @@ function CContentControlPr(nType)
 	this.InternalId = undefined;
 	this.CCType     = undefined !== nType ? nType : c_oAscSdtLevelType.Inline;
 
+    // section property
+	this.SectionBreak = undefined;
+	this.PageSizeW	  = undefined;
+	this.PageSizeH	  = undefined;
+	this.Orient 	  = undefined;
+
+	// Margins 
+	this.MarginT	 		 = undefined;
+	this.MarginL	 		 = undefined;
+	this.MarginR	 		 = undefined;
+	this.MarginB	 		 = undefined;
+	
+	
 	this.Appearance = Asc.c_oAscSdtAppearance.Frame;
 	this.Color      = undefined;
 
@@ -289,6 +373,8 @@ function CContentControlPr(nType)
 	this.ComboBoxPr = undefined;
 	this.DropDownPr = undefined;
 	this.DateTimePr = undefined;
+
+	this.PlaceholderText = undefined;
 }
 CContentControlPr.prototype.FillFromObject = function(oPr)
 {
@@ -312,6 +398,9 @@ CContentControlPr.prototype.FillFromObject = function(oPr)
 
 	if (undefined !== oPr.Color)
 		this.Color = oPr.Color;
+
+	if (undefined !== oPr.PlaceholderText)
+		this.PlaceholderText = oPr.PlaceholderText;
 };
 CContentControlPr.prototype.FillFromContentControl = function(oContentControl)
 {
@@ -336,6 +425,8 @@ CContentControlPr.prototype.FillFromContentControl = function(oContentControl)
 		this.DropDownPr = oContentControl.GetDropDownListPr().Copy();
 	else if (oContentControl.IsDatePicker())
 		this.DateTimePr = oContentControl.GetDatePickerPr().Copy();
+
+	this.PlaceholderText = oContentControl.GetPlaceholderText();
 };
 CContentControlPr.prototype.SetToContentControl = function(oContentControl)
 {
@@ -374,6 +465,9 @@ CContentControlPr.prototype.SetToContentControl = function(oContentControl)
 
 	if (undefined !== this.DateTimePr)
 		oContentControl.ApplyDatePickerPr(this.DateTimePr);
+
+	if (undefined !== this.PlaceholderText)
+		oContentControl.SetPlaceholderText(this.PlaceholderText);
 };
 CContentControlPr.prototype.GetId = function()
 {
@@ -489,6 +583,14 @@ CContentControlPr.prototype.GetDateTimePr = function()
 CContentControlPr.prototype.SetDateTimePr = function(oPr)
 {
 	this.DateTimePr = oPr;
+};
+CContentControlPr.prototype.GetPlaceholderText = function()
+{
+	return this.PlaceholderText;
+};
+CContentControlPr.prototype.SetPlaceholderText = function(sText)
+{
+	this.PlaceholderText = sText;
 };
 
 /**
@@ -813,7 +915,7 @@ CSdtDatePickerPr.prototype.ToString = function(sFormat, sFullDate, nLangId)
 	if (undefined === nLangId)
 		nLangId = this.LangId;
 
-	var oFormat = AscCommon.oNumFormatCache.get(sFormat);
+	var oFormat = AscCommon.oNumFormatCache.get(sFormat, AscCommon.NumFormatType.WordFieldDate);
 	if (oFormat)
 	{
 		var oCultureInfo = AscCommon.g_aCultureInfos[nLangId];
@@ -885,18 +987,18 @@ CSdtDatePickerPr.prototype.GetFormatsExamples = function()
 {
 	return [
 		"MM/DD/YYYY",
-		"dddd\\,\\ mmmm\\ dd\\,\\ yyyy",
-		"DD\\ MMMM\\ YYYY",
-		"MMMM\\ DD\\,\\ YYYY",
+		"dddd\,\ mmmm\ dd\,\ yyyy",
+		"DD\ MMMM\ YYYY",
+		"MMMM\ DD\,\ YYYY",
 		"DD-MMM-YY",
-		"MMMM\\ YY",
+		"MMMM\ YY",
 		"MMM-YY",
-		"MM/DD/YYYY\\ hh:mm\\ AM/PM",
-		"MM/DD/YYYY\\ hh:mm:ss\\ AM/PM",
+		"MM/DD/YYYY\ hh:mm\ AM/PM",
+		"MM/DD/YYYY\ hh:mm:ss\ AM/PM",
 		"hh:mm",
 		"hh:mm:ss",
-		"hh:mm\\ AM/PM",
-		"hh:mm:ss:\\ AM/PM"
+		"hh:mm\ AM/PM",
+		"hh:mm:ss:\ AM/PM"
 	];
 };
 
@@ -932,6 +1034,8 @@ CContentControlPr.prototype['get_DropDownListPr']     = CContentControlPr.protot
 CContentControlPr.prototype['put_DropDownListPr']     = CContentControlPr.prototype.SetDropDownListPr;
 CContentControlPr.prototype['get_DateTimePr']         = CContentControlPr.prototype.GetDateTimePr;
 CContentControlPr.prototype['put_DateTimePr']         = CContentControlPr.prototype.SetDateTimePr;
+CContentControlPr.prototype['get_PlaceholderText']    = CContentControlPr.prototype.GetPlaceholderText;
+CContentControlPr.prototype['put_PlaceholderText']    = CContentControlPr.prototype.SetPlaceholderText;
 
 window['AscCommon'].CSdtCheckBoxPr    = CSdtCheckBoxPr;
 window['AscCommon']['CSdtCheckBoxPr'] = CSdtCheckBoxPr;

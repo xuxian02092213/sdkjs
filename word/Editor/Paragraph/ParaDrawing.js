@@ -1472,7 +1472,7 @@ ParaDrawing.prototype.Shift = function(Dx, Dy)
 ParaDrawing.prototype.IsLayoutInCell = function()
 {
 	// Начиная с 15-ой версии Word не дает менять этот параметр и всегда считает его true
-	if (this.LogicDocument && this.LogicDocument.GetCompatibilityMode() >= document_compatibility_mode_Word15)
+	if (this.LogicDocument && this.LogicDocument.GetCompatibilityMode() >= AscCommon.document_compatibility_mode_Word15)
 		return true;
 
 	return this.LayoutInCell;
@@ -1624,10 +1624,18 @@ ParaDrawing.prototype.Use_TextWrap = function()
 ParaDrawing.prototype.Draw_Selection = function()
 {
 	var Padding = this.DrawingDocument.GetMMPerDot(6);
-	var extX = this.getXfrmExtX();
-	var extY = this.getXfrmExtY();
+	var extX, extY;
+	if(this.GraphicObj)
+	{
+		extX = this.GraphicObj.extX;
+		extY = this.GraphicObj.extY;
+	}
+	else
+	{
+		extX = this.getXfrmExtX();
+		extY = this.getXfrmExtY();
+	}
 	var rot = this.getXfrmRot();
-	var X, Y, W, H;
 	if(AscFormat.checkNormalRotate(rot))
 	{
 		this.DrawingDocument.AddPageSelection(this.PageNum, this.X - this.EffectExtent.L - Padding, this.Y - this.EffectExtent.T - Padding, this.EffectExtent.L + extX + this.EffectExtent.R + 2 * Padding, this.EffectExtent.T + extY + this.EffectExtent.B + 2 * Padding);
@@ -1643,13 +1651,27 @@ ParaDrawing.prototype.OnEnd_MoveInline = function(NearPos)
 {
 	NearPos.Paragraph.Check_NearestPos(NearPos);
 
+	var oRun        = this.Parent.Get_DrawingObjectRun(this.Id);
+	var isPictureCC = false;
+	if (oRun)
+	{
+		var arrContentControls = oRun.GetParentContentControls();
+		for (var nIndex = arrContentControls.length - 1; nIndex >= 0; --nIndex)
+		{
+			if (arrContentControls[nIndex].IsPicture())
+			{
+				isPictureCC = true;
+				break;
+			}
+		}
+	}
+
 	var RunPr = this.Remove_FromDocument(false);
 
 	// При переносе всегда создаем копию, чтобы в совместном редактировании не было проблем
 	var NewParaDrawing = this.Copy();
-    this.DocumentContent.Select_DrawingObject(NewParaDrawing.Get_Id());
-	NewParaDrawing.Add_ToDocument(NearPos, true, RunPr);
-
+	this.DocumentContent.Select_DrawingObject(NewParaDrawing.Get_Id());
+	NewParaDrawing.Add_ToDocument(NearPos, true, RunPr, undefined, isPictureCC);
 };
 ParaDrawing.prototype.Get_ParentTextTransform = function()
 {
@@ -1664,29 +1686,42 @@ ParaDrawing.prototype.GoTo_Text = function(bBefore, bUpdateStates)
 	var Paragraph = this.Get_ParentParagraph();
 	if (Paragraph)
 	{
-		Paragraph.Cursor_MoveTo_Drawing(this.Id, bBefore);
+		Paragraph.MoveCursorToDrawing(this.Id, bBefore);
 		Paragraph.Document_SetThisElementCurrent(undefined === bUpdateStates ? true : bUpdateStates);
 	}
 };
 ParaDrawing.prototype.Remove_FromDocument = function(bRecalculate)
 {
-	var Result = null;
-	var Run    = this.Parent.Get_DrawingObjectRun(this.Id);
+	var oResult = null;
 
-	if (null !== Run)
+	var oRun = this.Parent.Get_DrawingObjectRun(this.Id);
+	if (oRun)
 	{
-		Run.Remove_DrawingObject(this.Id);
+		var oPictureCC         = null;
+		var arrContentControls = oRun.GetParentContentControls();
+		for (var nIndex = arrContentControls.length - 1; nIndex >= 0; --nIndex)
+		{
+			if (arrContentControls[nIndex].IsPicture())
+			{
+				oPictureCC = arrContentControls[nIndex];
+				break;
+			}
+		}
 
-		if (true === Run.Is_InHyperlink())
-			Result = new CTextPr();
+		if (oPictureCC)
+			oPictureCC.RemoveContentControlWrapper();
+
+		oRun.Remove_DrawingObject(this.Id);
+		if (oRun.IsInHyperlink())
+			oResult = new CTextPr();
 		else
-			Result = Run.Get_TextPr();
+			oResult = oRun.GetTextPr();
 	}
 
 	if (false != bRecalculate)
 		editor.WordControl.m_oLogicDocument.Recalculate();
 
-	return Result;
+	return oResult;
 };
 ParaDrawing.prototype.Get_ParentParagraph = function()
 {
@@ -1719,7 +1754,7 @@ ParaDrawing.prototype.SelectAsText = function()
 	oDocument.RemoveSelection();
 	oDocument.SetSelectionByContentPositions(oStartPos, oEndPos);
 };
-ParaDrawing.prototype.Add_ToDocument = function(NearPos, bRecalculate, RunPr, Run)
+ParaDrawing.prototype.Add_ToDocument = function(NearPos, bRecalculate, RunPr, Run, isPictureCC)
 {
 	NearPos.Paragraph.Check_NearestPos(NearPos);
 
@@ -1735,12 +1770,23 @@ ParaDrawing.prototype.Add_ToDocument = function(NearPos, bRecalculate, RunPr, Ru
 	if (Run)
 		DrawingRun.SetReviewTypeWithInfo(Run.GetReviewType(), Run.GetReviewInfo());
 
-	Para.Add_ToContent(0, DrawingRun);
+	if (isPictureCC)
+	{
+		var oSdt = new CInlineLevelSdt();
+		oSdt.SetPicturePr(true);
+		oSdt.ReplacePlaceHolderWithContent();
+		oSdt.AddToContent(0, DrawingRun);
+		Para.Add_ToContent(0, oSdt);
+	}
+	else
+	{
+		Para.Add_ToContent(0, DrawingRun);
+	}
 
 	var SelectedElement = new CSelectedElement(Para, false);
 	var SelectedContent = new CSelectedContent();
 	SelectedContent.Add(SelectedElement);
-	SelectedContent.Set_MoveDrawing(true);
+	SelectedContent.SetMoveDrawing(true);
 
 	NearPos.Paragraph.Parent.InsertContent(SelectedContent, NearPos);
 	NearPos.Paragraph.Clear_NearestPosArray();
@@ -1959,20 +2005,20 @@ ParaDrawing.prototype.tableRemoveCol = function()
 	if (AscCommon.isRealObject(this.GraphicObj) && typeof  this.GraphicObj.tableRemoveCol === "function")
 		return this.GraphicObj.tableRemoveCol();
 };
-ParaDrawing.prototype.tableAddCol = function(bBefore)
+ParaDrawing.prototype.tableAddCol = function(bBefore, nCount)
 {
 	if (AscCommon.isRealObject(this.GraphicObj) && typeof  this.GraphicObj.tableAddCol === "function")
-		return this.GraphicObj.tableAddCol(bBefore);
+		return this.GraphicObj.tableAddCol(bBefore, nCount);
 };
 ParaDrawing.prototype.tableRemoveRow = function()
 {
 	if (AscCommon.isRealObject(this.GraphicObj) && typeof  this.GraphicObj.tableRemoveRow === "function")
 		return this.GraphicObj.tableRemoveRow();
 };
-ParaDrawing.prototype.tableAddRow = function(bBefore)
+ParaDrawing.prototype.tableAddRow = function(bBefore, nCount)
 {
 	if (AscCommon.isRealObject(this.GraphicObj) && typeof  this.GraphicObj.tableAddRow === "function")
-		return this.GraphicObj.tableAddRow(bBefore);
+		return this.GraphicObj.tableAddRow(bBefore, nCount);
 };
 ParaDrawing.prototype.getCurrentParagraph = function(bIgnoreSelection, arrSelectedParagraphs)
 {
@@ -2607,7 +2653,7 @@ ParaDrawing.prototype.getDrawingArrayType = function()
 	if (this.Is_Inline())
 		return DRAWING_ARRAY_TYPE_INLINE;
 	if (this.behindDoc === true){
-		if(this.wrappingType === WRAPPING_TYPE_NONE || (this.document && this.document.GetCompatibilityMode && this.document.GetCompatibilityMode() < document_compatibility_mode_Word15)){
+		if(this.wrappingType === WRAPPING_TYPE_NONE || (this.document && this.document.GetCompatibilityMode && this.document.GetCompatibilityMode() < AscCommon.document_compatibility_mode_Word15)){
 			return DRAWING_ARRAY_TYPE_BEHIND;
 		}
 	}
@@ -2691,102 +2737,74 @@ ParaDrawing.prototype.Restart_CheckSpelling = function()
 {
 	this.GraphicObj && this.GraphicObj.Restart_CheckSpelling && this.GraphicObj.Restart_CheckSpelling();
 };
-ParaDrawing.prototype.Is_MathEquation = function()
+/**
+ * Проверяем является ли данная автофигура формулой в старом формате
+ * @returns {boolean}
+ */
+ParaDrawing.prototype.IsMathEquation = function()
 {
 	if (undefined !== this.ParaMath && null !== this.ParaMath)
 		return true;
 
 	return false;
 };
-ParaDrawing.prototype.Get_ParaMath = function()
+/**
+ * Конвертируем данную автофигуру, представляющую формулу в старом формате, в новый формат
+ * @param {boolean} isUpdatePos - обновлять или нет позицию документа
+ */
+ParaDrawing.prototype.ConvertToMath = function(isUpdatePos)
 {
-	return this.ParaMath;
-};
-ParaDrawing.prototype.Convert_ToMathObject = function(isOpen)
-{
-	if (isOpen)
-	{
-		this.private_ConvertToMathObject(isOpen);
-	}
-	else
-	{
-		// TODO: Вообще здесь нужно запрашивать шрифты, которые использовались в старой формуле,
-		//      но пока это только 1 шрифт "Cambria Math".
-		var loader   = AscCommon.g_font_loader;
-		var fontinfo = g_fontApplication.GetFontInfo("Cambria Math");
-		var isasync  = loader.LoadFont(fontinfo, ConvertEquationToMathCallback, this);
-		if (false === isasync)
-		{
-			this.private_ConvertToMathObject();
-		}
-	}
-};
-ParaDrawing.prototype.private_ConvertToMathObject = function(isOpen)
-{
-	var Para = this.GetParagraph();
-	if (undefined === Para || null === Para || !(Para instanceof Paragraph))
+	if (!this.IsMathEquation())
 		return;
 
-	var ParaContentPos = Para.Get_PosByDrawing(this.Get_Id());
-	if (null === ParaContentPos)
+	var oParagraph = this.GetParagraph();
+	if (!oParagraph)
 		return;
 
-	var Depth = ParaContentPos.Get_Depth();
-	var TopElementPos = ParaContentPos.Get(0);
-	var BotElementPos = ParaContentPos.Get(Depth);
+	var oLogicDocument = oParagraph.GetLogicDocument();
+	if (!oLogicDocument)
+		return;
 
-	var TopElement = Para.Content[TopElementPos];
+	var oParaContentPos = oParagraph.Get_PosByDrawing(this.GetId());
+	if (!oParaContentPos)
+		return;
+
+	var nDepth         = oParaContentPos.GetDepth();
+	var nTopElementPos = oParaContentPos.Get(0);
+	var nBotElementPos = oParaContentPos.Get(nDepth);
+	var oTopElement    = oParagraph.Content[nTopElementPos];
 
 	// Уменьшаем глубину на 1, чтобы получить позицию родительского класса
-	var RunPos = ParaContentPos.Copy();
-	RunPos.Decrease_Depth(1);
-	var Run = Para.Get_ElementByPos(RunPos);
+	var oRunPos = oParaContentPos.Copy();
+	oRunPos.DecreaseDepth(1);
 
-	if (undefined === TopElement || undefined === TopElement.Content || !(Run instanceof ParaRun))
+	var oRun = oParagraph.Get_ElementByPos(oRunPos);
+
+	if (!oTopElement || !oTopElement.Content || !(oRun instanceof ParaRun))
 		return;
 
-	var LogicDocument = editor.WordControl.m_oLogicDocument;
-	if (isOpen || false === LogicDocument.Document_Is_SelectionLocked(AscCommon.changestype_None, {
-			Type      : AscCommon.changestype_2_Element_and_Type,
-			Element   : Para,
-			CheckType : AscCommon.changestype_Paragraph_Content
-		}))
+	// Коректируем формулу после конвертации
+	this.ParaMath.Correct_AfterConvertFromEquation();
+
+	// Сначала удаляем Drawing из рана
+	oRun.RemoveFromContent(nBotElementPos, 1);
+
+	// TODO: Тут возможно лучше взять настройки предыдущего элемента, но пока просто удалим самое неприятное
+	// свойство.
+	if (true === oRun.IsEmpty())
+		oRun.Set_Position(undefined);
+
+	// Теперь разделяем параграф по заданной позиции и добавляем туда новую формулу.
+	var oRightElement = oTopElement.Split(oParaContentPos, 1);
+	oParagraph.AddToContent(nTopElementPos + 1, oRightElement);
+	oParagraph.AddToContent(nTopElementPos + 1, this.ParaMath);
+	oParagraph.Correct_Content(nTopElementPos, nTopElementPos + 2);
+
+	if (isUpdatePos)
 	{
-		if (!isOpen)
-		{
-			LogicDocument.StartAction(AscDFH.historydescription_Document_ConvertOldEquation);
-		}
-
-		// Коректируем формулу после конвертации
-		this.ParaMath.Correct_AfterConvertFromEquation();
-
-		// Сначала удаляем Drawing из рана
-		Run.Remove_FromContent(BotElementPos, 1);
-
-		// TODO: Тут возможно лучше взять настройки предыдущего элемента, но пока просто удалим самое неприятное
-		// свойство.
-		if (true === Run.Is_Empty())
-			Run.Set_Position(undefined);
-
-		// Теперь разделяем параграф по заданной позиции и добавляем туда новую формулу.
-		var RightElement = TopElement.Split(ParaContentPos, 1);
-		Para.Add_ToContent(TopElementPos + 1, RightElement);
-		Para.Add_ToContent(TopElementPos + 1, this.ParaMath);
-		Para.Correct_Content(TopElementPos, TopElementPos + 2);
-
-		if (!isOpen)
-		{
-			// Устанавливаем курсор в начало правого элемента, полученного после Split
-			LogicDocument.RemoveSelection();
-			RightElement.MoveCursorToStartPos();
-			Para.CurPos.ContentPos = TopElementPos + 2;
-			Para.Document_SetThisElementCurrent(false);
-
-			LogicDocument.Recalculate();
-			LogicDocument.UpdateSelection();
-			LogicDocument.UpdateInterface();
-			LogicDocument.FinalizeAction();
-		}
+		oRightElement.MoveCursorToStartPos();
+		oParagraph.CurPos.ContentPos = nTopElementPos + 2;
+		oParagraph.Document_SetThisElementCurrent(false);
 	}
 };
 ParaDrawing.prototype.GetRevisionsChangeElement = function(SearchEngine)
@@ -3694,11 +3712,6 @@ CAnchorPosition.prototype.Calculate_Y_Value = function(RelativeFrom)
 
 	return Value;
 };
-
-function ConvertEquationToMathCallback(ParaDrawing)
-{
-	ParaDrawing.private_ConvertToMathObject();
-}
 
 //--------------------------------------------------------export----------------------------------------------------
 window['AscCommonWord'] = window['AscCommonWord'] || {};

@@ -169,7 +169,6 @@ CChartSpace.prototype.recalcText = function()
 
 CChartSpace.prototype.recalculateBounds = CShape.prototype.recalculateBounds;
 CChartSpace.prototype.deselect = CShape.prototype.deselect;
-CChartSpace.prototype.hitToHandles = CShape.prototype.hitToHandles;
 CChartSpace.prototype.hitInBoundingRect = CShape.prototype.hitInBoundingRect;
 CChartSpace.prototype.getRotateAngle = CShape.prototype.getRotateAngle;
 CChartSpace.prototype.getInvertTransform = CShape.prototype.getInvertTransform;
@@ -710,7 +709,7 @@ CStyle.prototype.Create_NormalTable = function()
     this.Set_TablePr( TablePr );
 };
 
-CTablePr.prototype.Init_Default = function()
+CTablePr.prototype.InitDefault = function()
 {
     this.TableStyleColBandSize = 1;
     this.TableStyleRowBandSize = 1;

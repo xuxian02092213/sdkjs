@@ -463,7 +463,9 @@ g_oColorManager = new ColorManager();
 		NumAbs: null,
 		BorderAbs: null,
 		AlignAbs: null,
-		ColorAuto: new RgbColor(0)
+		ColorAuto: new RgbColor(0),
+
+		xfs: new CellXfs()
 	};
 
 	/** @constructor */
@@ -608,6 +610,23 @@ var g_oFontProperties = {
 			this.setRepeat(font.repeat);
 		}
 	};
+    Font.prototype.assignFromTextPr = function (textPr) {
+        if (textPr.FontFamily) {
+            this.setName(textPr.FontFamily.Name);
+        }
+        this.setSize(textPr.FontSize);
+        this.setBold(textPr.Bold);
+        this.setItalic(textPr.Italic);
+        this.setUnderline(textPr.Underline);
+        this.setStrikeout(textPr.Strikeout);
+        this.setVerticalAlign(textPr.VertAlign);
+        if (textPr.Unifill) {
+            var color = textPr.Unifill.getRGBAColor();
+            this.setColor(createRgbColor(color.R, color.G, color.B));
+        } else if (textPr.Color) {
+            this.setColor(createRgbColor(textPr.Color.r, textPr.Color.g, textPr.Color.b));
+        }
+    };
 	Font.prototype.merge = function (font, isTable, isTableColor) {
 		var oRes = new Font();
 		oRes.fn = this.fn || font.fn;
@@ -1396,7 +1415,7 @@ var g_oFontProperties = {
 		this.position = value;
 	};
 	GradientStop.prototype.asc_getColor = function () {
-		return this.color ? Asc.colorObjToAscColor(this.color) : this.color;
+		return Asc.colorObjToAscColor(this.color);
 	};
 	GradientStop.prototype.asc_setColor = function (value) {
 		this.color = CorrectAscColor(value);
@@ -1583,13 +1602,13 @@ var g_oFontProperties = {
 		}
 	};
 	PatternFill.prototype.asc_getFgColor = function () {
-		return this.fgColor ? Asc.colorObjToAscColor(this.fgColor) : this.fgColor;
+		return Asc.colorObjToAscColor(this.fgColor);
 	};
 	PatternFill.prototype.asc_setFgColor = function (value) {
 		this.fgColor = CorrectAscColor(value);
 	};
 	PatternFill.prototype.asc_getBgColor = function () {
-		return this.bgColor ? Asc.colorObjToAscColor(this.bgColor) : this.bgColor;
+		return Asc.colorObjToAscColor(this.bgColor);
 	};
 	PatternFill.prototype.asc_setBgColor = function (value) {
 		this.bgColor = CorrectAscColor(value);
@@ -1618,8 +1637,6 @@ var g_oFontProperties = {
 		var res = null;
 		if (this.patternFill && c_oAscPatternType.None !== this.patternFill.patternType) {
 			res = this.patternFill.fgColor || AscCommonExcel.g_oColorManager.getThemeColor(g_nColorTextDefault, 0);
-		} else if (this.gradientFill) {
-			res = this.gradientFill.stop.length > 0 ? this.gradientFill.stop[0].color : AscCommonExcel.g_oColorManager.getThemeColor(g_nColorTextDefault, 0)
 		}
 		return res;
 	};
@@ -2287,95 +2304,97 @@ var g_oBorderProperties = {
 		}
 		return newContext;
 	};
-var g_oNumProperties = {
+
+	var g_oNumProperties = {
 		f: 0,
 		id: 1
 	};
-/** @constructor */
-function Num(val)
-{
-	if(null == val)
-		val = g_oDefaultFormat.NumAbs;
-	this.f = val.f;
-  this.id = val.id;
 
-	this._hash;
-	this._index;
-}
-Num.prototype =
-{
-	Properties: g_oNumProperties,
-	getHash: function() {
+	/** @constructor */
+	function Num(val) {
+		if (null == val)
+			val = g_oDefaultFormat.NumAbs;
+		this.f = val.f;
+		this.id = val.id;
+
+		this._hash;
+		this._index;
+	}
+
+	Num.prototype.Properties = g_oNumProperties;
+	Num.prototype.getHash = function () {
 		if (!this._hash) {
 			this._hash = this.f + '|' + this.id;
 		}
 		return this._hash;
-	},
-	getIndexNumber: function() {
+	};
+	Num.prototype.getIndexNumber = function () {
 		return this._index;
-	},
-	setIndexNumber: function(val) {
+	};
+	Num.prototype.setIndexNumber = function (val) {
 		this._index = val;
-	},
-  setFormat: function(f, opt_id) {
-    this.f = f;
-    this.id = opt_id;
-  },
-  getFormat: function() {
-    return (null != this.id) ? (AscCommon.getFormatByStandardId(this.id) || this.f) : this.f;
-  },
-  _mergeProperty : function(first, second, def)
-  {
-    if(def != first)
-      return first;
-    else
-      return second;
-  },
-	merge : function(num)
-	{
+	};
+	Num.prototype.setFormat = function (f, opt_id) {
+		this.f = f;
+		this.id = opt_id;
+	};
+	Num.prototype.getFormat = function () {
+		return (null != this.id) ? (AscCommon.getFormatByStandardId(this.id) || this.f) : this.f;
+	};
+	Num.prototype.getNumFormat = function () {
+		return AscCommon.oNumFormatCache.get(this.getFormat());
+	};
+	Num.prototype._mergeProperty = function (first, second, def) {
+		if (def != first)
+			return first;
+		else
+			return second;
+	};
+	Num.prototype.merge = function (num) {
 		var oRes = new Num();
-    oRes.f = this._mergeProperty(this.f, num.f, g_oDefaultFormat.Num.f);
-    oRes.id = this._mergeProperty(this.id, num.id, g_oDefaultFormat.Num.id);
+		oRes.f = this._mergeProperty(this.f, num.f, g_oDefaultFormat.Num.f);
+		oRes.id = this._mergeProperty(this.id, num.id, g_oDefaultFormat.Num.id);
 		return oRes;
-	},
-  isEqual: function(val) {
-    if (null != this.id && null != val.id) {
-      return this.id == val.id;
-    } else if (null != this.id || null != val.id) {
-      return false;
-    } else {
-      return this.f == val.f;
-    }
-  },
-    clone : function()
-    {
-        return new Num(this);
-    },
-	getType : function()
-	{
+	};
+	Num.prototype.isEqual = function (val) {
+		if (null != this.id && null != val.id) {
+			return this.id == val.id;
+		} else if (null != this.id || null != val.id) {
+			return false;
+		} else {
+			return this.f == val.f;
+		}
+	};
+	Num.prototype.clone = function () {
+		return new Num(this);
+	};
+	Num.prototype.getType = function () {
 		return UndoRedoDataTypes.StyleNum;
-	},
-	getProperties : function()
-	{
+	};
+	Num.prototype.getProperties = function () {
 		return this.Properties;
-	},
-	getProperty : function(nType)
-	{
-		switch(nType)
-		{
-			case this.Properties.f: return this.f;break;
-			case this.Properties.id: return this.id;break;
+	};
+	Num.prototype.getProperty = function (nType) {
+		switch (nType) {
+			case this.Properties.f:
+				return this.f;
+				break;
+			case this.Properties.id:
+				return this.id;
+				break;
 		}
-	},
-	setProperty : function(nType, value)
-	{
-		switch(nType)
-		{
-			case this.Properties.f: this.f = value;break;
-			case this.Properties.id: this.id = value;break;
+	};
+	Num.prototype.setProperty = function (nType, value) {
+		switch (nType) {
+			case this.Properties.f:
+				this.f = value;
+				break;
+			case this.Properties.id:
+				this.id = value;
+				break;
 		}
-	},
-	readAttributes : function(attr, uq) {
+	};
+	Num.prototype.readAttributes = function (attr, uq) {
 		if (attr()) {
 			var vals = attr();
 			var val;
@@ -2395,237 +2414,323 @@ Num.prototype =
 				this.id = id;
 			}
 		}
-	}
-};
-var g_oCellXfsProperties = {
-		border: 0,
-		fill: 1,
-		font: 2,
-		num: 3,
-		align: 4,
-		QuotePrefix: 5,
-		XfId: 6,
-		PivotButton: 7
 	};
-/** @constructor */
-function CellXfs() {
-    this.border = null;
-    this.fill = null;
-    this.font = null;
-    this.num = null;
-    this.align = null;
-	this.QuotePrefix = null;
-	this.PivotButton = null;
-	this.XfId = null;
 
-	//inner
-	this._hash;
-	this._index;
-	this.operationCache = {};
-}
-CellXfs.prototype =
-{
-	Properties: g_oCellXfsProperties,
-	getHash: function() {
-		if (!this._hash) {
-			this._hash = (this.border ? this.border.getIndexNumber() : '') + '|';
-			this._hash += (this.fill ? this.fill.getIndexNumber() : '') + '|';
-			this._hash += (this.font ? this.font.getIndexNumber() : '') + '|';
-			this._hash += (this.num ? this.num.getIndexNumber() : '') + '|';
-			this._hash += (this.align ? this.align.getIndexNumber() : '') + '|';
-			this._hash += this.QuotePrefix + '|';
-			this._hash += this.PivotButton + '|';
-			this._hash += this.XfId + '|';
-		}
-		return this._hash;
-	},
-	getIndexNumber: function() {
-		return this._index;
-	},
-	setIndexNumber: function(val) {
-		this._index = val;
-	},
-	_mergeProperty : function(addFunc, first, second, isTable, isTableColor)
-	{
-		var res = null;
-		if(null != first || null != second)
-		{
-			if(null == first)
-				res = second;
-			else if(null == second)
-				res = first;
-			else
-			{
-				if (null != first.merge) {
-					res = addFunc.call(g_StyleCache, first.merge(second, isTable, isTableColor));
-				} else {
-					res = first;
-				}
-			}
-		}
-		return res;
-	},
-	merge : function(xfs, isTable)
-	{
-		var xfIndexNumber = xfs.getIndexNumber();
-		if (undefined === xfIndexNumber) {
-			xfs = g_StyleCache.addXf(xfs);
-			xfIndexNumber = xfs.getIndexNumber();
-		}
-		var cache = this.getOperationCache("merge", xfIndexNumber);
-		if (!cache) {
-			cache = new CellXfs();
-			cache.border = this._mergeProperty(g_StyleCache.addBorder, xfs.border, this.border, isTable);
-			if (isTable && (g_StyleCache.firstXf === xfs || g_StyleCache.normalXf.fill === xfs.fill)) {
-				if (g_StyleCache.normalXf.fill === xfs.fill) {
-					cache.fill = this._mergeProperty(g_StyleCache.addFill, this.fill, g_oDefaultFormat.Fill);
-				} else {
-					cache.fill = this._mergeProperty(g_StyleCache.addFill, this.fill, xfs.fill);
-				}
-			} else {
-				cache.fill = this._mergeProperty(g_StyleCache.addFill, xfs.fill, this.fill);
-			}
-			var isTableColor = true;
-			if (isTable && (g_StyleCache.firstXf === xfs || g_StyleCache.normalXf.font === xfs.font)) {
-				if (g_StyleCache.normalXf.font === xfs.font) {
-					cache.font = this._mergeProperty(g_StyleCache.addFont, g_oDefaultFormat.Font, this.font, isTable, isTableColor);
-				} else {
-					cache.font = this._mergeProperty(g_StyleCache.addFont, xfs.font, this.font, isTable, isTableColor);
-				}
-			} else {
-				isTableColor = isTable && xfs.font && xfs.font.c && xfs.font.c.isEqual(g_StyleCache.normalXf.font.c);
-				cache.font = this._mergeProperty(g_StyleCache.addFont, xfs.font, this.font, isTable, isTableColor);
-			}
-			cache.num = this._mergeProperty(g_StyleCache.addNum, xfs.num, this.num);
-			cache.align = this._mergeProperty(g_StyleCache.addAlign, xfs.align, this.align);
-			cache.QuotePrefix = this._mergeProperty(null, xfs.QuotePrefix, this.QuotePrefix);
-			cache.PivotButton = this._mergeProperty(null, xfs.PivotButton, this.PivotButton);
-			cache.XfId = this._mergeProperty(null, xfs.XfId, this.XfId);
-			cache = g_StyleCache.addXf(cache);
-			this.setOperationCache("merge", xfIndexNumber, cache);
-		}
-		return cache;
-	},
-    clone : function()
-    {
-        var res = new CellXfs();
-		res.border = this.border;
-		res.fill = this.fill;
-		res.font = this.font;
-		res.num = this.num;
-		res.align = this.align;
-		res.QuotePrefix = this.QuotePrefix;
-		res.PivotButton = this.PivotButton;
-		res.XfId = this.XfId;
+    var g_oCellXfsProperties = {
+        border: 0,
+        fill: 1,
+        font: 2,
+        num: 3,
+        align: 4,
+        QuotePrefix: 5,
+        XfId: 6,
+        PivotButton: 7
+    };
+
+    /** @constructor */
+    function CellXfs() {
+        this.border = null;
+        this.fill = null;
+        this.font = null;
+        this.num = null;
+        this.align = null;
+        this.QuotePrefix = null;
+        this.PivotButton = null;
+        this.XfId = null;
+
+        //inner
+        this._hash;
+        this._index;
+        this.operationCache = {};
+    }
+
+    CellXfs.prototype.Properties = g_oCellXfsProperties;
+    CellXfs.prototype.getHash = function () {
+        if (!this._hash) {
+            this._hash = (this.border ? this.border.getIndexNumber() : '') + '|';
+            this._hash += (this.fill ? this.fill.getIndexNumber() : '') + '|';
+            this._hash += (this.font ? this.font.getIndexNumber() : '') + '|';
+            this._hash += (this.num ? this.num.getIndexNumber() : '') + '|';
+            this._hash += (this.align ? this.align.getIndexNumber() : '') + '|';
+            this._hash += this.QuotePrefix + '|';
+            this._hash += this.PivotButton + '|';
+            this._hash += this.XfId + '|';
+        }
+        return this._hash;
+    };
+    CellXfs.prototype.getIndexNumber = function () {
+        return this._index;
+    };
+    CellXfs.prototype.setIndexNumber = function (val) {
+        this._index = val;
+    };
+    CellXfs.prototype._mergeProperty = function (addFunc, first, second, isTable, isTableColor) {
+        var res = null;
+        if (null != first || null != second) {
+            if (null == first)
+                res = second;
+            else if (null == second)
+                res = first;
+            else {
+                if (null != first.merge) {
+                    res = addFunc.call(g_StyleCache, first.merge(second, isTable, isTableColor));
+                } else {
+                    res = first;
+                }
+            }
+        }
         return res;
-    },
-	isEqual : function(xfs)
-	{
-		return this.font === xfs.font && this.fill === xfs.fill && this.border === xfs.border && this.num === xfs.num &&
-			this.align === xfs.align && this.QuotePrefix === xfs.QuotePrefix && this.PivotButton === xfs.PivotButton &&
-			this.XfId === xfs.XfId;
-	},
-	getType : function()
-	{
-		return UndoRedoDataTypes.StyleXfs;
-	},
-	getProperties : function()
-	{
-		return this.Properties;
-	},
-	getProperty : function(nType)
-	{
-		switch(nType)
-		{
-			case this.Properties.border: return this.border;break;
-			case this.Properties.fill: return this.fill;break;
-			case this.Properties.font: return this.font;break;
-			case this.Properties.num: return this.num;break;
-			case this.Properties.align: return this.align;break;
-			case this.Properties.QuotePrefix: return this.QuotePrefix;break;
-			case this.Properties.PivotButton: return this.PivotButton;break;
-			case this.Properties.XfId: return this.XfId; break;
-		}
-	},
-	setProperty : function(nType, value)
-	{
-		switch(nType)
-		{
-			case this.Properties.border: this.border = value;break;
-			case this.Properties.fill: this.fill = value;break;
-			case this.Properties.font: this.font = value;break;
-			case this.Properties.num: this.num = value;break;
-			case this.Properties.align: this.align = value;break;
-			case this.Properties.QuotePrefix: this.QuotePrefix = value;break;
-			case this.Properties.PivotButton: this.PivotButton = value;break;
-			case this.Properties.XfId: this.XfId = value; break;
-		}
-	},
-	getBorder: function() {
-		return this.border;
-	},
-	setBorder: function(val) {
-		this.border = val;
-	},
-	getFill: function() {
-		return this.fill;
-	},
-	setFill: function(val) {
-		this.fill = val;
-	},
-	getFont: function() {
-		return this.font;
-	},
-	setFont: function(val) {
-		this.font = val;
-	},
-	getNum: function() {
-		return this.num;
-	},
-	setNum: function(val) {
-		this.num = val;
-	},
-	getAlign: function() {
-		return this.align;
-	},
-	setAlign: function(val) {
-		this.align = val;
-	},
-	getQuotePrefix: function() {
-		return this.QuotePrefix;
-	},
-	setQuotePrefix: function(val) {
-		this.QuotePrefix = val;
-	},
-	getPivotButton: function() {
-		return this.PivotButton;
-	},
-	setPivotButton: function(val) {
-		this.PivotButton = val;
-	},
-	getXfId: function() {
-		return this.XfId;
-	},
-	setXfId: function(val) {
-		this.XfId = val;
-	},
-	getOperationCache: function(operation, val) {
-		var res = undefined;
-		var operation = this.operationCache[operation];
-		if (operation) {
-			res = operation[val];
-		}
-		return res;
-	},
-	setOperationCache: function(operation, val, xfs) {
-		var valCache = this.operationCache[operation];
-		if (!valCache) {
-			valCache = {};
-			this.operationCache[operation] = valCache;
-		}
-		valCache[val] = xfs;
-	}
-};
+    };
+    CellXfs.prototype.merge = function (xfs, isTable) {
+        var xfIndexNumber = xfs.getIndexNumber();
+        if (undefined === xfIndexNumber) {
+            xfs = g_StyleCache.addXf(xfs);
+            xfIndexNumber = xfs.getIndexNumber();
+        }
+        var cache = this.getOperationCache("merge", xfIndexNumber);
+        if (!cache) {
+            cache = new CellXfs();
+            cache.border = this._mergeProperty(g_StyleCache.addBorder, xfs.border, this.border, isTable);
+            if (isTable && (g_StyleCache.firstXf === xfs || g_StyleCache.normalXf.fill === xfs.fill)) {
+                if (g_StyleCache.normalXf.fill === xfs.fill) {
+                    cache.fill = this._mergeProperty(g_StyleCache.addFill, this.fill, g_oDefaultFormat.Fill);
+                } else {
+                    cache.fill = this._mergeProperty(g_StyleCache.addFill, this.fill, xfs.fill);
+                }
+            } else {
+                cache.fill = this._mergeProperty(g_StyleCache.addFill, xfs.fill, this.fill);
+            }
+            var isTableColor = true;
+            if (isTable && (g_StyleCache.firstXf === xfs || g_StyleCache.normalXf.font === xfs.font)) {
+                if (g_StyleCache.normalXf.font === xfs.font) {
+                    cache.font = this._mergeProperty(g_StyleCache.addFont, g_oDefaultFormat.Font, this.font, isTable, isTableColor);
+                } else {
+                    cache.font = this._mergeProperty(g_StyleCache.addFont, xfs.font, this.font, isTable, isTableColor);
+                }
+            } else {
+                isTableColor = isTable && xfs.font && xfs.font.c && xfs.font.c.isEqual(g_StyleCache.normalXf.font.c);
+                cache.font = this._mergeProperty(g_StyleCache.addFont, xfs.font, this.font, isTable, isTableColor);
+            }
+            cache.num = this._mergeProperty(g_StyleCache.addNum, xfs.num, this.num);
+            cache.align = this._mergeProperty(g_StyleCache.addAlign, xfs.align, this.align);
+            cache.QuotePrefix = this._mergeProperty(null, xfs.QuotePrefix, this.QuotePrefix);
+            cache.PivotButton = this._mergeProperty(null, xfs.PivotButton, this.PivotButton);
+            cache.XfId = this._mergeProperty(null, xfs.XfId, this.XfId);
+            cache = g_StyleCache.addXf(cache);
+            this.setOperationCache("merge", xfIndexNumber, cache);
+        }
+        return cache;
+    };
+    CellXfs.prototype.clone = function () {
+        var res = new CellXfs();
+        res.border = this.border;
+        res.fill = this.fill;
+        res.font = this.font;
+        res.num = this.num;
+        res.align = this.align;
+        res.QuotePrefix = this.QuotePrefix;
+        res.PivotButton = this.PivotButton;
+        res.XfId = this.XfId;
+        return res;
+    };
+    CellXfs.prototype.isEqual = function (xfs) {
+        return this.font === xfs.font && this.fill === xfs.fill && this.border === xfs.border && this.num === xfs.num &&
+            this.align === xfs.align && this.QuotePrefix === xfs.QuotePrefix && this.PivotButton === xfs.PivotButton &&
+            this.XfId === xfs.XfId;
+    };
+    CellXfs.prototype.getType = function () {
+        return UndoRedoDataTypes.StyleXfs;
+    };
+    CellXfs.prototype.getProperties = function () {
+        return this.Properties;
+    };
+    CellXfs.prototype.getProperty = function (nType) {
+        switch (nType) {
+            case this.Properties.border:
+                return this.border;
+            case this.Properties.fill:
+                return this.fill;
+            case this.Properties.font:
+                return this.font;
+            case this.Properties.num:
+                return this.num;
+            case this.Properties.align:
+                return this.align;
+            case this.Properties.QuotePrefix:
+                return this.QuotePrefix;
+            case this.Properties.PivotButton:
+                return this.PivotButton;
+            case this.Properties.XfId:
+                return this.XfId;
+        }
+    };
+    CellXfs.prototype.setProperty = function (nType, value) {
+        switch (nType) {
+            case this.Properties.border:
+                this.border = value;
+                break;
+            case this.Properties.fill:
+                this.fill = value;
+                break;
+            case this.Properties.font:
+                this.font = value;
+                break;
+            case this.Properties.num:
+                this.num = value;
+                break;
+            case this.Properties.align:
+                this.align = value;
+                break;
+            case this.Properties.QuotePrefix:
+                this.QuotePrefix = value;
+                break;
+            case this.Properties.PivotButton:
+                this.PivotButton = value;
+                break;
+            case this.Properties.XfId:
+                this.XfId = value;
+                break;
+        }
+    };
+    CellXfs.prototype.getBorder = function () {
+        return this.border;
+    };
+    CellXfs.prototype.setBorder = function (val) {
+        this.border = val;
+    };
+    CellXfs.prototype.getFill = function () {
+        return this.fill;
+    };
+	CellXfs.prototype.getFill2 = function () {
+		// ToDo check this! Rename to getFill
+		return this.fill || g_oDefaultFormat.Fill;
+	};
+    CellXfs.prototype.setFill = function (val) {
+        this.fill = val;
+    };
+    CellXfs.prototype.getFont = function () {
+        return this.font;
+    };
+	CellXfs.prototype.getFont2 = function () {
+		// ToDo check this! Rename to getFont
+		return this.font || g_oDefaultFormat.Font;
+	};
+    CellXfs.prototype.setFont = function (val) {
+        this.font = val;
+    };
+    CellXfs.prototype.getNum = function () {
+        return this.num;
+    };
+	CellXfs.prototype.getNum2 = function () {
+		// ToDo check this! Rename to getNum
+		return this.num || g_oDefaultFormat.Num;
+	};
+    CellXfs.prototype.setNum = function (val) {
+        this.num = val;
+    };
+    CellXfs.prototype.getAlign = function () {
+        return this.align;
+    };
+    CellXfs.prototype.getAlign2 = function () {
+        // ToDo check this! Rename to getAlign
+        return this.align || g_oDefaultFormat.Align;
+    };
+    CellXfs.prototype.setAlign = function (val) {
+        this.align = val;
+    };
+    CellXfs.prototype.getQuotePrefix = function () {
+        return this.QuotePrefix;
+    };
+    CellXfs.prototype.setQuotePrefix = function (val) {
+        this.QuotePrefix = val;
+    };
+    CellXfs.prototype.getPivotButton = function () {
+        return this.PivotButton;
+    };
+    CellXfs.prototype.setPivotButton = function (val) {
+        this.PivotButton = val;
+    };
+    CellXfs.prototype.getXfId = function () {
+        return this.XfId;
+    };
+    CellXfs.prototype.setXfId = function (val) {
+        this.XfId = val;
+    };
+    CellXfs.prototype.getOperationCache = function (operation, val) {
+        var res = undefined;
+        operation = this.operationCache[operation];
+        if (operation) {
+            res = operation[val];
+        }
+        return res;
+    };
+    CellXfs.prototype.setOperationCache = function (operation, val, xfs) {
+        var valCache = this.operationCache[operation];
+        if (!valCache) {
+            valCache = {};
+            this.operationCache[operation] = valCache;
+        }
+        valCache[val] = xfs;
+    };
+
+	CellXfs.prototype.asc_getFillColor = function () {
+		return Asc.colorObjToAscColor(this.getFill2().bg());
+	};
+	CellXfs.prototype.asc_getFill = function () {
+		return this.getFill2().clone();
+	};
+
+    CellXfs.prototype.asc_getFontName = function () {
+		return this.getFont2().getName();
+	};
+    CellXfs.prototype.asc_getFontSize = function () {
+        return this.getFont2().getSize();
+    };
+    CellXfs.prototype.asc_getFontColor = function () {
+        return Asc.colorObjToAscColor(this.getFont2().getColor());
+    };
+    CellXfs.prototype.asc_getFontBold = function () {
+        return this.getFont2().getBold();
+    };
+    CellXfs.prototype.asc_getFontItalic = function () {
+        return this.getFont2().getItalic();
+    };
+    CellXfs.prototype.asc_getFontUnderline = function () {
+        // ToDo убрать, когда будет реализовано двойное подчеркивание
+        return (Asc.EUnderline.underlineNone !== this.getFont2().getUnderline());
+    };
+    CellXfs.prototype.asc_getFontStrikeout = function () {
+        return this.getFont2().getStrikeout();
+    };
+    CellXfs.prototype.asc_getFontSubscript = function () {
+        return (AscCommon.vertalign_SubScript === this.getFont2().getVerticalAlign());
+    };
+    CellXfs.prototype.asc_getFontSuperscript = function () {
+        return (AscCommon.vertalign_SuperScript === this.getFont2().getVerticalAlign());
+    };
+
+	CellXfs.prototype.asc_getNumFormat = function () {
+		return this.getNum2().getFormat();
+	};
+	CellXfs.prototype.asc_getNumFormatInfo = function () {
+		return this.getNum2().getNumFormat().getTypeInfo();
+	};
+
+	CellXfs.prototype.asc_getHorAlign = function () {
+		return this.getAlign2().getAlignHorizontal();
+	};
+	CellXfs.prototype.asc_getVertAlign = function () {
+		return this.getAlign2().getAlignVertical();
+	};
+	CellXfs.prototype.asc_getAngle = function () {
+		return this.getAlign2().getAngle();
+	};
+	CellXfs.prototype.asc_getWrapText = function () {
+		return this.getAlign2().getWrap();
+	};
+	CellXfs.prototype.asc_getShrinkToFit = function () {
+		return this.getAlign2().getShrinkToFit();
+	};
 
 	function FromXml_ST_HorizontalAlignment(val) {
 		var res = -1;
@@ -2665,7 +2770,7 @@ CellXfs.prototype =
 		return res;
 	}
 
-var g_oAlignProperties = {
+	var g_oAlignProperties = {
 		hor: 0,
 		indent: 1,
 		RelativeIndent: 2,
@@ -2674,47 +2779,44 @@ var g_oAlignProperties = {
 		ver: 5,
 		wrap: 6
 	};
-/** @constructor */
-function Align(val)
-{
-	if(null == val)
-		val = g_oDefaultFormat.AlignAbs;
-	this.hor = val.hor;
-	this.indent = val.indent;
-	this.RelativeIndent = val.RelativeIndent;
-	this.shrink = val.shrink;
-	this.angle = val.angle;
-	this.ver = val.ver;
-	this.wrap = val.wrap;
 
-	this._hash;
-	this._index;
-}
-Align.prototype =
-{
-	Properties: g_oAlignProperties,
-	getHash: function() {
+	/** @constructor */
+	function Align(val) {
+		if (null == val)
+			val = g_oDefaultFormat.AlignAbs;
+		this.hor = val.hor;
+		this.indent = val.indent;
+		this.RelativeIndent = val.RelativeIndent;
+		this.shrink = val.shrink;
+		this.angle = val.angle;
+		this.ver = val.ver;
+		this.wrap = val.wrap;
+
+		this._hash;
+		this._index;
+	}
+
+	Align.prototype.Properties = g_oAlignProperties;
+	Align.prototype.getHash = function () {
 		if (!this._hash) {
 			this._hash = this.hor + '|' + this.indent + '|' + this.RelativeIndent + '|' + this.shrink + '|' +
 				this.angle + '|' + this.ver + '|' + this.wrap;
 		}
 		return this._hash;
-	},
-	getIndexNumber: function() {
+	};
+	Align.prototype.getIndexNumber = function () {
 		return this._index;
-	},
-	setIndexNumber: function(val) {
+	};
+	Align.prototype.setIndexNumber = function (val) {
 		this._index = val;
-	},
-	_mergeProperty : function(first, second, def)
-	{
+	};
+	Align.prototype._mergeProperty = function (first, second, def) {
 		if (def != first)
 			return first;
 		else
 			return second;
-	},
-	merge : function(align)
-	{
+	};
+	Align.prototype.merge = function (align) {
 		var defaultAlign = g_oDefaultFormat.Align;
 		var oRes = new Align();
 		oRes.hor = this._mergeProperty(this.hor, align.hor, defaultAlign.hor);
@@ -2725,162 +2827,181 @@ Align.prototype =
 		oRes.ver = this._mergeProperty(this.ver, align.ver, defaultAlign.ver);
 		oRes.wrap = this._mergeProperty(this.wrap, align.wrap, defaultAlign.wrap);
 		return oRes;
-	},
-	getDif : function(val)
-	{
+	};
+	Align.prototype.getDif = function (val) {
 		var oRes = new Align(this);
 		var bEmpty = true;
-		if(this.hor == val.hor)
-			oRes.hor =  null;
+		if (this.hor == val.hor)
+			oRes.hor = null;
 		else
 			bEmpty = false;
-		if(this.indent == val.indent)
-			oRes.indent =  null;
+		if (this.indent == val.indent)
+			oRes.indent = null;
 		else
 			bEmpty = false;
-		if(this.RelativeIndent == val.RelativeIndent)
-			oRes.RelativeIndent =  null;
+		if (this.RelativeIndent == val.RelativeIndent)
+			oRes.RelativeIndent = null;
 		else
 			bEmpty = false;
-		if(this.shrink == val.shrink)
-			oRes.shrink =  null;
+		if (this.shrink == val.shrink)
+			oRes.shrink = null;
 		else
 			bEmpty = false;
-		if(this.angle == val.angle)
-			oRes.angle =  null;
+		if (this.angle == val.angle)
+			oRes.angle = null;
 		else
 			bEmpty = false;
-		if(this.ver == val.ver)
-			oRes.ver =  null;
+		if (this.ver == val.ver)
+			oRes.ver = null;
 		else
 			bEmpty = false;
-		if(this.wrap == val.wrap)
-			oRes.wrap =  null;
+		if (this.wrap == val.wrap)
+			oRes.wrap = null;
 		else
 			bEmpty = false;
-		if(bEmpty)
+		if (bEmpty)
 			oRes = null;
 		return oRes;
-	},
-	isEqual : function(val)
-	{
+	};
+	Align.prototype.isEqual = function (val) {
 		return this.hor == val.hor && this.indent == val.indent && this.RelativeIndent == val.RelativeIndent && this.shrink == val.shrink &&
-				this.angle == val.angle && this.ver == val.ver && this.wrap == val.wrap;
-	},
-    clone : function()
-    {
-        return new Align(this);
-    },
-	getType : function()
-	{
+			this.angle == val.angle && this.ver == val.ver && this.wrap == val.wrap;
+	};
+	Align.prototype.clone = function () {
+		return new Align(this);
+	};
+	Align.prototype.getType = function () {
 		return UndoRedoDataTypes.StyleAlign;
-	},
-	getProperties : function()
-	{
+	};
+	Align.prototype.getProperties = function () {
 		return this.Properties;
-	},
-	getProperty : function(nType)
-	{
-		switch(nType)
-		{
-			case this.Properties.hor: return this.hor;break;
-			case this.Properties.indent: return this.indent;break;
-			case this.Properties.RelativeIndent: return this.RelativeIndent;break;
-			case this.Properties.shrink: return this.shrink;break;
-			case this.Properties.angle: return this.angle;break;
-			case this.Properties.ver: return this.ver;break;
-			case this.Properties.wrap: return this.wrap;break;
+	};
+	Align.prototype.getProperty = function (nType) {
+		switch (nType) {
+			case this.Properties.hor:
+				return this.hor;
+				break;
+			case this.Properties.indent:
+				return this.indent;
+				break;
+			case this.Properties.RelativeIndent:
+				return this.RelativeIndent;
+				break;
+			case this.Properties.shrink:
+				return this.shrink;
+				break;
+			case this.Properties.angle:
+				return this.angle;
+				break;
+			case this.Properties.ver:
+				return this.ver;
+				break;
+			case this.Properties.wrap:
+				return this.wrap;
+				break;
 		}
-	},
-	setProperty : function(nType, value)
-	{
-		switch(nType)
-		{
-			case this.Properties.hor: this.hor = value;break;
-			case this.Properties.indent: this.indent = value;break;
-			case this.Properties.RelativeIndent: this.RelativeIndent = value;break;
-			case this.Properties.shrink: this.shrink = value;break;
-			case this.Properties.angle: this.angle = value;break;
-			case this.Properties.ver: this.ver = value;break;
-			case this.Properties.wrap: this.wrap = value;break;
+	};
+	Align.prototype.setProperty = function (nType, value) {
+		switch (nType) {
+			case this.Properties.hor:
+				this.hor = value;
+				break;
+			case this.Properties.indent:
+				this.indent = value;
+				break;
+			case this.Properties.RelativeIndent:
+				this.RelativeIndent = value;
+				break;
+			case this.Properties.shrink:
+				this.shrink = value;
+				break;
+			case this.Properties.angle:
+				this.angle = value;
+				break;
+			case this.Properties.ver:
+				this.ver = value;
+				break;
+			case this.Properties.wrap:
+				this.wrap = value;
+				break;
 		}
-	},
-	getAngle: function() {
+	};
+	Align.prototype.getAngle = function () {
 		var nRes = 0;
 		if (0 <= this.angle && this.angle <= 180) {
 			nRes = this.angle <= 90 ? this.angle : 90 - this.angle;
 		}
 		return nRes;
-	},
-	setAngle: function(val) {
-		this.angle = AscCommonExcel.angleInterfaceToFormat(val);;
-	},
-	getWrap: function() {
+	};
+	Align.prototype.setAngle = function (val) {
+		this.angle = null !== val ? AscCommonExcel.angleInterfaceToFormat(val) : val;
+	};
+	Align.prototype.getWrap = function () {
 		// Для justify wrap всегда true
 		return (AscCommon.align_Justify === this.hor || Asc.c_oAscVAlign.Just === this.ver || Asc.c_oAscVAlign.Dist === this.ver) ? true : this.wrap;
-	},
-	setWrap: function(val) {
+	};
+	Align.prototype.setWrap = function (val) {
 		this.wrap = val;
-	},
-	getShrinkToFit: function() {
+	};
+	Align.prototype.getShrinkToFit = function () {
 		return this.shrink;
-	},
-	setShrinkToFit: function(val) {
+	};
+	Align.prototype.setShrinkToFit = function (val) {
 		this.shrink = val;
-	},
-	getAlignHorizontal: function() {
+	};
+	Align.prototype.getAlignHorizontal = function () {
 		return this.hor;
-	},
-	setAlignHorizontal: function(val) {
+	};
+	Align.prototype.setAlignHorizontal = function (val) {
 		this.hor = val;
-	},
-	getAlignVertical: function() {
+	};
+	Align.prototype.getAlignVertical = function () {
 		return this.ver;
-	},
-	setAlignVertical: function(val) {
+	};
+	Align.prototype.setAlignVertical = function (val) {
 		this.ver = val;
-	},
-	readAttributes : function(attr, uq) {
-	if(attr()){
-		var vals = attr();
-		var val;
-		val = vals["horizontal"];
-		if(undefined !== val){
-			val = FromXml_ST_HorizontalAlignment(val);
-			if(-1 !== val){
-				this.hor = val;
+	};
+	Align.prototype.readAttributes = function (attr, uq) {
+		if (attr()) {
+			var vals = attr();
+			var val;
+			val = vals["horizontal"];
+			if (undefined !== val) {
+				val = FromXml_ST_HorizontalAlignment(val);
+				if (-1 !== val) {
+					this.hor = val;
+				}
+			}
+			val = vals["vertical"];
+			if (undefined !== val) {
+				val = FromXml_ST_VerticalAlignment(val);
+				if (-1 !== val) {
+					this.ver = val;
+				}
+			}
+			val = vals["textRotation"];
+			if (undefined !== val) {
+				this.angle = val - 0;
+			}
+			val = vals["wrapText"];
+			if (undefined !== val) {
+				this.wrap = AscCommon.getBoolFromXml(val);
+			}
+			val = vals["indent"];
+			if (undefined !== val) {
+				this.indent = val - 0;
+			}
+			val = vals["relativeIndent"];
+			if (undefined !== val) {
+				this.RelativeIndent = val - 0;
+			}
+			val = vals["shrinkToFit"];
+			if (undefined !== val) {
+				this.shrink = AscCommon.getBoolFromXml(val);
 			}
 		}
-		val = vals["vertical"];
-		if(undefined !== val){
-			val = FromXml_ST_VerticalAlignment(val);
-			if(-1 !== val){
-				this.ver = val;
-			}
-		}
-		val = vals["textRotation"];
-		if(undefined !== val){
-			this.angle = val - 0;
-		}
-		val = vals["wrapText"];
-		if(undefined !== val){
-			this.wrap = AscCommon.getBoolFromXml(val);
-		}
-		val = vals["indent"];
-		if(undefined !== val){
-			this.indent = val - 0;
-		}
-		val = vals["relativeIndent"];
-		if(undefined !== val){
-			this.RelativeIndent = val - 0;
-		}
-		val = vals["shrinkToFit"];
-		if(undefined !== val){
-			this.shrink = AscCommon.getBoolFromXml(val);
-		}
-	}
-}
-};
+	};
+
 /** @constructor */
 function CCellStyles() {
 	this.CustomStyles = [];
@@ -3081,7 +3202,7 @@ function StyleManager(){
 }
 StyleManager.prototype =
 {
-	init: function(wb, firstXf, firstFont, firstFill, secondFill, firstBorder, normalXf) {
+	init: function(firstXf, firstFont, firstFill, secondFill, firstBorder, normalXf) {
 		g_StyleCache.firstXf = firstXf;
 		g_StyleCache.firstFont = firstFont;
 		g_StyleCache.firstFill = firstFill;
@@ -3089,15 +3210,15 @@ StyleManager.prototype =
 		g_StyleCache.firstBorder = firstBorder;
 		g_StyleCache.normalXf = normalXf;
 		if(null != firstXf.font)
-			g_oDefaultFormat.Font = firstXf.font;
+			g_oDefaultFormat.xfs.font = g_oDefaultFormat.Font = firstXf.font;
 		if(null != firstXf.fill)
-			g_oDefaultFormat.Fill = firstXf.fill.clone();
+			g_oDefaultFormat.xfs.fill = g_oDefaultFormat.Fill = firstXf.fill.clone();
 		if(null != firstXf.border)
-			g_oDefaultFormat.Border = firstXf.border.clone();
+			g_oDefaultFormat.xfs.border = g_oDefaultFormat.Border = firstXf.border.clone();
 		if(null != firstXf.num)
-			g_oDefaultFormat.Num = firstXf.num.clone();
+			g_oDefaultFormat.xfs.num = g_oDefaultFormat.Num = firstXf.num.clone();
 		if(null != firstXf.align)
-			g_oDefaultFormat.Align = firstXf.align.clone();
+			g_oDefaultFormat.xfs.align = g_oDefaultFormat.Align = firstXf.align.clone();
 		if (null !== firstXf.XfId) {
 			g_oDefaultFormat.XfId = firstXf.XfId;
 		}
@@ -4699,6 +4820,10 @@ CCellValue.prototype =
 
 		return false;
 	},
+	isEqualCell : function(cell)
+	{
+		return this.isEqual(cell);
+	},
 	getType : function()
 	{
 		return UndoRedoDataTypes.CellValue;
@@ -5198,8 +5323,7 @@ function RangeDataManagerElem(bbox, data)
 				--i;
 			}
 		}
-		var bRemove = (0 === this.arrSparklines.length);
-		return bRemove;
+		return (0 === this.arrSparklines.length);
 	};
 	sparklineGroup.prototype.getLocationRanges = function (onlySingle) {
 		var result = new AscCommonExcel.SelectionRange();
@@ -5286,28 +5410,28 @@ function RangeDataManagerElem(bbox, data)
 		return this.manualMin;
 	};
 	sparklineGroup.prototype.asc_getColorSeries = function () {
-		return this.colorSeries ? Asc.colorObjToAscColor(this.colorSeries) : this.colorSeries;
+		return Asc.colorObjToAscColor(this.colorSeries);
 	};
 	sparklineGroup.prototype.asc_getColorNegative = function () {
-		return this.colorNegative ? Asc.colorObjToAscColor(this.colorNegative) : this.colorNegative;
+		return Asc.colorObjToAscColor(this.colorNegative);
 	};
 	sparklineGroup.prototype.asc_getColorAxis = function () {
-		return this.colorAxis ? Asc.colorObjToAscColor(this.colorAxis) : this.colorAxis;
+		return Asc.colorObjToAscColor(this.colorAxis);
 	};
 	sparklineGroup.prototype.asc_getColorMarkers = function () {
-		return this.colorMarkers ? Asc.colorObjToAscColor(this.colorMarkers) : this.colorMarkers;
+		return Asc.colorObjToAscColor(this.colorMarkers);
 	};
 	sparklineGroup.prototype.asc_getColorFirst = function () {
-		return this.colorFirst ? Asc.colorObjToAscColor(this.colorFirst) : this.colorFirst;
+		return Asc.colorObjToAscColor(this.colorFirst);
 	};
 	sparklineGroup.prototype.asc_getColorLast = function () {
-		return this.colorLast ? Asc.colorObjToAscColor(this.colorLast) : this.colorLast;
+		return Asc.colorObjToAscColor(this.colorLast);
 	};
 	sparklineGroup.prototype.asc_getColorHigh = function () {
-		return this.colorHigh ? Asc.colorObjToAscColor(this.colorHigh) : this.colorHigh;
+		return Asc.colorObjToAscColor(this.colorHigh);
 	};
 	sparklineGroup.prototype.asc_getColorLow = function () {
-		return this.colorLow ? Asc.colorObjToAscColor(this.colorLow) : this.colorLow;
+		return Asc.colorObjToAscColor(this.colorLow);
 	};
 	sparklineGroup.prototype.asc_getDataRanges = function () {
 		var arrResultData = [];
@@ -8745,6 +8869,10 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 		this.headings = null;
 		this.ws = ws;
 
+		//только для передачи из интефейса
+		this.printTitlesWidth = null;
+		this.printTitlesHeight = null;
+
 		return this;
 	}
 	asc_CPageOptions.prototype.init = function () {
@@ -8754,6 +8882,42 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 			this.gridLines = c_oAscPrintDefaultSettings.PageGridLines;
 		if (null == this.headings)
 			this.headings = c_oAscPrintDefaultSettings.PageHeadings;
+	};
+	asc_CPageOptions.prototype.initPrintTitles = function () {
+		//функция добавлена только для того, чтобы в интерфейс передать текущие заголовки печати, которые хранятся как именованный диапазон
+
+		this.printTitlesWidth = null;
+		this.printTitlesHeight = null;
+
+		var printTitles = this.ws.workbook.getDefinesNames("Print_Titles", this.ws.getId());
+		var c1, c2, r1, r2;
+		var t = this;
+		if (printTitles) {
+			var printTitleRefs;
+			AscCommonExcel.executeInR1C1Mode(false, function () {
+				printTitleRefs = AscCommonExcel.getRangeByRef(printTitles.ref, t.ws, true, true)
+			});
+			if (printTitleRefs && printTitleRefs.length) {
+				for (var i = 0; i < printTitleRefs.length; i++) {
+					var bbox = printTitleRefs[i].bbox;
+					if (bbox) {
+						if (Asc.c_oAscSelectionType.RangeCol === bbox.getType()) {
+							c1 = bbox.c1;
+							c2 = bbox.c2;
+						} else if(Asc.c_oAscSelectionType.RangeRow === bbox.getType()) {
+							r1 = bbox.r1;
+							r2 = bbox.r2;
+						}
+					}
+				}
+			}
+		}
+		if (c1 !== undefined) {
+			this.printTitlesWidth = new Asc.Range(c1, 0, c2, gc_nMaxRow0).getAbsName();
+		}
+		if(r1 !== undefined) {
+			this.printTitlesHeight = new Asc.Range(0, r1, gc_nMaxCol0, r2).getAbsName()
+		}
 	};
 	asc_CPageOptions.prototype.clone = function (ws) {
 		var res = new asc_CPageOptions(ws);
@@ -8801,6 +8965,18 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 
 		this.asc_getPageMargins().asc_setOptions(obj.asc_getPageMargins());
 		this.asc_getPageSetup().asc_setOptions(obj.asc_getPageSetup());
+	};
+	asc_CPageOptions.prototype.asc_setPrintTitlesWidth = function (newVal) {
+		this.printTitlesWidth = newVal;
+	};
+	asc_CPageOptions.prototype.asc_setPrintTitlesHeight = function (newVal) {
+		this.printTitlesHeight = newVal;
+	};
+	asc_CPageOptions.prototype.asc_getPrintTitlesWidth = function () {
+		return this.printTitlesWidth;
+	};
+	asc_CPageOptions.prototype.asc_getPrintTitlesHeight = function () {
+		return this.printTitlesHeight;
 	};
 
 
@@ -9354,6 +9530,97 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 		return this.isText;
 	};
 
+	function CRemoveDuplicatesProps(ws) {
+		this.selection = null;
+		this._newSelection = null;
+		this.hasHeaders = null;
+
+		this.columnList = null;
+
+		this._ws = ws;
+
+		this.duplicateValues = null;
+		this.uniqueValues = null;
+
+		return this;
+	}
+	CRemoveDuplicatesProps.prototype.asc_getHasHeaders = function () {
+		return this.hasHeaders;
+	};
+	CRemoveDuplicatesProps.prototype.asc_getColumnList = function () {
+		return this.columnList;
+	};
+	CRemoveDuplicatesProps.prototype.asc_setHasHeaders = function (val) {
+		var oldVal = !!this.hasHeaders;
+		if (this._newSelection && oldVal !== val) {
+			if(val) {
+				this._newSelection.r1++;
+			} else {
+				this._newSelection.r1--;
+			}
+			this._ws.setSelection(this._newSelection);
+		}
+		this.hasHeaders = val;
+	};
+	CRemoveDuplicatesProps.prototype.asc_updateColumnList = function () {
+		//TODO change selection
+		this.generateColumnList();
+	};
+	CRemoveDuplicatesProps.prototype.generateColumnList = function () {
+		var maxCount = 500;
+		var selection = this._newSelection;
+		var j, elem;
+
+		if(this.columnList && this.columnList.length) {
+			for(j in this.columnList) {
+				this.columnList[j].asc_setVal(this.getNameColumnByIndex(parseInt(j)));
+			}
+		} else {
+			this.columnList = [];
+			for(j = selection.c1; j <= selection.c2; j++) {
+				if(j - selection.c1 >= maxCount) {
+					break;
+				}
+				elem = new window["AscCommonExcel"].AutoFiltersOptionsElements();
+				elem.asc_setVisible(true);
+				elem.asc_setVal(this.getNameColumnByIndex(j - selection.c1));
+				this.columnList.push(elem);
+			}
+		}
+	};
+	CRemoveDuplicatesProps.prototype.getNameColumnByIndex = function (index) {
+		var t = this;
+		var _generateName = function(index) {
+			var base = AscCommon.translateManager.getValue("Column");
+			var text = t._ws._getColumnTitle(index);
+			text = base + " " + text;
+			return text;
+		};
+
+		var row = this._newSelection.r1;
+		var col = index + this._newSelection.c1;
+
+		if(!this.hasHeaders) {
+			return _generateName(col);
+		} else {
+			var cell = t._ws.model.getCell3(row - 1, col);
+			var value = cell.getValueWithFormat();
+			return value !== "" ? value : _generateName(col);
+		}
+	};
+	CRemoveDuplicatesProps.prototype.setDuplicateValues = function (val) {
+		this.duplicateValues = val;
+	};
+	CRemoveDuplicatesProps.prototype.setUniqueValues = function (val) {
+		this.uniqueValues = val;
+	};
+	CRemoveDuplicatesProps.prototype.asc_getDuplicateValues = function (val) {
+		return this.duplicateValues;
+	};
+	CRemoveDuplicatesProps.prototype.asc_getUniqueValues = function (val) {
+		return this.uniqueValues;
+	};
+
 
 	//----------------------------------------------------------export----------------------------------------------------
 	var prot;
@@ -9438,6 +9705,25 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 	window['AscCommonExcel'].Border = Border;
 	window['AscCommonExcel'].Num = Num;
 	window['AscCommonExcel'].CellXfs = CellXfs;
+	prot = CellXfs.prototype;
+	prot["asc_getFillColor"] = prot.asc_getFillColor;
+	prot["asc_getFill"] = prot.asc_getFill;
+	prot["asc_getFontName"] = prot.asc_getFontName;
+    prot["asc_getFontSize"] = prot.asc_getFontSize;
+    prot["asc_getFontColor"] = prot.asc_getFontColor;
+    prot["asc_getFontBold"] = prot.asc_getFontBold;
+    prot["asc_getFontItalic"] = prot.asc_getFontItalic;
+    prot["asc_getFontUnderline"] = prot.asc_getFontUnderline;
+    prot["asc_getFontStrikeout"] = prot.asc_getFontStrikeout;
+    prot["asc_getFontSubscript"] = prot.asc_getFontSubscript;
+    prot["asc_getFontSuperscript"] = prot.asc_getFontSuperscript;
+	prot["asc_getNumFormat"] = prot.asc_getNumFormat;
+	prot["asc_getNumFormatInfo"] = prot.asc_getNumFormatInfo;
+	prot["asc_getHorAlign"] = prot.asc_getHorAlign;
+	prot["asc_getVertAlign"] = prot.asc_getVertAlign;
+	prot["asc_getAngle"] = prot.asc_getAngle;
+	prot["asc_getWrapText"] = prot.asc_getWrapText;
+	prot["asc_getShrinkToFit"] = prot.asc_getShrinkToFit;
 	window['AscCommonExcel'].Align = Align;
 	window['AscCommonExcel'].CCellStyles = CCellStyles;
 	window['AscCommonExcel'].CCellStyle = CCellStyle;
@@ -9601,6 +9887,10 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 	prot["asc_setPageSetup"] = prot.asc_setPageSetup;
 	prot["asc_setGridLines"] = prot.asc_setGridLines;
 	prot["asc_setHeadings"] = prot.asc_setHeadings;
+	prot["asc_setPrintTitlesWidth"] = prot.asc_setPrintTitlesWidth;
+	prot["asc_setPrintTitlesHeight"] = prot.asc_setPrintTitlesHeight;
+	prot["asc_getPrintTitlesWidth"] = prot.asc_getPrintTitlesWidth;
+	prot["asc_getPrintTitlesHeight"] = prot.asc_getPrintTitlesHeight;
 
 	window["Asc"]["CHeaderFooter"] = window["Asc"].CHeaderFooter = CHeaderFooter;
 	window["Asc"]["CHeaderFooterData"] = window["Asc"].CHeaderFooterData = CHeaderFooterData;
@@ -9643,5 +9933,14 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 	prot["asc_getColorsFill"] = prot.asc_getColorsFill;
 	prot["asc_getColorsFont"] = prot.asc_getColorsFont;
 	prot["asc_getIsTextData"] = prot.asc_getIsTextData;
+
+	window["Asc"]["CRemoveDuplicatesProps"] = window["Asc"].CRemoveDuplicatesProps = CRemoveDuplicatesProps;
+	prot = CRemoveDuplicatesProps.prototype;
+	prot["asc_getHasHeaders"] = prot.asc_getHasHeaders;
+	prot["asc_getColumnList"] = prot.asc_getColumnList;
+	prot["asc_updateColumnList"] = prot.asc_updateColumnList;
+	prot["asc_setHasHeaders"] = prot.asc_setHasHeaders;
+	prot["asc_getDuplicateValues"] = prot.asc_getDuplicateValues;
+	prot["asc_getUniqueValues"] = prot.asc_getUniqueValues;
 
 })(window);

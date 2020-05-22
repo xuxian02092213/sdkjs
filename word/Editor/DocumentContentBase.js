@@ -77,7 +77,7 @@ CDocumentContentBase.prototype.GetDocPosType = function()
 };
 /**
  * Выставляем тип активной части документа.
- * @param {(docpostype_Content | docpostype_HdrFtr | docpostype_DrawingObjects | docpostype_Footnotes)} nType
+ * @param {(docpostype_Content | docpostype_HdrFtr | docpostype_DrawingObjects | docpostype_Footnotes | docpostype_Endnotes)} nType
  */
 CDocumentContentBase.prototype.SetDocPosType = function(nType)
 {
@@ -96,6 +96,10 @@ CDocumentContentBase.prototype.SetDocPosType = function(nType)
 		else if (docpostype_Footnotes === nType)
 		{
 			this.Controller = this.Footnotes;
+		}
+		else if (docpostype_Endnotes === nType)
+		{
+			this.Controller = this.Endnotes;
 		}
 		else //if (docpostype_Content === nType)
 		{
@@ -195,11 +199,12 @@ CDocumentContentBase.prototype.GetAllSeqFieldsByType = function(sType, aFields)
  * Находим отрезок сносок, заданный между сносками.
  * @param {?CFootEndnote} oFirstFootnote - если null, то иещм с начала документа
  * @param {?CFootEndnote} oLastFootnote - если null, то ищем до конца документа
+ * @param {boolean} [isEndnotes=false] - собираем концевые сноски или нет
  */
-CDocumentContentBase.prototype.GetFootnotesList = function(oFirstFootnote, oLastFootnote)
+CDocumentContentBase.prototype.GetFootnotesList = function(oFirstFootnote, oLastFootnote, isEndnotes)
 {
 	var oEngine = new CDocumentFootnotesRangeEngine();
-	oEngine.Init(oFirstFootnote, oLastFootnote);
+	oEngine.Init(oFirstFootnote, oLastFootnote, isEndnotes);
 
 	var arrFootnotes = [];
 
@@ -697,6 +702,19 @@ CDocumentContentBase.prototype.private_Remove = function(Count, isRemoveWholeEle
 							this.Content[StartPos].Concat(this.Content[StartPos + 1]);
 							this.Internal_Content_Remove(StartPos + 1, 1);
 						}
+						else if (StartPos < this.Content.length - 1 && this.Content[StartPos].IsParagraph() && this.Content[StartPos + 1].IsTable())
+						{
+							var oCurPara        = this.Content[StartPos];
+							var oFirstParagraph = this.Content[StartPos + 1].GetFirstParagraph();
+
+							oFirstParagraph.MoveCursorToStartPos();
+							oFirstParagraph.ConcatBefore(oCurPara);
+							this.RemoveFromContent(StartPos, 1);
+							var oState = oFirstParagraph.SaveSelectionState();
+							this.Content[StartPos].MoveCursorToStartPos(false);
+							oFirstParagraph.LoadSelectionState(oState);
+							this.CurPos.ContentPos = StartPos;
+						}
 						else if (this.Content.length === 1 && true === this.Content[0].IsEmpty())
 						{
 							if (Count > 0)
@@ -854,6 +872,27 @@ CDocumentContentBase.prototype.private_Remove = function(Count, isRemoveWholeEle
 									this.Internal_Content_Remove(nCurContentPos + 1, 1);
 								}
 							}
+						}
+					}
+					else if (nCurContentPos < this.Content.length - 1 && this.Content[nCurContentPos + 1].IsTable())
+					{
+						if (this.Content[nCurContentPos].IsEmpty())
+						{
+							this.RemoveFromContent(nCurContentPos, 1);
+							this.CurPos.ContentPos = nCurContentPos;
+							this.Content[nCurContentPos].MoveCursorToStartPos(false);
+						}
+						else
+						{
+							var oCurPara        = this.Content[nCurContentPos];
+							var oFirstParagraph = this.Content[nCurContentPos + 1].GetFirstParagraph();
+
+							oFirstParagraph.MoveCursorToStartPos();
+							oFirstParagraph.ConcatBefore(oCurPara);
+							this.RemoveFromContent(nCurContentPos, 1);
+							var oState = oFirstParagraph.SaveSelectionState();
+							this.Content[nCurContentPos].MoveCursorToStartPos(false);
+							oFirstParagraph.LoadSelectionState(oState);
 						}
 					}
 					else if (nCurContentPos < this.Content.length - 1 && type_BlockLevelSdt === this.Content[nCurContentPos + 1].GetType())
@@ -1891,6 +1930,10 @@ CDocumentContentBase.prototype.private_CheckSelectedContentBeforePaste = functio
 			break;
 		}
 	}
+	if(this.bPresentation)
+	{
+		oSelectedContent.ConvertToPresentation(this);
+	}
 };
 /**
  * Проверяем, начинается ли заданная страница с заданного элемента
@@ -1904,4 +1947,33 @@ CDocumentContentBase.prototype.IsFirstElementOnPage = function(nCurPage, nElemen
 		return false;
 
 	return (this.Pages[nCurPage].Pos === nElementIndex);
+};
+/**
+ * Является ли данный элемент первым на странице, с которой начинается
+ * @param {number} nElementPos
+ * @returns {boolean}
+ */
+CDocumentContentBase.prototype.IsElementStartOnNewPage = function(nElementPos)
+{
+	for (var nCurPage = 0, nPagesCount = this.Pages.length; nCurPage < nPagesCount; ++nCurPage)
+	{
+		var oPage = this.Pages[nCurPage];
+		if (oPage.Pos === nElementPos)
+			return true;
+
+		if (oPage.Pos < nElementPos && nElementPos <= oPage.EndPos)
+			return false;
+	}
+
+	return false;
+};
+/**
+ * Вычисляем EndInfo для всех параграфаов
+ */
+CDocumentContentBase.prototype.RecalculateEndInfo = function()
+{
+	for (var nIndex = 0, nCount = this.Content.length; nIndex < nCount; ++nIndex)
+	{
+		this.Content[nIndex].RecalculateEndInfo();
+	}
 };

@@ -105,7 +105,7 @@ CHdrFtrController.prototype.ClearParagraphFormatting = function(isClearParaPr, i
 };
 CHdrFtrController.prototype.AddToParagraph = function(oItem, bRecalculate)
 {
-	if (para_NewLine === oItem.Type && true === oItem.IsPageOrColumnBreak())
+	if (para_NewLine === oItem.Type && true === oItem.IsPageBreak())
 		return;
 
 	this.HdrFtr.AddToParagraph(oItem, bRecalculate);
@@ -329,13 +329,13 @@ CHdrFtrController.prototype.GetSelectedElementsInfo = function(oInfo)
 {
 	this.HdrFtr.GetSelectedElementsInfo(oInfo);
 };
-CHdrFtrController.prototype.AddTableRow = function(bBefore)
+CHdrFtrController.prototype.AddTableRow = function(bBefore, nCount)
 {
-	this.HdrFtr.AddTableRow(bBefore);
+	this.HdrFtr.AddTableRow(bBefore, nCount);
 };
-CHdrFtrController.prototype.AddTableColumn = function(bBefore)
+CHdrFtrController.prototype.AddTableColumn = function(bBefore, nCount)
 {
-	this.HdrFtr.AddTableColumn(bBefore);
+	this.HdrFtr.AddTableColumn(bBefore, nCount);
 };
 CHdrFtrController.prototype.RemoveTableRow = function()
 {

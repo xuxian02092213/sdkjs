@@ -383,10 +383,19 @@
 			window["AscDesktopEditor"]["SetDocumentName"](this.documentTitle);
 		}
 
-        if (!this.isChartEditor && undefined !== window["AscDesktopEditor"] && undefined !== window["AscDesktopEditor"]["CryptoMode"])
-        {
-            this.DocInfo.put_Encrypted(0 < window["AscDesktopEditor"]["CryptoMode"]);
-        }
+		if (this.DocInfo.get_EncryptedInfo())
+		{
+			if (undefined !== window["AscDesktopEditor"])
+			{
+				var obj = this.DocInfo.get_EncryptedInfo();
+				obj["userId"] = this.documentUserId;
+				window["AscDesktopEditor"]["execCommand"]("portal:cryptoinfo", JSON.stringify(obj));
+			}
+		}
+		if (!this.isChartEditor && undefined !== window["AscDesktopEditor"] && undefined !== window["AscDesktopEditor"]["CryptoMode"])
+		{
+			this.DocInfo.put_Encrypted(0 < window["AscDesktopEditor"]["CryptoMode"]);
+		}
 
 		if (!oldInfo)
 		{
@@ -469,25 +478,33 @@
 	{
 		return this.isViewMode;
 	};
+	baseEditorsApi.prototype.asc_addRestriction              = function(val)
+	{
+		this.restrictions |= val;
+	};
+	baseEditorsApi.prototype.asc_removeRestriction           = function(val)
+	{
+		this.restrictions &= ~val;
+	};
 	baseEditorsApi.prototype.canEdit                         = function()
 	{
 		return !this.isViewMode && this.restrictions === Asc.c_oAscRestrictionType.None;
 	};
 	baseEditorsApi.prototype.isRestrictionForms              = function()
 	{
-		return (this.restrictions === Asc.c_oAscRestrictionType.OnlyForms);
+		return (this.restrictions & Asc.c_oAscRestrictionType.OnlyForms);
 	};
 	baseEditorsApi.prototype.isRestrictionComments           = function()
 	{
-		return (this.restrictions === Asc.c_oAscRestrictionType.OnlyComments);
+		return (this.restrictions & Asc.c_oAscRestrictionType.OnlyComments);
 	};
 	baseEditorsApi.prototype.isRestrictionSignatures         = function()
 	{
-		return (this.restrictions === Asc.c_oAscRestrictionType.OnlySignatures);
+		return (this.restrictions & Asc.c_oAscRestrictionType.OnlySignatures);
 	};
 	baseEditorsApi.prototype.isRestrictionView               = function()
 	{
-		return (this.restrictions === Asc.c_oAscRestrictionType.View);
+		return (this.restrictions & Asc.c_oAscRestrictionType.View);
 	};
 	baseEditorsApi.prototype.isLongAction                    = function()
 	{
@@ -700,7 +717,8 @@
 		if (this.DocInfo)
 			this["pluginMethod_SetProperties"](this.DocInfo.asc_getOptions());
 
-		this.macros && !this.disableAutostartMacros && this.macros.runAuto();
+		if (this.macros && !this.disableAutostartMacros && this.macros.isExistAuto())
+			this.sendEvent("asc_onRunAutostartMacroses");
 
 		if (window["AscDesktopEditor"] && window["AscDesktopEditor"]["onDocumentContentReady"])
             window["AscDesktopEditor"]["onDocumentContentReady"]();
@@ -2531,7 +2549,7 @@
             }
             case c_oEditorId.Spreadsheet:
             {
-                var off, selectionType = this.asc_getCellInfo().asc_getFlags().asc_getSelectionType();
+                var off, selectionType = this.asc_getCellInfo().asc_getSelectionType();
                 if (this.asc_getCellEditMode())
                 {
                     // cell edit
@@ -2699,6 +2717,11 @@
 		return this.macros.GetData();
 	};
 
+    baseEditorsApi.prototype.asc_runAutostartMacroses = function()
+    {
+        this.macros && !this.disableAutostartMacros && this.macros.runAuto();
+    };
+
 	baseEditorsApi.prototype.asc_getSelectedDrawingObjectsCount = function()
 	{
 		return 0;
@@ -2791,5 +2814,6 @@
 	prot['asc_Print'] = prot.asc_Print;
 	prot['asc_GetCurrentColorSchemeName'] = prot.asc_GetCurrentColorSchemeName;
 	prot['asc_GetCurrentColorSchemeIndex'] = prot.asc_GetCurrentColorSchemeIndex;
+	prot['asc_runAutostartMacroses'] = prot.asc_runAutostartMacroses;
 
 })(window);

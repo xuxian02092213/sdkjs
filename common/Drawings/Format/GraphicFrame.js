@@ -1122,12 +1122,6 @@ CGraphicFrame.prototype.Get_PageContentStartPos2 = function()
         return this.Get_PageContentStartPos();
 };
 
-CGraphicFrame.prototype.hitToHandles = CShape.prototype.hitToHandles;
-CGraphicFrame.prototype.hitToAdjustment = function()
-    {
-        return {hit:false};
-};
-
 CGraphicFrame.prototype.Refresh_RecalcData = function()
     {
         this.Refresh_RecalcData2();
@@ -1168,6 +1162,9 @@ CGraphicFrame.prototype.Is_ThisElementCurrent = function()
        if(this.graphicObject){
            this.graphicObject.GetAllContentControls(arrContentControls);
        }
+    };
+    CGraphicFrame.prototype.IsElementStartOnNewPage = function(){
+      return true;
     };
 
     CGraphicFrame.prototype.getCopyWithSourceFormatting = function(){
