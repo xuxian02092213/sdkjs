@@ -238,6 +238,14 @@ function (window, undefined) {
 	window['AscCH'].historyitem_Slicer_SetTableName = 4;
 	window['AscCH'].historyitem_Slicer_SetCacheName = 5;
 	window['AscCH'].historyitem_Slicer_SetName = 6;
+	window['AscCH'].historyitem_Slicer_SetStartItem = 7;
+	window['AscCH'].historyitem_Slicer_SetColumnCount = 8;
+	window['AscCH'].historyitem_Slicer_SetShowCaption = 9;
+	window['AscCH'].historyitem_Slicer_SetLevel = 10;
+	window['AscCH'].historyitem_Slicer_SetStyle = 11;
+	window['AscCH'].historyitem_Slicer_SetLockedPosition = 12;
+	window['AscCH'].historyitem_Slicer_SetRowHeight = 13;
+
 
 function CHistory()
 {

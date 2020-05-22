@@ -597,6 +597,27 @@
 
 	};
 
+	CT_slicer.prototype.set = function (val) {
+		this.type = this.checkProperty(this.type, val.type, AscDFH.historyitem_Slicer_SetName);
+		this.caption = this.checkProperty(this.caption, val.caption, AscDFH.historyitem_Slicer_SetCaption);
+		this.startItem = this.checkProperty(this.startItem, val.startItem, AscDFH.historyitem_Slicer_SetStartItem);
+		this.columnCount = this.checkProperty(this.columnCount, val.columnCount, AscDFH.historyitem_Slicer_SetColumnCount);
+		this.showCaption = this.checkProperty(this.showCaption, val.showCaption, AscDFH.historyitem_Slicer_SetShowCaption);
+		this.level = this.checkProperty(this.level, val.level, AscDFH.historyitem_Slicer_SetLevel);
+		this.style = this.checkProperty(this.style, val.style, AscDFH.historyitem_Slicer_SetStyle);
+		this.lockedPosition = this.checkProperty(this.lockedPosition, val.lockedPosition, AscDFH.historyitem_Slicer_SetLockedPosition);
+		this.rowHeight = this.checkProperty(this.rowHeight, val.rowHeight, AscDFH.historyitem_Slicer_SetRowHeight);
+	};
+
+	CT_slicer.prototype.checkProperty = function (propOld, propNew, type) {
+		if (propOld !== propNew) {
+			History.Add(AscCommonExcel.g_oUndoRedoSlicer, type,
+				this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(null, propOld, propNew));
+			return propNew;
+		}
+		return propOld;
+	};
+
 	CT_slicer.prototype.asc_setName = function (val) {
 		this.name = val;
 	};

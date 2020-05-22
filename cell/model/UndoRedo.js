@@ -3350,6 +3350,55 @@ function (window, undefined) {
 				}
 				break;
 			}
+			case AscCH.historyitem_Slicer_SetStartItem: {
+				slicer = oModel.getSlicerByName(bUndo ? Data.to : Data.from);
+				if (slicer) {
+					slicer.startItem = bUndo ? Data.from : Data.to;
+				}
+				break;
+			}
+			case AscCH.historyitem_Slicer_SetColumnCount: {
+				slicer = oModel.getSlicerByName(bUndo ? Data.to : Data.from);
+				if (slicer) {
+					slicer.columnCount = bUndo ? Data.from : Data.to;
+				}
+				break;
+			}
+			case AscCH.historyitem_Slicer_SetShowCaption: {
+				slicer = oModel.getSlicerByName(bUndo ? Data.to : Data.from);
+				if (slicer) {
+					slicer.showCaption = bUndo ? Data.from : Data.to;
+				}
+				break;
+			}
+			case AscCH.historyitem_Slicer_SetLevel: {
+				slicer = oModel.getSlicerByName(bUndo ? Data.to : Data.from);
+				if (slicer) {
+					slicer.level = bUndo ? Data.from : Data.to;
+				}
+				break;
+			}
+			case AscCH.historyitem_Slicer_SetStyle: {
+				slicer = oModel.getSlicerByName(bUndo ? Data.to : Data.from);
+				if (slicer) {
+					slicer.style = bUndo ? Data.from : Data.to;
+				}
+				break;
+			}
+			case AscCH.historyitem_Slicer_SetLockedPosition: {
+				slicer = oModel.getSlicerByName(bUndo ? Data.to : Data.from);
+				if (slicer) {
+					slicer.lockedPosition = bUndo ? Data.from : Data.to;
+				}
+				break;
+			}
+			case AscCH.historyitem_Slicer_SetRowHeight: {
+				slicer = oModel.getSlicerByName(bUndo ? Data.to : Data.from);
+				if (slicer) {
+					slicer.rowHeight = bUndo ? Data.from : Data.to;
+				}
+				break;
+			}
 		}
 		//this.wb.onSlicerUpdate(bUndo ? Data.from.name : Data.to.name);
 	};
