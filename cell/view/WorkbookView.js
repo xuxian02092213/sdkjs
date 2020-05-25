@@ -3360,7 +3360,7 @@
 		}
 	};
 
-	WorkbookView.prototype.setSlicers = function (names, objs) {
+	WorkbookView.prototype.setSlicers = function (names, obj) {
 		var slicers = [];
 		for(var j = 0; j < names.length; j++) {
 			for (var i in this.wsViews) {
@@ -3379,7 +3379,7 @@
 
 			History.StartTransaction();
 			for (var i = 0; i < slicers.length; i++) {
-				slicers[i].slicer.set(objs[i]);
+				slicers[i].slicer.set(obj);
 			}
 			History.EndTransaction();
 		};
