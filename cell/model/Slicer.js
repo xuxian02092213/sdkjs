@@ -347,8 +347,7 @@
 
 		return res;
 	};
-	CT_slicer.prototype.merge = function(val)
-	{
+	CT_slicer.prototype.merge = function(val) {
 		if(val.caption !== this.caption) {
 			this.caption = undefined;
 		}
