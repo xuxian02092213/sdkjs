@@ -3362,8 +3362,8 @@
 
 	WorkbookView.prototype.setSlicers = function (names, objs) {
 		var slicers = [];
-		for(var i in this.wsViews) {
-			for (var j = 0; j < names.length; j++) {
+		for(var j = 0; j < names.length; j++) {
+			for (var i in this.wsViews) {
 				var slicer = this.wsViews[i].model.getSlicerByName(names[j]);
 				if (slicer) {
 					slicers.push({ws: this.wsViews[i], slicer: slicer});
@@ -3420,7 +3420,7 @@
 			}
 
 			if (lockRanges && lockRanges.length) {
-				t._isLockedCells(lockRanges, /*subType*/null, callback);
+				t.collaborativeEditing.lock(lockRanges, callback);
 			} else {
 				callback(true);
 			}

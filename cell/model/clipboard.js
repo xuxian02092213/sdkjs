@@ -313,7 +313,10 @@
 			var _data = null;
 			var activeRange = ws.getSelectedRange();
 			var wb = window["Asc"]["editor"].wb;
-			
+
+			var oProps = Asc.editor.asc_getGraphicObjectProps()[0].Value;
+			oProps.SlicerProperties.columnCount = 3; Asc.editor.asc_setGraphicObjectProps(oProps);
+
 			window['AscCommon'].g_specialPasteHelper.SpecialPasteButton_Hide();
 			ws.handlers.trigger("cleanCutData", true);
 
