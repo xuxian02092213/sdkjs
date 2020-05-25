@@ -3372,8 +3372,6 @@
 			}
 		}
 
-		var t = this;
-
 		var callback = function (success) {
 			if (!success) {
 				return;
@@ -3388,11 +3386,11 @@
 		};
 
 		if (slicers && slicers.length) {
-			this.checkLockSlicer(slicers, true, callback);
+			this.checkLockSlicers(slicers, true, callback);
 		}
 	};
 
-	WorkbookView.prototype.checkLockSlicer = function (slicers, doLockRange, callback) {
+	WorkbookView.prototype.checkLockSlicers = function (slicers, doLockRange, callback) {
 		var t = this;
 		var _lockMap = [];
 		var lockInfoArr = [];
@@ -3436,7 +3434,7 @@
 		}
 	};
 
-	
+
 	//------------------------------------------------------------export---------------------------------------------------
   window['AscCommonExcel'] = window['AscCommonExcel'] || {};
   window["AscCommonExcel"].WorkbookView = WorkbookView;
