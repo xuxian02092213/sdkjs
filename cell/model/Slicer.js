@@ -733,6 +733,13 @@
 		return this.rowHeight;
 	};
 
+	CT_slicer.prototype.asc_getSourceName = function () {
+		return this.cacheDefinition.sourceName;
+	};
+
+	CT_slicer.prototype.asc_getNameInFormulas = function () {
+		return this.cacheDefinition.name;
+	};
 
 
 	function CT_slicerCacheDefinition(ws) {
@@ -2004,6 +2011,8 @@
 	prot["asc_getStyle"] = prot.asc_getStyle;
 	prot["asc_getLockedPosition"] = prot.asc_getLockedPosition;
 	prot["asc_getRowHeight"] = prot.asc_getRowHeight;
+	prot["asc_getSourceName"] = prot.asc_getSourceName;
+	prot["asc_getNameInFormulas"] = prot.asc_getNameInFormulas;
 
 	window['Asc']['CT_slicers'] = window['Asc'].CT_slicers = CT_slicers;
 	window['Asc']['CT_slicerCacheDefinition'] = window['Asc'].CT_slicerCacheDefinition = CT_slicerCacheDefinition;
