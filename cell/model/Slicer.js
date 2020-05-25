@@ -653,7 +653,7 @@
 	};
 
 	CT_slicer.prototype.checkProperty = function (propOld, propNew, type) {
-		if (propOld !== propNew) {
+		if (propOld !== propNew && undefined !== propNew) {
 			History.Add(AscCommonExcel.g_oUndoRedoSlicer, type,
 				this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(null, propOld, propNew));
 			return propNew;
