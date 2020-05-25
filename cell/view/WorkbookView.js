@@ -3401,7 +3401,7 @@
 			sheetId =  slicers[i].ws.model.getId();
 			if (!_lockMap[cache.name]) {
 				_lockMap[cache.name] = 1;
-				defNameId = this.model.workbook.dependencyFormulas.getDefNameByName(cache.name, sheetId);
+				defNameId = this.model.dependencyFormulas.getDefNameByName(cache.name, sheetId);
 				defNameId = defNameId ? defNameId.getNodeId() : null;
 				lockInfo = this.collaborativeEditing.getLockInfo(AscCommonExcel.c_oAscLockTypeElem.Object, null, -1, defNameId);
 				lockInfoArr.push(lockInfo);
