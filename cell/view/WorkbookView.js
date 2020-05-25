@@ -3377,7 +3377,6 @@
 				return;
 			}
 
-			History.Create_NewPoint();
 			History.StartTransaction();
 			for (var i = 0; i < slicers.length; i++) {
 				slicers[i].slicer.set(objs[i]);
