@@ -3352,7 +3352,7 @@
 
 	WorkbookView.prototype.setSlicer = function (name, obj) {
 		for(var i in this.wsViews) {
-			var slicer = this.model.getSlicerByName(name);
+			var slicer = this.wsViews[i].model.getSlicerByName(name);
 			if (slicer) {
 				this.wsViews[i].setSlicer(slicer, obj);
 				break;
@@ -3360,8 +3360,84 @@
 		}
 	};
 
+	WorkbookView.prototype.setSlicers = function (names, objs) {
+		var slicers = [];
+		for(var i in this.wsViews) {
+			for (var j = 0; j < names.length; j++) {
+				var slicer = this.wsViews[i].model.getSlicerByName(names[j]);
+				if (slicer) {
+					slicers.push({ws: this.wsViews[i], slicer: slicer});
+					break;
+				}
+			}
+		}
 
-  //------------------------------------------------------------export---------------------------------------------------
+		var t = this;
+
+		var callback = function (success) {
+			if (!success) {
+				return;
+			}
+
+			History.Create_NewPoint();
+			History.StartTransaction();
+			for (var i = 0; i < slicers.length; i++) {
+				slicers[i].slicer.set(objs[i]);
+			}
+			History.EndTransaction();
+		};
+
+		if (slicers && slicers.length) {
+			this.checkLockSlicer(slicers, true, callback);
+		}
+	};
+
+	WorkbookView.prototype.checkLockSlicer = function (slicers, doLockRange, callback) {
+		var t = this;
+		var _lockMap = [];
+		var lockInfoArr = [];
+		var lockRanges = [];
+		var cache, defNameId, lockInfo, lockRange, sheetId;
+		for (var i = 0; i < slicers.length; i++) {
+			cache = slicers[i].slicer.getCacheDefinition();
+			sheetId =  slicers[i].ws.model.getId();
+			if (!_lockMap[cache.name]) {
+				_lockMap[cache.name] = 1;
+				defNameId = this.model.workbook.dependencyFormulas.getDefNameByName(cache.name, sheetId);
+				defNameId = defNameId ? defNameId.getNodeId() : null;
+				lockInfo = this.collaborativeEditing.getLockInfo(AscCommonExcel.c_oAscLockTypeElem.Object, null, -1, defNameId);
+				lockInfoArr.push(lockInfo);
+				if (doLockRange) {
+					lockRange = cache.getRange();
+					if (lockRange) {
+						lockRanges.push(this.collaborativeEditing.getLockInfo(AscCommonExcel.c_oAscLockTypeElem.Range, null, sheetId,
+							new AscCommonExcel.asc_CCollaborativeRange(lockRange.c1, lockRange.r1, lockRange.c2, lockRange.r2)));
+					}
+				}
+			}
+		}
+
+		var _callback = function (success) {
+			if (!success && callback) {
+				callback(false);
+			}
+
+			if (lockRanges && lockRanges.length) {
+				t._isLockedCells(lockRanges, /*subType*/null, callback);
+			} else {
+				callback(true);
+			}
+		};
+
+		if (lockInfoArr && lockInfoArr.length) {
+			this.collaborativeEditing.lock(lockInfoArr, _callback);
+		} else {
+			_callback(true);
+		}
+	};
+
+	
+	//------------------------------------------------------------export---------------------------------------------------
   window['AscCommonExcel'] = window['AscCommonExcel'] || {};
   window["AscCommonExcel"].WorkbookView = WorkbookView;
 })(window);
