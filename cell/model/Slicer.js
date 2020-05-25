@@ -347,6 +347,33 @@
 
 		return res;
 	};
+	CT_slicer.prototype.merge = function(val)
+	{
+		if(val.caption !== this.caption) {
+			this.caption = undefined;
+		}
+		if(val.startItem !== this.startItem) {
+			this.startItem = undefined;
+		}
+		if(val.columnCount !== this.columnCount) {
+			this.columnCount = undefined;
+		}
+		if(val.showCaption !== this.showCaption) {
+			this.showCaption = undefined;
+		}
+		if(val.level !== this.level) {
+			this.level = undefined;
+		}
+		if(val.style !== this.style) {
+			this.style = undefined;
+		}
+		if(val.lockedPosition !== this.lockedPosition) {
+			this.lockedPosition = undefined;
+		}
+		if(val.rowHeight !== this.rowHeight) {
+			this.rowHeight = undefined;
+		}
+	};
 	CT_slicer.prototype.init = function (name, obj_name, type, ws) {
 		if (name) {
 			this.name = this.generateName(name);
