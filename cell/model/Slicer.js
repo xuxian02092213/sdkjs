@@ -701,35 +701,35 @@
 		return this.name;
 	};
 
-	CT_slicer.prototype.asc_setCaption = function () {
+	CT_slicer.prototype.asc_getCaption = function () {
 		return this.caption;
 	};
 
-	CT_slicer.prototype.asc_setStartItem = function () {
+	CT_slicer.prototype.asc_getStartItem = function () {
 		return this.startItem;
 	};
 
-	CT_slicer.prototype.asc_setColumnCount = function () {
+	CT_slicer.prototype.asc_getColumnCount = function () {
 		return this.columnCount;
 	};
 
-	CT_slicer.prototype.asc_setShowCaption = function () {
+	CT_slicer.prototype.asc_getShowCaption = function () {
 		return this.showCaption;
 	};
 
-	CT_slicer.prototype.asc_setLevel = function () {
+	CT_slicer.prototype.asc_getLevel = function () {
 		return this.level;
 	};
 
-	CT_slicer.prototype.asc_setStyle = function () {
+	CT_slicer.prototype.asc_getStyle = function () {
 		return this.style;
 	};
 
-	CT_slicer.prototype.asc_setLockedPosition = function () {
+	CT_slicer.prototype.asc_getLockedPosition = function () {
 		return this.lockedPosition;
 	};
 
-	CT_slicer.prototype.asc_setRowHeight = function () {
+	CT_slicer.prototype.asc_getRowHeight = function () {
 		return this.rowHeight;
 	};
 
