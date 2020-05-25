@@ -3767,13 +3767,12 @@ DrawingObjectsController.prototype =
             var aSlicers = objects_by_type.slicers;
             var oAPI = Asc.editor;
             History.StartTransaction();
-            var aSlicerNames = [], aSlicerPrs = [];
+            var aSlicerNames = [];
             for(i = 0; i < aSlicers.length; ++i)
             {
                 aSlicerNames.push(aSlicers[i].getName());
-                aSlicerPrs.push(props.SlicerProperties);
             }
-            oAPI.asc_setSlicers(aSlicerNames, aSlicerPrs);
+            oAPI.asc_setSlicers(aSlicerNames, props.SlicerProperties);
             History.EndTransaction();
         }
         var aGroups = [];
