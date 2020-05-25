@@ -330,6 +330,23 @@
 	CT_slicer.prototype.getType = function() {
 		return AscCommonExcel.UndoRedoDataTypes.Slicer;
 	};
+	CT_slicer.prototype.clone = function () {
+		//клонирование для интерфейса, только CT_slicer без внутренних структур
+		var res = new CT_slicer();
+
+		res.name = this.name;
+		//res.uid = this.uid;
+		res.caption = this.caption;
+		res.startItem = this.startItem;
+		res.columnCount = this.columnCount;
+		res.showCaption = this.showCaption;
+		res.level = this.level;
+		res.style = this.style;
+		res.lockedPosition = this.lockedPosition;
+		res.rowHeight = this.rowHeight;
+
+		return res;
+	};
 	CT_slicer.prototype.init = function (name, obj_name, type, ws) {
 		if (name) {
 			this.name = this.generateName(name);
