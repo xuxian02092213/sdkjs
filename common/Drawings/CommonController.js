@@ -3766,10 +3766,12 @@ DrawingObjectsController.prototype =
         {
             var aSlicers = objects_by_type.slicers;
             var oAPI = Asc.editor;
+            History.StartTransaction();
             for(i = 0; i < aSlicers.length; ++i)
             {
                 oAPI.asc_setSlicer(aSlicers[i].getName(), props.SlicerProperties);
             }
+            History.EndTransaction();
         }
         var aGroups = [];
         var bCheckConnectors = false;
@@ -8888,8 +8890,15 @@ DrawingObjectsController.prototype =
                     else
                     {
                         if(slicer_props.slicerProps != null)
-                        {   //TODO: need merge function
-                           // slicer_props.slicerProps = slicer_props.slicerProps.merge(new_slicer_props.slicerProps)
+                        {   
+                            if(!new_slicer_props.slicerProps)
+                            {
+                                slicer_props.slicerProps = null;
+                            }
+                            else
+                            {
+                                slicer_props.slicerProps.merge(new_slicer_props.slicerProps);
+                            }
                         }
                         if(slicer_props.w != null && slicer_props.w !== new_slicer_props.w)
                             slicer_props.w = null;
