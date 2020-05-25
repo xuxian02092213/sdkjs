@@ -2694,6 +2694,7 @@
 
 			this.ChartProperties = (undefined != obj.ChartProperties) ? obj.ChartProperties : null;
 			this.ShapeProperties = (undefined != obj.ShapeProperties) ? obj.ShapeProperties : null;
+			this.SlicerProperties = (undefined != obj.SlicerProperties) ? obj.SlicerProperties : null;
 
 			this.ChangeLevel = (undefined != obj.ChangeLevel) ? obj.ChangeLevel : null;
 			this.Group = (obj.Group != undefined) ? obj.Group : null;
@@ -2746,6 +2747,7 @@
 
 			this.ChartProperties = null;
 			this.ShapeProperties = null;
+			this.SlicerProperties = null;
 
 			this.ChangeLevel = null;
 			this.Group = null;
@@ -2919,6 +2921,10 @@
 			return this.ShapeProperties;
 		}, asc_putShapeProperties: function (v) {
 			this.ShapeProperties = v;
+		}, asc_getSlicerProperties: function() {
+			return this.SlicerProperties;
+		}, asc_putSlicerProperties: function(v) {
+			this.SlicerProperties = v;
 		},
 
 		asc_getOriginSize: function (api)
@@ -5231,6 +5237,8 @@
 	prot["put_ChartProperties"] = prot["asc_putChartProperties"] = prot.asc_putChartProperties;
 	prot["get_ShapeProperties"] = prot["asc_getShapeProperties"] = prot.asc_getShapeProperties;
 	prot["put_ShapeProperties"] = prot["asc_putShapeProperties"] = prot.asc_putShapeProperties;
+	prot["put_SlicerProperties"] = prot["asc_putSlicerProperties"] = prot.asc_putSlicerProperties;
+	prot["get_SlicerProperties"] = prot["asc_getSlicerProperties"] = prot.asc_getSlicerProperties;
 	prot["get_OriginSize"] = prot["asc_getOriginSize"] = prot.asc_getOriginSize;
 	prot["get_PluginGuid"] = prot["asc_getPluginGuid"] = prot.asc_getPluginGuid;
 	prot["put_PluginGuid"] = prot["asc_putPluginGuid"] = prot.asc_putPluginGuid;

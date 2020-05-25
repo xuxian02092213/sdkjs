@@ -3352,7 +3352,7 @@
 
 	WorkbookView.prototype.setSlicer = function (name, obj) {
 		for(var i in this.wsViews) {
-			var slicer = this.wsViews.model.getSlicerByName(name);
+			var slicer = this.model.getSlicerByName(name);
 			if (slicer) {
 				this.wsViews[i].setSlicer(slicer, obj);
 				break;

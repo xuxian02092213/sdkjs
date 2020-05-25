@@ -747,7 +747,6 @@
     };
     CSlicer.prototype.draw = function (graphics, transform, transformText, pageIndex) {
         AscFormat.ExecuteNoHistory(this.internalDraw, this, [graphics, transform, transformText, pageIndex]);
-
     };
     CSlicer.prototype.handleUpdateExtents = function () {
         this.recalcInfo.recalculateHeader = true;
@@ -981,6 +980,13 @@
             return this.header.invertMultiSelect();
         }
         return false;
+    };
+    CSlicer.prototype.getSlicer = function() {
+        var oWorkbook = this.getWorkbook();
+        if(!oWorkbook) {
+            return oWorkbook;
+        }
+        return oWorkbook.getSlicerByName(this.name);
     };
     
     function CHeader(slicer) {

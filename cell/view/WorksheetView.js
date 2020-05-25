@@ -20317,7 +20317,7 @@
 			}
 			History.Create_NewPoint();
 			History.StartTransaction();
-			slicer.setSlicer(obj);
+			slicer.set(obj);
 			History.EndTransaction();
 		};
 

@@ -664,7 +664,7 @@ function CheckSpPrXfrm2(object)
 
 function getObjectsByTypesFromArr(arr, bGrouped)
 {
-    var ret = {shapes: [], images: [], groups: [], charts: [], tables: [], oleObjects: []};
+    var ret = {shapes: [], images: [], groups: [], charts: [], tables: [], oleObjects: [], slicers: []};
     var selected_objects = arr;
     for(var i = 0;  i < selected_objects.length; ++i)
     {
@@ -710,6 +710,11 @@ function getObjectsByTypesFromArr(arr, bGrouped)
             case AscDFH.historyitem_type_GraphicFrame:
             {
                 ret.tables.push(drawing);
+                break;
+            }
+            case AscDFH.historyitem_type_SlicerView:
+            {
+                ret.slicers.push(drawing);
                 break;
             }
         }
@@ -3757,7 +3762,15 @@ DrawingObjectsController.prototype =
                 this.applyPropsToChartSpace(props.ChartProperties, objects_by_type.charts[i]);
             }
         }
-
+        if(props.SlicerProperties)
+        {
+            var aSlicers = objects_by_type.slicers;
+            var oAPI = Asc.editor;
+            for(i = 0; i < aSlicers.length; ++i)
+            {
+                oAPI.asc_setSlicer(aSlicers[i].getName(), props.SlicerProperties);
+            }
+        }
         var aGroups = [];
         var bCheckConnectors = false;
         var oApi = editor || Asc['editor'];
@@ -8536,6 +8549,7 @@ DrawingObjectsController.prototype =
     {
         var image_props, shape_props, chart_props, table_props = undefined, new_image_props, new_shape_props, new_chart_props, new_table_props, shape_chart_props, locked;
         var drawing;
+        var slicer_props, new_slicer_props;
         for(var i = 0; i < drawings.length; ++i)
         {
             drawing = drawings[i];
@@ -8853,6 +8867,50 @@ DrawingObjectsController.prototype =
                     }
                     break;
                 }
+                case AscDFH.historyitem_type_SlicerView:
+                {
+                    var oSlicer = drawing.getSlicer();
+                    new_slicer_props =
+                        {
+                            w: drawing.extX,
+                            h: drawing.extY,
+                            locked: locked,
+                            lockAspect: lockAspect,
+                            title: drawing.getTitle(),
+                            description: drawing.getDescription(),
+                            anchor: drawing.getDrawingBaseType(),
+                            slicerProps: (oSlicer ? oSlicer.clone() : null)
+                        };
+                    if(!slicer_props)
+                    {
+                        slicer_props = new_slicer_props;
+                    }
+                    else
+                    {
+                        if(slicer_props.slicerProps != null)
+                        {   //TODO: need merge function
+                           // slicer_props.slicerProps = slicer_props.slicerProps.merge(new_slicer_props.slicerProps)
+                        }
+                        if(slicer_props.w != null && slicer_props.w !== new_slicer_props.w)
+                            slicer_props.w = null;
+                        if(slicer_props.h != null && slicer_props.h !== new_slicer_props.h)
+                            slicer_props.h = null;
+
+                        if(slicer_props.locked || new_slicer_props.locked)
+                            slicer_props.locked = true;
+                        if(!slicer_props.lockAspect || !new_slicer_props.lockAspect)
+                            slicer_props.locked = false;
+
+
+                        if(slicer_props.title !== new_slicer_props.title)
+                            slicer_props.title = undefined;
+                        if(slicer_props.description !== new_slicer_props.description)
+                            slicer_props.description = undefined;
+                        if(slicer_props.anchor !== new_slicer_props.anchor)
+                            slicer_props.anchor = undefined;
+                    }
+                    break;
+                }
                 case AscDFH.historyitem_type_GraphicFrame:
                 {
                     if(table_props === undefined)
@@ -9059,7 +9117,7 @@ DrawingObjectsController.prototype =
                 }
             }
         }
-        return {imageProps: image_props, shapeProps: shape_props, chartProps: chart_props, tableProps: table_props, shapeChartProps: shape_chart_props};
+        return {imageProps: image_props, shapeProps: shape_props, chartProps: chart_props, tableProps: table_props, shapeChartProps: shape_chart_props, slicerProps: slicer_props};
     },
 
     getDrawingProps: function()
@@ -9088,7 +9146,7 @@ DrawingObjectsController.prototype =
         var  props = this.getDrawingProps();
 
         var api = this.getEditorApi();
-        var shape_props, image_props, chart_props;
+        var shape_props, image_props, chart_props, slicer_props;
         var ascSelectedObjects = [];
 
         var ret = [], i, bParaLocked = false;
@@ -9302,6 +9360,24 @@ DrawingObjectsController.prototype =
             chart_props.description = props.chartProps.description;
             chart_props.title = props.chartProps.title;
             ret.push(chart_props);
+        }
+        if (isRealObject(props.slicerProps) && isRealObject(props.slicerProps.slicerProps))
+        {
+            slicer_props = new Asc.asc_CImgProperty();
+            slicer_props.Width = props.slicerProps.w;
+            slicer_props.Height = props.slicerProps.h;
+            slicer_props.SlicerProperties = props.slicerProps.slicerProps;
+            slicer_props.Locked = props.slicerProps.locked === true;
+            slicer_props.lockAspect = props.slicerProps.lockAspect;
+            slicer_props.anchor = props.slicerProps.anchor;
+            if(!bParaLocked)
+            {
+                bParaLocked = slicer_props.Locked;
+            }
+
+            slicer_props.description = props.slicerProps.description;
+            slicer_props.title = props.slicerProps.title;
+            ret.push(slicer_props);
         }
         for (i = 0; i < ret.length; i++)
         {
