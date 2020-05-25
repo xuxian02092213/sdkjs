@@ -230,7 +230,9 @@
 			CustomSortNotOriginalSelectError: -801,
 
 			// Data Validate
-			RemoveDuplicates : -850
+			RemoveDuplicates : -850,
+
+			LargeRangeWarning: -900
 		}
 	};
 
@@ -2154,6 +2156,8 @@
 	prot['InvalidReferenceOrName']           = prot.InvalidReferenceOrName;
 	prot['LockCreateDefName']                = prot.LockCreateDefName;
 	prot['LockedCellPivot']                  = prot.LockedCellPivot;
+	prot['PivotLabledColumns']               = prot.PivotLabledColumns;
+	prot['PivotOverlap']                     = prot.PivotOverlap;
 	prot['ForceSaveButton']                  = prot.ForceSaveButton;
 	prot['ForceSaveTimeout']                 = prot.ForceSaveTimeout;
 	prot['CannotChangeFormulaArray']         = prot.CannotChangeFormulaArray;
@@ -2170,6 +2174,7 @@
 	prot['CustomSortMoreOneSelectedError']   = prot.CustomSortMoreOneSelectedError;
 	prot['CustomSortNotOriginalSelectError'] = prot.CustomSortNotOriginalSelectError;
 	prot['RemoveDuplicates']                 = prot.RemoveDuplicates;
+	prot['LargeRangeWarning']                = prot.LargeRangeWarning;
 	window['Asc']['c_oAscAsyncAction']       = window['Asc'].c_oAscAsyncAction = c_oAscAsyncAction;
 	prot                                     = c_oAscAsyncAction;
 	prot['Open']                             = prot.Open;
