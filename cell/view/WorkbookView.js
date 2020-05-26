@@ -1712,13 +1712,13 @@
               var oSlicerStyle = oAllSlicerStyles[sStyleName];
               var oTableStyle = oAllTableStyles[sStyleName];
               if(oSlicerStyle && oTableStyle) {
-                  aStylesPreview.push(this.getSlicerStylePreview(oSlicerStyle, oTableStyle));
+                  aStylesPreview.push(this.getSlicerStylePreview(sStyleName, oSlicerStyle, oTableStyle));
               }
           }
       }
       return aStylesPreview;
   };
-  WorkbookView.prototype.getSlicerStylePreview = function(oSlicerStyle, oTableStyle) {
+  WorkbookView.prototype.getSlicerStylePreview = function(sStyleName, oSlicerStyle, oTableStyle) {
       var nW = 36, nH = 49;
       var nCanvasW = nW, nCanvasH = nH;
       var r = function (nPix) {
@@ -1737,8 +1737,12 @@
       var oDXF;
 
       var nIns = 1;
+      var nTIns = 3;
       var nBH = 9;
-      var nPos = nBH + nIns;
+      var nTW = 8;
+      var nPos = 0;
+      var oFont;
+      var oColor;
       //whole
       oDXF = oTableStyle.wholeTable && oTableStyle.wholeTable.dxf;
       if(oDXF) {
@@ -1748,6 +1752,17 @@
       oDXF = oTableStyle.headerRow && oTableStyle.headerRow.dxf;
       if(oDXF) {
           this.drawPreviewElement(oDXF, oDrawingContext, 0, 0, r(nW), r(nBH));
+          oFont = oDXF.getFont();
+          if(oFont) {
+              oColor = oFont.getColor();
+          }
+          else {
+              oColor = new AscCommon.CColor(0, 0, 0)
+          }
+          oDrawingContext.setStrokeStyle(oColor);
+          oDrawingContext.setLineWidth(1);
+          oDrawingContext.lineHor(r(nTIns + nIns), r(nPos + nBH / 2.0), r(nTIns + nIns + nTW));
+          nPos += (nBH + nIns)
       }
       var aBT = [
           Asc.ST_slicerStyleType.selectedItemWithData,
@@ -1759,10 +1774,20 @@
           oDXF = oSlicerStyle[aBT[nType]];
           if(oDXF) {
               this.drawPreviewElement(oDXF, oDrawingContext, r(nIns), r(nPos), r(nW - nIns), r(nPos + nBH));
+              oFont = oDXF.getFont();
+              if(oFont) {
+                  oColor = oFont.getColor();
+              }
+              else {
+                  oColor = new AscCommon.CColor(0, 0, 0)
+              }
+              oDrawingContext.setStrokeStyle(oColor);
+              oDrawingContext.setLineWidth(1);
+              oDrawingContext.lineHor(r(nTIns + nIns), r(nPos + nBH / 2.0), r(nTIns + nIns + nTW));
               nPos += (nIns + nBH);
           }
       }
-      return oCanvas.toDataURL("image/png");
+      return new AscCommon.CStyleImage(sStyleName, AscCommon.c_oAscStyleImage.Default, oCanvas.toDataURL("image/png"), undefined) ;
   };
   WorkbookView.prototype.drawPreviewElement = function(oDXF, oDrawingContext, x0, y0, x1, y1) {
       var oFill = oDXF.getFill();
