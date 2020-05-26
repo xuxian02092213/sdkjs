@@ -325,8 +325,8 @@
 
 		this._writeBinaryForHistory = null;
 
-		this._sourceName = null;
-		this._nameInFormulas = null;
+		this._ascSourceName = null;
+		this._ascNameInFormulas = null;
 		this._ascSortOrder = null;
 		this._ascCustomListSort = null;
 		this._ascHideItemsWithNoData = null;
@@ -355,8 +355,8 @@
 
 		this.initInterfaceOptions();
 
-		res._sourceName = this._sourceName;
-		res._nameInFormulas = this._nameInFormulas;
+		res._ascSourceName = this._ascSourceName;
+		res._ascNameInFormulas = this._ascNameInFormulas;
 		res._ascSortOrder = this._ascSortOrder;
 		res._ascCustomListSort = this._ascCustomListSort;
 		res._ascHideItemsWithNoData = this._ascHideItemsWithNoData;
@@ -390,6 +390,28 @@
 		}
 		if(val.rowHeight !== this.rowHeight) {
 			this.rowHeight = undefined;
+		}
+
+		if(val._ascSourceName !== this._ascSourceName) {
+			this._ascSourceName = undefined;
+		}
+		if(val._ascNameInFormulas !== this._ascNameInFormulas) {
+			this._ascNameInFormulas = undefined;
+		}
+		if(val._ascSortOrder !== this._ascSortOrder) {
+			this._ascSortOrder = undefined;
+		}
+		if(val._ascCustomListSort !== this._ascCustomListSort) {
+			this._ascCustomListSort = undefined;
+		}
+		if(val._ascHideItemsWithNoData !== this._ascHideItemsWithNoData) {
+			this._ascHideItemsWithNoData = undefined;
+		}
+		if(val._ascIndicateItemsWithNoData !== this._ascIndicateItemsWithNoData) {
+			this._ascIndicateItemsWithNoData = undefined;
+		}
+		if(val._ascShowItemsWithNoDataLast !== this._ascShowItemsWithNoDataLast) {
+			this._ascShowItemsWithNoDataLast = undefined;
 		}
 	};
 	CT_slicer.prototype.init = function (name, obj_name, type, ws) {
@@ -442,8 +464,8 @@
 		}
 	};
 	CT_slicer.prototype.initInterfaceOptions = function () {
-		this._sourceName = this.getSourceName();
-		this._nameInFormulas = this.getNameInFormulas();
+		this._ascSourceName = this.getSourceName();
+		this._ascNameInFormulas = this.getNameInFormulas();
 		this._ascSortOrder = this.getSortOrder();
 		this._ascCustomListSort = this.getCustomListSort();
 		this._ascHideItemsWithNoData = this.getHideItemsWithNoData();
@@ -678,6 +700,14 @@
 		this.style = this.checkProperty(this.style, val.style, AscDFH.historyitem_Slicer_SetStyle);
 		this.lockedPosition = this.checkProperty(this.lockedPosition, val.lockedPosition, AscDFH.historyitem_Slicer_SetLockedPosition);
 		this.rowHeight = this.checkProperty(this.rowHeight, val.rowHeight, AscDFH.historyitem_Slicer_SetRowHeight);
+
+
+		/*res._ascSortOrder = this._ascSortOrder;
+		res._ascCustomListSort = this._ascCustomListSort;
+		res._ascHideItemsWithNoData = this._ascHideItemsWithNoData;
+
+		res._ascIndicateItemsWithNoData = this._ascIndicateItemsWithNoData;
+		res._ascShowItemsWithNoDataLast = this._ascShowItemsWithNoDataLast;*/
 	};
 
 	CT_slicer.prototype.checkProperty = function (propOld, propNew, type) {
@@ -837,11 +867,11 @@
 	};
 
 	CT_slicer.prototype.asc_getSourceName = function () {
-		return this._sourceName;
+		return this._ascSourceName;
 	};
 
 	CT_slicer.prototype.asc_getNameInFormulas = function () {
-		return this._nameInFormulas;
+		return this._ascNameInFormulas;
 	};
 
 	CT_slicer.prototype.asc_getSortOrder = function () {
