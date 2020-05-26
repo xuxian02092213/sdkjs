@@ -521,8 +521,8 @@
         var oFill;
         var oDXF = this.getDXF(nType);
         if(oDXF) {
-            oFill = oDXF.getFill();
-            if(oFill) {
+            var oFill = oDXF.getFill();
+            if(oFill || nType !== STYLE_TYPE.WHOLE) {
                 return oFill;
             }
         }
@@ -545,10 +545,7 @@
         var oBorder;
         var oDXF = this.getDXF(nType);
         if(oDXF) {
-            oBorder = oDXF.getBorder();
-            if(oBorder) {
-                return oBorder;
-            }
+            return oDXF.getBorder();
         }
         var r = 91, g = 155, b = 213;
         if(nType !== STYLE_TYPE.HEADER && nType !== STYLE_TYPE.WHOLE) {

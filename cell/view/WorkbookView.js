@@ -1700,7 +1700,126 @@
   WorkbookView.prototype.getCellStyles = function(width, height) {
   	return AscCommonExcel.generateStyles(width, height, this.model.CellStyles, this);
   };
+  WorkbookView.prototype.getSlicerStyles = function() {
+      var oWorkbook = this.model;
+      var oSlicerStyles= oWorkbook.SlicerStyles;
+      var oTableStyles = oWorkbook.TableStyles;
+      var oAllSlicerStyles = oSlicerStyles.AllStyles;
+      var oAllTableStyles = oTableStyles.AllStyles;
+      var aStylesPreview = [];
+      for(var sStyleName in oAllSlicerStyles) {
+          if(oAllSlicerStyles.hasOwnProperty(sStyleName)) {
+              var oSlicerStyle = oAllSlicerStyles[sStyleName];
+              var oTableStyle = oAllTableStyles[sStyleName];
+              if(oSlicerStyle && oTableStyle) {
+                  aStylesPreview.push(this.getSlicerStylePreview(oSlicerStyle, oTableStyle));
+              }
+          }
+      }
+      return aStylesPreview;
+  };
+  WorkbookView.prototype.getSlicerStylePreview = function(oSlicerStyle, oTableStyle) {
+      var nW = 36, nH = 49;
+      var nCanvasW = nW, nCanvasH = nH;
+      var r = function (nPix) {
+          return AscCommon.AscBrowser.convertToRetinaValue(nPix, true);
+      }
+      nCanvasW = r(nW);
+      nCanvasH = r(nH);
+      var oCanvas = document.createElement("canvas");
+      oCanvas.width = nCanvasW;
+      oCanvas.height = nCanvasH;
+      var oDrawingContext = new Asc.DrawingContext(
+          {canvas: oCanvas, units: 0/*px*/, fmgrGraphics: Asc.editor.wb.fmgrGraphics, font: Asc.editor.wb.m_oFont});
+      
+      //white background
+      oDrawingContext.setFillStyle(new AscCommon.CColor(255, 255, 255)).fillRect(0, 0, nCanvasW, nCanvasH);
+      var oDXF;
 
+      var nIns = 1;
+      var nBH = 9;
+      var nPos = nBH + nIns;
+      //whole
+      oDXF = oTableStyle.wholeTable && oTableStyle.wholeTable.dxf;
+      if(oDXF) {
+          this.drawPreviewElement(oDXF, oDrawingContext, 0, 0, r(nW), r(nH));
+      }
+      //header
+      oDXF = oTableStyle.headerRow && oTableStyle.headerRow.dxf;
+      if(oDXF) {
+          this.drawPreviewElement(oDXF, oDrawingContext, 0, 0, r(nW), r(nBH));
+      }
+      var aBT = [
+          Asc.ST_slicerStyleType.selectedItemWithData,
+          Asc.ST_slicerStyleType.unselectedItemWithData,
+          Asc.ST_slicerStyleType.selectedItemWithNoData,
+          Asc.ST_slicerStyleType.unselectedItemWithNoData
+      ];
+      for(var nType = 0; nType < aBT.length; ++nType) {
+          oDXF = oSlicerStyle[aBT[nType]];
+          if(oDXF) {
+              this.drawPreviewElement(oDXF, oDrawingContext, r(nIns), r(nPos), r(nW - nIns), r(nPos + nBH));
+              nPos += (nIns + nBH);
+          }
+      }
+      return oCanvas.toDataURL("image/png");
+  };
+  WorkbookView.prototype.drawPreviewElement = function(oDXF, oDrawingContext, x0, y0, x1, y1) {
+      var oFill = oDXF.getFill();
+      if(oFill) {
+          var findFillColor = oFill.getSolidFill();
+          if (findFillColor) {
+              oDrawingContext.setFillStyle(findFillColor).fillRect(x0, y0, x1 - x0, y1 - y0);
+          }
+          else {
+              var oGraphics = new AscCommon.CGraphics();
+              oGraphics.init(oDrawingContext.ctx, oDrawingContext.getWidth(0), oDrawingContext.getHeight(0),
+                  oDrawingContext.getWidth(0), oDrawingContext.getHeight(0));
+              oGraphics.m_oFontManager = AscCommon.g_fontManager;
+              AscCommonExcel.drawFillCell(oDrawingContext, oGraphics, oFill, new AscCommon.asc_CRect(x0, y0, x1 - x0, y1 - y0));
+          }
+      }
+      var oBorder = oDXF.getBorder();
+      if(oBorder) {
+          var oSide = oBorder.l;
+          var bStroke = false;
+          if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None && oSide.c) {
+              oDrawingContext.setStrokeStyle(oSide.c);
+              oDrawingContext.setLineWidth(1);
+              oDrawingContext.setLineDash(oSide.getDashSegments());
+              oDrawingContext.lineVer(x0, y0, y1);
+              bStroke = true;
+          }
+          oSide = oBorder.t;
+          if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None && oSide.c) {
+              oDrawingContext.setStrokeStyle(oSide.c);
+              oDrawingContext.setLineWidth(1);
+              oDrawingContext.setLineDash(oSide.getDashSegments());
+              oDrawingContext.lineHor(x0 + 1, y0, x1 - 1);
+              bStroke = true;
+          }
+          oSide = oBorder.r;
+          if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None && oSide.c) {
+              oDrawingContext.setStrokeStyle(oSide.c);
+              oDrawingContext.setLineWidth(1);
+              oDrawingContext.setLineDash(oSide.getDashSegments());
+              oDrawingContext.lineVer(x1 - 1, y0, y1);
+              bStroke = true;
+          }
+          oSide = oBorder.b;
+          if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None && oSide.c) {
+              oDrawingContext.setStrokeStyle(oSide.c);
+              oDrawingContext.setLineWidth(1);
+              oDrawingContext.setLineDash(oSide.getDashSegments());
+              oDrawingContext.lineHor(x0 + 1, y1 - 1, x1 - 1);
+              bStroke = true;
+          }
+          if(bStroke) {
+              oDrawingContext.stroke();
+          }
+      }
+  };
+  
   WorkbookView.prototype.getWorksheetById = function(id, onlyExist) {
     var wsModel = this.model.getWorksheetById(id);
     if (wsModel) {
