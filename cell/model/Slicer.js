@@ -325,6 +325,10 @@
 
 		this._writeBinaryForHistory = null;
 
+		this._ascSortOrder = null;
+		this._ascCrossFilter = null;
+		this._ascSlicerCacheHideItemsWithNoData = null;
+
 		return this;
 	}
 	CT_slicer.prototype.getType = function() {
@@ -737,8 +741,45 @@
 		return this.cacheDefinition.sourceName;
 	};
 
-	CT_slicer.prototype.asc_getNameInFormulas = function () {
-		return this.cacheDefinition.name;
+	CT_slicer.prototype.asc_getSortOrder = function () {
+		//TODO может быть не только таблица
+		/*prot = ST_tabularSlicerCacheSortOrder;
+		prot['Ascending'] = prot.Ascending;
+		prot['Descending'] = prot.Descending;*/
+		var table = this.cacheDefinition.getTableSlicerCache();
+		if (table) {
+			return table.sortOrder;
+		}
+		return ST_tabularSlicerCacheSortOrder.Ascending;
+	};
+
+	CT_slicer.prototype.asc_setSortOrder = function (val) {
+		this._ascSortOrder = val;
+	};
+
+	CT_slicer.prototype.asc_getCrossFilter = function () {
+		/*var ST_slicerCacheCrossFilter = {
+			None: 0,
+			ShowItemsWithDataAtTop: 1,
+			showItemsWithNoData: 2
+		};*/
+		var table = this.cacheDefinition.getTableSlicerCache();
+		if (table) {
+			return table.crossFilter;
+		}
+		return ST_tabularSlicerCacheSortOrder.ShowItemsWithDataAtTop;
+	};
+
+	CT_slicer.prototype.asc_getHideItemsWithNoData = function () {
+		return null !== this.cacheDefinition.slicerCacheHideItemsWithNoData;
+	};
+
+	CT_slicer.prototype.asc_setCrossFilter = function (val) {
+		this._ascCrossFilter = val;
+	};
+
+	CT_slicer.prototype.asc_setHideItemsWithNoData = function (val) {
+		this._ascSlicerCacheHideItemsWithNoData = val;
 	};
 
 
@@ -2003,6 +2044,10 @@
 	prot["asc_setStyle"] = prot.asc_setStyle;
 	prot["asc_setLockedPosition"] = prot.asc_setLockedPosition;
 	prot["asc_setRowHeight"] = prot.asc_setRowHeight;
+	prot["asc_setLockedPosition"] = prot.asc_setLockedPosition;
+	prot["asc_setSortOrder"] = prot.asc_setSortOrder;
+	prot["asc_setCrossFilter"] = prot.asc_setCrossFilter;
+	prot["asc_setHideItemsWithNoData"] = prot.asc_setHideItemsWithNoData;
 	prot["asc_getName"] = prot.asc_getName;
 	prot["asc_getCaption"] = prot.asc_getCaption;
 	prot["asc_getStartItem"] = prot.asc_getStartItem;
@@ -2013,6 +2058,9 @@
 	prot["asc_getRowHeight"] = prot.asc_getRowHeight;
 	prot["asc_getSourceName"] = prot.asc_getSourceName;
 	prot["asc_getNameInFormulas"] = prot.asc_getNameInFormulas;
+	prot["asc_getSortOrder"] = prot.asc_getSortOrder;
+	prot["asc_getCrossFilter"] = prot.asc_getCrossFilter;
+	prot["asc_getHideItemsWithNoData"] = prot.asc_getHideItemsWithNoData;
 
 	window['Asc']['CT_slicers'] = window['Asc'].CT_slicers = CT_slicers;
 	window['Asc']['CT_slicerCacheDefinition'] = window['Asc'].CT_slicerCacheDefinition = CT_slicerCacheDefinition;
