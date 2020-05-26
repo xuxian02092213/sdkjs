@@ -325,10 +325,11 @@
 
 		this._writeBinaryForHistory = null;
 
+		this._sourceName = null;
+		this._nameInFormulas = null;
 		this._ascSortOrder = null;
-		this._ascCrossFilter = null;
-		this._ascSlicerCacheHideItemsWithNoData = null;
-
+		this._ascCustomListSort = null;
+		this._ascHideItemsWithNoData = null;
 		this._ascIndicateItemsWithNoData = null;
 		this._ascShowItemsWithNoDataLast = null;
 
@@ -351,6 +352,17 @@
 		res.style = this.style;
 		res.lockedPosition = this.lockedPosition;
 		res.rowHeight = this.rowHeight;
+
+		this.initInterfaceOptions();
+
+		res._sourceName = this._sourceName;
+		res._nameInFormulas = this._nameInFormulas;
+		res._ascSortOrder = this._ascSortOrder;
+		res._ascCustomListSort = this._ascCustomListSort;
+		res._ascHideItemsWithNoData = this._ascHideItemsWithNoData;
+
+		res._ascIndicateItemsWithNoData = this._ascIndicateItemsWithNoData;
+		res._ascShowItemsWithNoDataLast = this._ascShowItemsWithNoDataLast;
 
 		return res;
 	};
@@ -428,6 +440,15 @@
 				}
 			}
 		}
+	};
+	CT_slicer.prototype.initInterfaceOptions = function () {
+		this._sourceName = this.getSourceName();
+		this._nameInFormulas = this.getNameInFormulas();
+		this._ascSortOrder = this.getSortOrder();
+		this._ascCustomListSort = this.getCustomListSort();
+		this._ascHideItemsWithNoData = this.getHideItemsWithNoData();
+		this._ascIndicateItemsWithNoData = this.getIndicateItemsWithNoData();
+		this._ascShowItemsWithNoDataLast = this.getShowItemsWithNoDataLast();
 	};
 
 	CT_slicer.prototype.Write_ToBinary2 = function(w) {
@@ -668,6 +689,61 @@
 		return propOld;
 	};
 
+	CT_slicer.prototype.getSourceName = function () {
+		return this.cacheDefinition.sourceName;
+	};
+
+	CT_slicer.prototype.getNameInFormulas = function () {
+		return this.cacheDefinition.name;
+	};
+
+	CT_slicer.prototype.getSortOrder = function () {
+		//TODO может быть не только таблица
+		var table = this.cacheDefinition.getTableSlicerCache();
+		if (table) {
+			return table.sortOrder;
+		}
+		return ST_tabularSlicerCacheSortOrder.Ascending;
+	};
+
+	CT_slicer.prototype.getCustomListSort = function () {
+		var table = this.cacheDefinition.getTableSlicerCache();
+		if (table) {
+			return table.customListSort;
+		}
+		return true;
+	};
+
+	CT_slicer.prototype.getHideItemsWithNoData = function () {
+		return null !== this.cacheDefinition.slicerCacheHideItemsWithNoData;
+	};
+
+	CT_slicer.prototype.getIndicateItemsWithNoData = function () {
+		var hideItemsWithNoData = this.asc_getHideItemsWithNoData();
+		if (hideItemsWithNoData) {
+			return true;
+		} else {
+			var table = this.cacheDefinition.getTableSlicerCache();
+			if (table) {
+				return table.crossFilter !== ST_tabularSlicerCacheSortOrder.None || table.crossFilter === null;
+			}
+			return true;
+		}
+	};
+
+	CT_slicer.prototype.getShowItemsWithNoDataLast = function () {
+		var hideItemsWithNoData = this.asc_getHideItemsWithNoData();
+		if (hideItemsWithNoData) {
+			return true;
+		} else {
+			var table = this.cacheDefinition.getTableSlicerCache();
+			if (table) {
+				return table.crossFilter === ST_tabularSlicerCacheSortOrder.ShowItemsWithDataAtTop || table.crossFilter === null;
+			}
+			return true;
+		}
+	};
+
 	CT_slicer.prototype.asc_setName = function (val) {
 		this.name = val;
 	};
@@ -708,12 +784,8 @@
 		this._ascSortOrder = val;
 	};
 
-	CT_slicer.prototype.asc_setCrossFilter = function (val) {
-		this._ascCrossFilter = val;
-	};
-
 	CT_slicer.prototype.asc_setHideItemsWithNoData = function (val) {
-		this._ascSlicerCacheHideItemsWithNoData = val;
+		this._ascHideItemsWithNoData = val;
 	};
 
 	CT_slicer.prototype.asc_setCustomListSort = function (val) {
@@ -765,16 +837,15 @@
 	};
 
 	CT_slicer.prototype.asc_getSourceName = function () {
-		return this.cacheDefinition.sourceName;
+		return this._sourceName;
+	};
+
+	CT_slicer.prototype.asc_getNameInFormulas = function () {
+		return this._nameInFormulas;
 	};
 
 	CT_slicer.prototype.asc_getSortOrder = function () {
-		//TODO может быть не только таблица
-		var table = this.cacheDefinition.getTableSlicerCache();
-		if (table) {
-			return table.sortOrder;
-		}
-		return ST_tabularSlicerCacheSortOrder.Ascending;
+		return this._ascSortOrder;
 	};
 
 	CT_slicer.prototype.asc_getCrossFilter = function () {
@@ -786,41 +857,19 @@
 	};
 
 	CT_slicer.prototype.asc_getCustomListSort = function () {
-		var table = this.cacheDefinition.getTableSlicerCache();
-		if (table) {
-			return table.customListSort;
-		}
-		return true;
+		return this._ascCustomListSort;
 	};
 
 	CT_slicer.prototype.asc_getHideItemsWithNoData = function () {
-		return null !== this.cacheDefinition.slicerCacheHideItemsWithNoData;
+		return this._ascHideItemsWithNoData;
 	};
 
 	CT_slicer.prototype.asc_getIndicateItemsWithNoData = function () {
-		var hideItemsWithNoData = this.asc_getHideItemsWithNoData();
-		if (hideItemsWithNoData) {
-			return true;
-		} else {
-			var table = this.cacheDefinition.getTableSlicerCache();
-			if (table) {
-				return table.crossFilter !== ST_tabularSlicerCacheSortOrder.None || table.crossFilter === null;
-			}
-			return true;
-		}
+		return this._ascIndicateItemsWithNoData;
 	};
 
 	CT_slicer.prototype.asc_getShowItemsWithNoDataLast = function () {
-		var hideItemsWithNoData = this.asc_getHideItemsWithNoData();
-		if (hideItemsWithNoData) {
-			return true;
-		} else {
-			var table = this.cacheDefinition.getTableSlicerCache();
-			if (table) {
-				return table.crossFilter === ST_tabularSlicerCacheSortOrder.ShowItemsWithDataAtTop || table.crossFilter === null;
-			}
-			return true;
-		}
+		return this._ascShowItemsWithNoDataLast;
 	};
 
 	function CT_slicerCacheDefinition(ws) {
