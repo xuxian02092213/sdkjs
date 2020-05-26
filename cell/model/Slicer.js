@@ -701,6 +701,18 @@
 		this.rowHeight = val;
 	};
 
+	CT_slicer.prototype.asc_setSortOrder = function (val) {
+		this._ascSortOrder = val;
+	};
+
+	CT_slicer.prototype.asc_setCrossFilter = function (val) {
+		this._ascCrossFilter = val;
+	};
+
+	CT_slicer.prototype.asc_setHideItemsWithNoData = function (val) {
+		this._ascSlicerCacheHideItemsWithNoData = val;
+	};
+
 	CT_slicer.prototype.asc_getName = function () {
 		return this.name;
 	};
@@ -743,9 +755,6 @@
 
 	CT_slicer.prototype.asc_getSortOrder = function () {
 		//TODO может быть не только таблица
-		/*prot = ST_tabularSlicerCacheSortOrder;
-		prot['Ascending'] = prot.Ascending;
-		prot['Descending'] = prot.Descending;*/
 		var table = this.cacheDefinition.getTableSlicerCache();
 		if (table) {
 			return table.sortOrder;
@@ -753,16 +762,7 @@
 		return ST_tabularSlicerCacheSortOrder.Ascending;
 	};
 
-	CT_slicer.prototype.asc_setSortOrder = function (val) {
-		this._ascSortOrder = val;
-	};
-
 	CT_slicer.prototype.asc_getCrossFilter = function () {
-		/*var ST_slicerCacheCrossFilter = {
-			None: 0,
-			ShowItemsWithDataAtTop: 1,
-			showItemsWithNoData: 2
-		};*/
 		var table = this.cacheDefinition.getTableSlicerCache();
 		if (table) {
 			return table.crossFilter;
@@ -772,14 +772,6 @@
 
 	CT_slicer.prototype.asc_getHideItemsWithNoData = function () {
 		return null !== this.cacheDefinition.slicerCacheHideItemsWithNoData;
-	};
-
-	CT_slicer.prototype.asc_setCrossFilter = function (val) {
-		this._ascCrossFilter = val;
-	};
-
-	CT_slicer.prototype.asc_setHideItemsWithNoData = function (val) {
-		this._ascSlicerCacheHideItemsWithNoData = val;
 	};
 
 
