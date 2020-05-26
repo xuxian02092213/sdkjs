@@ -713,6 +713,10 @@
 		this._ascSlicerCacheHideItemsWithNoData = val;
 	};
 
+	CT_slicer.prototype.asc_setCustomListSort = function (val) {
+		this._ascCustomListSort = val;
+	};
+
 	CT_slicer.prototype.asc_getName = function () {
 		return this.name;
 	};
@@ -774,6 +778,13 @@
 		return null !== this.cacheDefinition.slicerCacheHideItemsWithNoData;
 	};
 
+	CT_slicer.prototype.asc_getCustomListSort = function () {
+		var table = this.cacheDefinition.getTableSlicerCache();
+		if (table) {
+			return table.customListSort;
+		}
+		return true;
+	};
 
 	function CT_slicerCacheDefinition(ws) {
 		this.pivotTables = [];//SlicerCachePivotTable
@@ -2040,6 +2051,7 @@
 	prot["asc_setSortOrder"] = prot.asc_setSortOrder;
 	prot["asc_setCrossFilter"] = prot.asc_setCrossFilter;
 	prot["asc_setHideItemsWithNoData"] = prot.asc_setHideItemsWithNoData;
+	prot["asc_setCustomListSort"] = prot.asc_setCustomListSort;
 	prot["asc_getName"] = prot.asc_getName;
 	prot["asc_getCaption"] = prot.asc_getCaption;
 	prot["asc_getStartItem"] = prot.asc_getStartItem;
@@ -2053,6 +2065,7 @@
 	prot["asc_getSortOrder"] = prot.asc_getSortOrder;
 	prot["asc_getCrossFilter"] = prot.asc_getCrossFilter;
 	prot["asc_getHideItemsWithNoData"] = prot.asc_getHideItemsWithNoData;
+	prot["asc_getCustomListSort"] = prot.asc_getCustomListSort;
 
 	window['Asc']['CT_slicers'] = window['Asc'].CT_slicers = CT_slicers;
 	window['Asc']['CT_slicerCacheDefinition'] = window['Asc'].CT_slicerCacheDefinition = CT_slicerCacheDefinition;
