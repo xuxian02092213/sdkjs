@@ -3918,14 +3918,8 @@ var editor;
   spreadsheet_api.prototype.asc_canEnterWizardRange = function(char) {
     return this.wb.canEnterWizardRange(char);
   };
-  spreadsheet_api.prototype.asc_insertArgumentsInFormula = function(val, argNum, argType) {
-    var res = this.wb.insertArgumentsInFormula(val, argNum, argType);
-    this.wb.restoreFocus();
-    return res;
-  };
-
-  spreadsheet_api.prototype.asc_moveCursorFunctionArgument = function(argNum, pos) {
-    var res = this.wb.moveCursorFunctionArgument(argNum, pos);
+  spreadsheet_api.prototype.asc_insertArgumentsInFormula = function(val, argNum, argType, name) {
+    var res = this.wb.insertArgumentsInFormula(val, argNum, argType, name);
     this.wb.restoreFocus();
     return res;
   };
@@ -4942,8 +4936,6 @@ var editor;
   prot["asc_getFormulasInfo"] = prot.asc_getFormulasInfo;
   prot["asc_getFormulaLocaleName"] = prot.asc_getFormulaLocaleName;
   prot["asc_getFormulaNameByLocale"] = prot.asc_getFormulaNameByLocale;
-  prot["asc_insertFormulaArgument"] = prot.asc_insertFormulaArgument;
-  prot["asc_moveCursorFunctionArgument"] = prot.asc_moveCursorFunctionArgument;
   prot["asc_startWizard"] = prot.asc_startWizard;
   prot["asc_canEnterWizardRange"] = prot.asc_canEnterWizardRange;
   prot["asc_insertArgumentsInFormula"] = prot.asc_insertArgumentsInFormula;

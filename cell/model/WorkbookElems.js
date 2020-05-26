@@ -9633,7 +9633,7 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 	};
 
 	function CFunctionInfo(name) {
-		this.name = name;
+		this.name = null;
 		this.argumentsMin = null;
 		this.argumentsMax = null;
 
@@ -9643,8 +9643,21 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 		this.formulaResult = null;
 		this.functionResult = null;
 
+		this._init(name);
+
 		return this;
 	}
+
+	CFunctionInfo.prototype._init = function (name) {
+		var f = AscCommonExcel.cFormulaFunctionLocalized ?
+			AscCommonExcel.cFormulaFunctionLocalized[name] : AscCommonExcel.cFormulaFunction[name];
+		if (f) {
+			this.name = name;
+			this.argumentsMin = f.prototype.argumentsMin;
+			this.argumentsMax = f.prototype.argumentsMax;
+			this.argumentsType = f.prototype.argumentsType;
+		}
+	};
 	CFunctionInfo.prototype.asc_getArgumentMin = function () {
 		return this.argumentsMin;
 	};
@@ -9991,7 +10004,7 @@ AutoFilterDateElem.prototype.convertDateGroupItemToRange = function(oDateGroupIt
 	prot["asc_getDuplicateValues"] = prot.asc_getDuplicateValues;
 	prot["asc_getUniqueValues"] = prot.asc_getUniqueValues;
 
-	window["Asc"]["CFunctionInfo"] = window["Asc"].CFunctionInfo = CFunctionInfo;
+	window["AscCommonExcel"].CFunctionInfo = CFunctionInfo;
 	prot = CFunctionInfo.prototype;
 	prot["asc_getArgumentMin"] = prot.asc_getArgumentMin;
 	prot["asc_getArgumentMax"] = prot.asc_getArgumentMax;

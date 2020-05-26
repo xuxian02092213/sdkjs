@@ -7799,18 +7799,6 @@
 		return null;
 	};
 	Worksheet.prototype.getActiveFunctionInfo = function (parser, parserResult, argNum, type, doNotCalcArgs) {
-
-		var createFunctionInfoByName = function (_name) {
-			var _res;
-			var f = AscCommonExcel.cFormulaFunction[_name];
-			if (f) {
-				_res = new Asc.CFunctionInfo(_name);
-				_res.argumentsMin = f.prototype.argumentsMin;
-				_res.argumentsMax = f.prototype.argumentsMax;
-				_res.argumentsType = f.prototype.argumentsType;
-			}
-			return _res;
-		};
 		var t = this;
 		var calculateFormula = function (str) {
 			var _res = null;
@@ -7864,7 +7852,7 @@
 
 		var res, str, calcRes;
 		if (_formulaParsed && _parseResult.activeFunction && _parseResult.activeFunction.func) {
-			res = createFunctionInfoByName(_parseResult.activeFunction.func.name);
+			res = new AscCommonExcel.CFunctionInfo(_parseResult.activeFunction.func.name);
 			if (!_parseResult.error) {
 				var _parent = _formulaParsed.parent;
 				_formulaParsed.parent = null;
@@ -7912,6 +7900,91 @@
 				res = true;
 			}
 		});
+		return res;
+	};
+
+	Worksheet.prototype.calculateWizardFormula = function (formula, type) {
+		var res = null;
+		if (formula) {
+			var parser = new AscCommonExcel.parserFormula(formula, /*formulaParsed.parent*/null, this);
+			var parseResultArg = new AscCommonExcel.ParseResult([], []);
+			parser.parse(true, true, parseResultArg, true);
+			if (!parseResultArg.error) {
+				res = parser.calculate();
+			}
+
+			if (res) {
+				//TODO если полная проверка, то выводим ошибки - если нет, то вовзращаем пустую строку
+				if (type === undefined || type === null || res.type === AscCommonExcel.cElementType.error) {
+					res = res.toLocaleString();
+				} else if (type === Asc.c_oAscFormulaArgumentType.number) {
+					if (res.type === AscCommonExcel.cElementType.array) {
+						res = res.getElementRowCol(0, 0);
+						res = res.tocNumber();
+						if (res) {
+							res = '"' + res.toLocaleString() + '"';
+						}
+					} else if (res.type === AscCommonExcel.cElementType.cellsRange) {
+						res = res.toLocaleString();
+					} else if (res.type === AscCommonExcel.cElementType.cell || res.type === AscCommonExcel.cElementType.cell3D) {
+						res = res.getValue();
+						res = res.tocNumber();
+						res = res.toLocaleString();
+					} else {
+						res = res.tocNumber();
+						if (res) {
+							res = res.toLocaleString();
+						}
+					}
+				} else if (type === Asc.c_oAscFormulaArgumentType.text) {
+					if (res.type === AscCommonExcel.cElementType.array) {
+						res = res.getElementRowCol(0, 0);
+						res = res.tocString();
+						if (res) {
+							res = '"' + res.toLocaleString() + '"';
+						}
+					} else if (res.type === AscCommonExcel.cElementType.cellsRange) {
+						res = res.toLocaleString();
+					} else if (res.type === AscCommonExcel.cElementType.cell || res.type === AscCommonExcel.cElementType.cell3D) {
+						res = res.getValue();
+						res = res.tocString();
+						if (res) {
+							res = '"' + res.toLocaleString() + '"';
+						}
+					} else {
+						res = res.tocString();
+						if (res) {
+							res = '"' + res.toLocaleString() + '"';
+						}
+					}
+				} else if (type === Asc.c_oAscFormulaArgumentType.logical) {
+					res = res.tocBool();
+					if (res) {
+						res = res.toLocaleString();
+					}
+				} else if (type === Asc.c_oAscFormulaArgumentType.any) {
+					if (res.type === AscCommonExcel.cElementType.array) {
+						res = res.getElementRowCol(0, 0);
+						res = res.tocString();
+					} else if (res.type === AscCommonExcel.cElementType.cellsRange) {
+						res = res.toLocaleString();
+					} else if (res.type === AscCommonExcel.cElementType.cell || res.type === AscCommonExcel.cElementType.cell3D) {
+						res = res.getValue();
+						res = res.tocString();
+						if (res) {
+							res = '"' + res.toLocaleString() + '"';
+						}
+					} else {
+						res = res.tocString();
+						if (res) {
+							res = '"' + res.toLocaleString() + '"';
+						}
+					}
+				} /*else if (type === Asc.c_oAscFormulaArgumentType.reference) {
+					res = res.toLocaleString();
+				}*/
+			}
+		}
 		return res;
 	};
 

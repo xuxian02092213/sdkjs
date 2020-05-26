@@ -689,7 +689,7 @@
 			  }, "getWizard": function () {
 			      return self.isWizardMode;
               }, "getActiveWS": function () {
-			      return self.model.getWorksheet(-1 === self.copyActiveSheet ? self.wsActive : self.copyActiveSheet);
+			      return self.getActiveWS();
 			  }, "updateEditorSelectionInfo": function (xfs) {
 				  self.handlers.trigger("asc_onEditorSelectionChanged", xfs);
 			  }, "onContextMenu": function (event) {
@@ -932,10 +932,10 @@
       this.handlers.trigger("asc_onSelectionRangeChanged", val);
   };
 
-  WorkbookView.prototype._onCleanSelectRange = function () {
+  WorkbookView.prototype._onCleanSelectRange = function (force) {
       if (this.selectionDialogMode) {
           var ws = this.getWorksheet();
-          if (ws.model.selectionRange) {
+          if (ws.model.selectionRange || force) {
               ws.cleanSelection();
               ws.model.selectionRange = null;
 			  if (this.isActive()) {
@@ -1709,6 +1709,10 @@
     return null;
   };
 
+  WorkbookView.prototype.getActiveWS = function () {
+      return this.model.getWorksheet(-1 === this.copyActiveSheet ? this.wsActive : this.copyActiveSheet)
+  };
+
   /**
    * @param {Number} [index]
    * @param {Boolean} [onlyExist]
@@ -1988,7 +1992,7 @@
 			this.isWizardMode = mode;
 			if (this.isWizardMode) {
 				this.cellEditor.updateWizardMode(this.isWizardMode);
-				this._onCleanSelectRange();
+				this._onCleanSelectRange(true);
 			}
 			this.input.disabled = this.isWizardMode;
 		}
@@ -2232,14 +2236,7 @@
         	t.setWizardMode(true);
 			t.cellEditor.insertFormula(name);
 			// ToDo send info from selection
-			var res;
-			var f = AscCommonExcel.cFormulaFunction[name];
-			if (f) {
-				res = new Asc.CFunctionInfo(name);
-				res.argumentsMin = f.prototype.argumentsMin;
-				res.argumentsMax = f.prototype.argumentsMax;
-				res.argumentsType = f.prototype.argumentsType;
-			}
+			var res = name ? new AscCommonExcel.CFunctionInfo(name) : null;
 			t.handlers.trigger("asc_onSendFunctionWizardInfo", res);
         };
 
@@ -2258,142 +2255,27 @@
         return this.getCellEditMode() && this.cellEditor.checkSymbolBeforeRange(char);
     };
 	
-	WorkbookView.prototype.insertArgumentsInFormula = function(args, argNum, argType) {
+	WorkbookView.prototype.insertArgumentsInFormula = function (args, argNum, argType, name) {
 		if (this.getCellEditMode()) {
-			this.cellEditor.changeCellText(args.join(AscCommon.FormulaSeparators.functionArgumentSeparator));
+		    var sArguments = args.join(AscCommon.FormulaSeparators.functionArgumentSeparator);
+			this.cellEditor.changeCellText(sArguments);
 
-			if (argNum !== undefined) {
-				var res = new Asc.CFunctionInfo(null);
+			if (name) {
+			    var ws = this.getActiveWS();
+
+				var res = new AscCommonExcel.CFunctionInfo(name);
 				res.argumentsResult = [];
-				res.argumentsResult[argNum] = this.calculateWizardArg(args[argNum], argType);
+				res.argumentsResult[argNum] = ws.calculateWizardFormula(args[argNum], argType);
+
+                res.functionResult = ws.calculateWizardFormula(name + '(' + sArguments + ')');
+				// ToDo can calculate if previous error
+                res.formulaResult = ws.calculateWizardFormula(this.cellEditor.getText().substring(1));
+
 				return res;
 			}
 		}
 
 		return null;
-	};
-
-	WorkbookView.prototype.calculateWizardArg = function (str, type) {
-		if (!str) {
-			str = '';
-		}
-
-		var calcRes = this._calculateWizardFormula(str);
-		if (calcRes) {
-			if (type === undefined || type === null || calcRes.type === AscCommonExcel.cElementType.error) {
-				return calcRes.toLocaleString();
-			}
-
-			//TODO если полная проверка, то выводим ошибки - если нет, то вовзращаем пустую строку
-			var result = "";
-			if (type === Asc.c_oAscFormulaArgumentType.number) {
-				if (calcRes.type === AscCommonExcel.cElementType.array) {
-					calcRes = calcRes.getElementRowCol(0, 0);
-					calcRes = calcRes.tocNumber();
-					if (calcRes) {
-						result = '"' + calcRes.toLocaleString() + '"';
-					}
-				} else if (calcRes.type === AscCommonExcel.cElementType.cellsRange) {
-					result = calcRes.toLocaleString();
-				} else if (calcRes.type === AscCommonExcel.cElementType.cell || calcRes.type === AscCommonExcel.cElementType.cell3D) {
-					calcRes = calcRes.getValue();
-					calcRes = calcRes.tocNumber()
-					result = calcRes.toLocaleString();
-				} else {
-					calcRes = calcRes.tocNumber();
-					if (calcRes) {
-						result = calcRes.toLocaleString();
-					}
-				}
-			} else if (type === Asc.c_oAscFormulaArgumentType.text) {
-				if (calcRes.type === AscCommonExcel.cElementType.array) {
-					calcRes = calcRes.getElementRowCol(0, 0);
-					calcRes = calcRes.tocString();
-					if (calcRes) {
-						result = '"' + calcRes.toLocaleString() + '"';
-					}
-				} else if (calcRes.type === AscCommonExcel.cElementType.cellsRange) {
-					result = calcRes.toLocaleString();
-				} else if (calcRes.type === AscCommonExcel.cElementType.cell || calcRes.type === AscCommonExcel.cElementType.cell3D) {
-					calcRes = calcRes.getValue();
-					calcRes = calcRes.tocString();
-					if (calcRes) {
-						result = '"' + calcRes.toLocaleString() + '"';
-					}
-				} else {
-					calcRes = calcRes.tocString();
-					if (calcRes) {
-						result = '"' + calcRes.toLocaleString() + '"';
-					}
-				}
-			} else if (type === Asc.c_oAscFormulaArgumentType.logical) {
-				calcRes = calcRes.tocBool();
-				if (calcRes) {
-					result = calcRes.toLocaleString();
-				}
-			} else if (type === Asc.c_oAscFormulaArgumentType.any) {
-				if (calcRes.type === AscCommonExcel.cElementType.array) {
-					calcRes = calcRes.getElementRowCol(0, 0);
-					result = calcRes.tocString();
-				} else if (calcRes.type === AscCommonExcel.cElementType.cellsRange) {
-					result = calcRes.toLocaleString();
-				} else if (calcRes.type === AscCommonExcel.cElementType.cell || calcRes.type === AscCommonExcel.cElementType.cell3D) {
-					calcRes = calcRes.getValue();
-					calcRes = calcRes.tocString();
-					if (calcRes) {
-						result = '"' + calcRes.toLocaleString() + '"';
-					}
-				} else {
-					calcRes = calcRes.tocString();
-					if (calcRes) {
-						result = '"' + calcRes.toLocaleString() + '"';
-					}
-				}
-			} /*else if (type === Asc.c_oAscFormulaArgumentType.reference) {
-				result = calcRes.toLocaleString();
-			}*/
-			return result;
-		}
-	};
-
-	WorkbookView.prototype._calculateWizardFormula = function (_str) {
-		var _res = null;
-		if (_str !== "") {
-			var ws = this.getWorksheet();
-			var _formula = new AscCommonExcel.parserFormula(_str, /*formulaParsed.parent*/null, ws.model);
-			var _parseResultArg = new AscCommonExcel.ParseResult([], []);
-			_formula.parse(true, true, _parseResultArg, true);
-			if (!_parseResultArg.error) {
-				_res = _formula.calculate();
-			}
-		}
-		return _res;
-	};
-
-	WorkbookView.prototype.moveCursorFunctionArgument = function (argNum, pos) {
-		if (!this.getCellEditMode()) {
-			return;
-		}
-
-		var parseResult = this.cellEditor ? this.cellEditor._parseResult : null;
-		if (!parseResult || !parseResult.argPosArr || !parseResult.activeFunction || argNum > parseResult.activeFunction.argumentsMax) {
-			return;
-		}
-
-		if (!parseResult.argPosArr[argNum]) {
-			//меняем строку и добавляем разделителей
-			var val = "";
-			for (var i = parseResult.argPosArr.length; i <= argNum; i++) {
-				val = AscCommon.FormulaSeparators.functionArgumentSeparator + val;
-			}
-
-			this.cellEditor.pasteText(val);
-		} else {
-			//в этой функции необходимо запомнить позицию и длину ссылки, если она уже имеется в данном аргументе
-			//если нет, то запоминаем позицию, длина будет 0
-
-			this.cellEditor._moveCursor(-11, parseResult.argPosArr[argNum].start + pos);
-		}
 	};
 
   WorkbookView.prototype.bIsEmptyClipboard = function() {
