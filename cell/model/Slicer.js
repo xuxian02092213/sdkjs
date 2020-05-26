@@ -329,6 +329,9 @@
 		this._ascCrossFilter = null;
 		this._ascSlicerCacheHideItemsWithNoData = null;
 
+		this._ascIndicateItemsWithNoData = null;
+		this._ascShowItemsWithNoDataLast = null;
+
 		return this;
 	}
 	CT_slicer.prototype.getType = function() {
@@ -717,6 +720,14 @@
 		this._ascCustomListSort = val;
 	};
 
+	CT_slicer.prototype.asc_setIndicateItemsWithNoData = function (val) {
+		this._ascIndicateItemsWithNoData = val;
+	};
+
+	CT_slicer.prototype.asc_setShowItemsWithNoDataLast = function (val) {
+		this._ascShowItemsWithNoDataLast = val;
+	};
+
 	CT_slicer.prototype.asc_getName = function () {
 		return this.name;
 	};
@@ -774,16 +785,42 @@
 		return ST_tabularSlicerCacheSortOrder.ShowItemsWithDataAtTop;
 	};
 
-	CT_slicer.prototype.asc_getHideItemsWithNoData = function () {
-		return null !== this.cacheDefinition.slicerCacheHideItemsWithNoData;
-	};
-
 	CT_slicer.prototype.asc_getCustomListSort = function () {
 		var table = this.cacheDefinition.getTableSlicerCache();
 		if (table) {
 			return table.customListSort;
 		}
 		return true;
+	};
+
+	CT_slicer.prototype.asc_getHideItemsWithNoData = function () {
+		return null !== this.cacheDefinition.slicerCacheHideItemsWithNoData;
+	};
+
+	CT_slicer.prototype.asc_getIndicateItemsWithNoData = function () {
+		var hideItemsWithNoData = this.asc_getHideItemsWithNoData();
+		if (hideItemsWithNoData) {
+			return true;
+		} else {
+			var table = this.cacheDefinition.getTableSlicerCache();
+			if (table) {
+				return table.crossFilter !== ST_tabularSlicerCacheSortOrder.None || table.crossFilter === null;
+			}
+			return true;
+		}
+	};
+
+	CT_slicer.prototype.asc_getShowItemsWithNoDataLast = function () {
+		var hideItemsWithNoData = this.asc_getHideItemsWithNoData();
+		if (hideItemsWithNoData) {
+			return true;
+		} else {
+			var table = this.cacheDefinition.getTableSlicerCache();
+			if (table) {
+				return table.crossFilter === ST_tabularSlicerCacheSortOrder.ShowItemsWithDataAtTop || table.crossFilter === null;
+			}
+			return true;
+		}
 	};
 
 	function CT_slicerCacheDefinition(ws) {
@@ -2052,6 +2089,8 @@
 	prot["asc_setCrossFilter"] = prot.asc_setCrossFilter;
 	prot["asc_setHideItemsWithNoData"] = prot.asc_setHideItemsWithNoData;
 	prot["asc_setCustomListSort"] = prot.asc_setCustomListSort;
+	prot["asc_setIndicateItemsWithNoData"] = prot.asc_setIndicateItemsWithNoData;
+	prot["asc_setShowItemsWithNoDataLast"] = prot.asc_setShowItemsWithNoDataLast;
 	prot["asc_getName"] = prot.asc_getName;
 	prot["asc_getCaption"] = prot.asc_getCaption;
 	prot["asc_getStartItem"] = prot.asc_getStartItem;
@@ -2066,6 +2105,8 @@
 	prot["asc_getCrossFilter"] = prot.asc_getCrossFilter;
 	prot["asc_getHideItemsWithNoData"] = prot.asc_getHideItemsWithNoData;
 	prot["asc_getCustomListSort"] = prot.asc_getCustomListSort;
+	prot["asc_getIndicateItemsWithNoData"] = prot.asc_getIndicateItemsWithNoData;
+	prot["asc_getShowItemsWithNoDataLast"] = prot.asc_getShowItemsWithNoDataLast;
 
 	window['Asc']['CT_slicers'] = window['Asc'].CT_slicers = CT_slicers;
 	window['Asc']['CT_slicerCacheDefinition'] = window['Asc'].CT_slicerCacheDefinition = CT_slicerCacheDefinition;
