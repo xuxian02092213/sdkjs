@@ -621,6 +621,9 @@ var editor;
 	spreadsheet_api.prototype.asc_getTablePictures = function (props, pivot) {
 		return this.wb.getTableStyles(props, pivot);
 	};
+	spreadsheet_api.prototype.asc_getSlicerPictures = function () {
+		return this.wb.getSlicerStyles();
+	};
 
   spreadsheet_api.prototype.asc_setViewMode = function (isViewMode) {
     this.isViewMode = !!isViewMode;
@@ -4789,6 +4792,7 @@ var editor;
   prot["asc_changeTableRange"] = prot.asc_changeTableRange;
   prot["asc_convertTableToRange"] = prot.asc_convertTableToRange;
   prot["asc_getTablePictures"] = prot.asc_getTablePictures;
+  prot["asc_getSlicerPictures"] = prot.asc_getSlicerPictures;
   prot["asc_getDefaultTableStyle"] = prot.asc_getDefaultTableStyle;
 
 
