@@ -7742,6 +7742,7 @@
 
 				return {
 					cursor: drawingInfo.cursor,
+                    tooltip: drawingInfo.tooltip,
 					target: c_oTargetType.Shape,
 					drawingId: drawingInfo.id,
 					col: -1,

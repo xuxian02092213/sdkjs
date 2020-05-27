@@ -369,10 +369,10 @@ function handleFloatObjects(drawingObjectsController, drawingArr, e, x, y, group
         }
         else
         {
-            var sCursor = drawing.getCursorType(e, x, y);
-            if(sCursor)
+            var oCursorInfo = drawing.getCursorInfo(e, x, y);
+            if(oCursorInfo)
             {
-                return {objectId: drawing.Get_Id(), cursorType: sCursor, bMarker: false};
+                return oCursorInfo;
             }
             return handleShapeImage(drawing, drawingObjectsController, e, x, y, group, pageIndex, bWord);
         }
@@ -396,10 +396,10 @@ function handleFloatObjects(drawingObjectsController, drawingArr, e, x, y, group
         }
         else
         {
-            var sCursor = shape.getCursorType(e, x, y);
-            if(sCursor)
+            var oCursorInfo = shape.getCursorInfo(e, x, y);
+            if(oCursorInfo)
             {
-                return {objectId: shape.Get_Id(), cursorType: sCursor, bMarker: false};
+                return oCursorInfo;
             }
             return handleShapeImageInGroup(drawingObjectsController, drawing, shape, e, x, y, pageIndex, bWord);
         }

@@ -859,15 +859,17 @@
         }
         return bRet;
     };  
-    CSlicer.prototype.getCursorType = function (e, x, y) {
+    CSlicer.prototype.getCursorInfo = function (e, x, y) {
         if(this.getLocked() || !this.hit(x, y) || !this.data.hasData()) {
             return null;
         }
-        var sRet = (this.header && this.header.getCursorType(e, x, y)) || (this.buttonsContainer && this.buttonsContainer.getCursorType(e, x, y));
-        if(sRet) {
-            return sRet;
+        var oRet = (this.header && this.header.getCursorInfo(e, x, y)) || (this.buttonsContainer && this.buttonsContainer.getCursorInfo(e, x, y));
+        if(oRet) {
+            oRet.objectId = this.Get_Id();
+            oRet.bMarker = false;
+            return oRet;
         }
-        return sRet;
+        return oRet;
     };
     CSlicer.prototype.onMouseUp = function (e, x, y) {
         var bRet = false;
@@ -1316,16 +1318,22 @@
         bRet |= this.buttons[1].onMouseDown(e, x, y);
         return bRet;
     };  
-    CHeader.prototype.getCursorType = function (e, x, y) {
+    CHeader.prototype.getCursorInfo = function (e, x, y) {
         if(!this.hit(x, y)) {
             return null;
         }
-        var sRet = this.buttons[0].getCursorType(e, x, y);
-        if(sRet) {
-            return  sRet;
+        var oRet = this.buttons[0].getCursorInfo(e, x, y);
+        if(oRet) {
+            return  oRet;
         }
-        sRet = this.buttons[1].getCursorType(e, x, y);
-        return sRet;
+        oRet = this.buttons[1].getCursorInfo(e, x, y);
+        if(!oRet) {
+            oRet = {
+                cursorType: "move",
+                tooltip: !this.txBody.bFit ? this.getString() : null
+            }
+        }
+        return oRet;
     };
     CHeader.prototype.onMouseUp = function (e, x, y) {
         var bRet = false;
@@ -1427,6 +1435,16 @@
         }
         this.slicer.onUpdate(oClipBounds);    
     };
+    CHeader.prototype.getTooltipText = function (nIndex) {
+        var sText = null;
+        if(nIndex === 0) {
+            sText = AscCommon.translateManager.getValue("Multi-Select (Alt+S)");
+        }
+        else if(nIndex === 1) {
+            sText = AscCommon.translateManager.getValue("Clear Filter (Alt+C)");
+        }
+        return sText;
+    };
     
     function CButtonBase(parent) {
         AscFormat.CShape.call(this);
@@ -1511,6 +1529,9 @@
         if(bOld !== this.isHovered) {
             this.onUpdate(this.bounds);
         }
+    };
+    CButtonBase.prototype.getTooltipText = function() {
+        return null;
     };
     CButtonBase.prototype.setNotHoverState = function() {
         var bOld = this.isHovered;
@@ -1685,12 +1706,15 @@
     CButtonBase.prototype.onUpdate = function(oBounds) {
         this.parent.onUpdate(oBounds);
     };
-    CButtonBase.prototype.getCursorType = function(e, x, y) {
+    CButtonBase.prototype.getCursorInfo = function(e, x, y) {
         if(!this.hit(x, y)) {
             return null;
         }
         else {
-            return "default";
+            return {
+                cursorType: "default",
+                tooltip: this.getTooltipText()
+            }
         }
     };
     
@@ -1745,7 +1769,13 @@
         this.txBody = this.textBoxes[this.getState()];
         CButtonBase.prototype.draw.call(this, graphics);
     };
-
+    CButton.prototype.getTooltipText = function() {
+        if(this.txBody.bFit) {
+            return null;
+        }
+        return this.getString();
+    };
+    
     function CInterfaceButton(parent) {
         CButtonBase.call(this, parent);
         this.setTmpState(STYLE_TYPE.UNSELECTED_DATA);
@@ -1797,7 +1827,10 @@
             graphics.RestoreGrState();
         }
     };
-
+    CInterfaceButton.prototype.getTooltipText = function() {
+        return this.parent.getTooltipText(this.parent.getButtonIndex(this));
+    };
+    
     function CButtonsContainer(slicer) {
         this.slicer = slicer;
         this.worksheet = slicer.worksheet;
@@ -2181,11 +2214,28 @@
     CButtonsContainer.prototype.getIcon = function (nIndex, nType) {
         return null;
     };
-    CButtonsContainer.prototype.getCursorType = function (e, x, y) {
+    CButtonsContainer.prototype.getCursorInfo = function (e, x, y) {
         if(!this.hit(x, y)) {
             return null;
         }
-        return "default";
+        var oRet = {
+            cursorType: "default",
+            tooltip: null
+        }
+        var oRet;
+        for(var i = 0; i < this.buttons.length; ++i) {
+            oRet = this.buttons[i].getCursorInfo(e, x, y);
+            if(oRet) {
+                return oRet;
+            }
+        }
+        return {
+            cursorType: "default",
+            tooltip: null
+        }
+    };
+    CButtonsContainer.prototype.getTooltipText = function (nIndex) {
+        return this.getString(nIndex)
     };
     
     function CScrollButton(parent, type) {

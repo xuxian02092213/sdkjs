@@ -1294,6 +1294,18 @@
 			}
 		}
 
+		// check shape
+		if (ct.target === c_oTargetType.Shape) {
+		    if(typeof ct.tooltip === "string" && ct.tooltip.length > 0) {
+                arrMouseMoveObjects.push(new asc_CMM({
+                    type: c_oAscMouseMoveType.Tooltip,
+                    x: AscCommon.AscBrowser.convertToRetinaValue(x),
+                    y: AscCommon.AscBrowser.convertToRetinaValue(y),
+                    tooltip: ct.tooltip
+                }));
+            }
+		}
+
       /* Проверяем, может мы на никаком объекте (такая схема оказалась приемлимой
        * для отдела разработки приложений)
        */
@@ -1736,9 +1748,9 @@
       oDrawingContext.setFillStyle(new AscCommon.CColor(255, 255, 255)).fillRect(0, 0, nCanvasW, nCanvasH);
       var oDXF;
 
-      var nIns = 1;
+      var nIns = 2;
       var nTIns = 3;
-      var nBH = 9;
+      var nBH = 8;
       var nTW = 8;
       var nPos = 0;
       var oFont;

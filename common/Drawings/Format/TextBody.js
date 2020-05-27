@@ -115,6 +115,7 @@ function CTextBody()
     this.content2 = null;
     this.compiledBodyPr = null;
     this.parent = null;
+    this.bFit = true;
     this.recalcInfo =
     {
         recalculateBodyPr: true,
@@ -572,8 +573,11 @@ CTextBody.prototype =
     },
     recalculateOneString: function(sText) {
         if(this.checkContentFit(sText)) {
+
+            this.bFit = true;
             return;
         }
+        this.bFit = false;
         var nLeftPos = 0, nRightPos = sText.length;
         var nMiddlePos;
         var sEnd = "...";
