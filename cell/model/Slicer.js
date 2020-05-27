@@ -332,6 +332,7 @@
 		this._ascHideItemsWithNoData = null;
 		this._ascIndicateItemsWithNoData = null;
 		this._ascShowItemsWithNoDataLast = null;
+		this._ascButtonWidth = null;
 
 		return this;
 	}
@@ -363,6 +364,7 @@
 
 		res._ascIndicateItemsWithNoData = this._ascIndicateItemsWithNoData;
 		res._ascShowItemsWithNoDataLast = this._ascShowItemsWithNoDataLast;
+		res._ascButtonWidth = this._ascButtonWidth;
 
 		return res;
 	};
@@ -412,6 +414,9 @@
 		}
 		if(val._ascShowItemsWithNoDataLast !== this._ascShowItemsWithNoDataLast) {
 			this._ascShowItemsWithNoDataLast = undefined;
+		}
+		if(val._ascButtonWidth !== this._ascButtonWidth) {
+			this._ascButtonWidth = undefined;
 		}
 	};
 	CT_slicer.prototype.init = function (name, obj_name, type, ws) {
@@ -691,15 +696,15 @@
 	};
 
 	CT_slicer.prototype.set = function (val) {
-		this.type = this.checkProperty(this.type, val.type, AscDFH.historyitem_Slicer_SetName);
-		this.caption = this.checkProperty(this.caption, val.caption, AscDFH.historyitem_Slicer_SetCaption);
-		this.startItem = this.checkProperty(this.startItem, val.startItem, AscDFH.historyitem_Slicer_SetStartItem);
-		this.columnCount = this.checkProperty(this.columnCount, val.columnCount, AscDFH.historyitem_Slicer_SetColumnCount);
-		this.showCaption = this.checkProperty(this.showCaption, val.showCaption, AscDFH.historyitem_Slicer_SetShowCaption);
-		this.level = this.checkProperty(this.level, val.level, AscDFH.historyitem_Slicer_SetLevel);
-		this.style = this.checkProperty(this.style, val.style, AscDFH.historyitem_Slicer_SetStyle);
-		this.lockedPosition = this.checkProperty(this.lockedPosition, val.lockedPosition, AscDFH.historyitem_Slicer_SetLockedPosition);
-		this.rowHeight = this.checkProperty(this.rowHeight, val.rowHeight, AscDFH.historyitem_Slicer_SetRowHeight);
+		this.type = this.checkProperty(this.type, val.type, AscCH.historyitem_Slicer_SetName);
+		this.caption = this.checkProperty(this.caption, val.caption, AscCH.historyitem_Slicer_SetCaption);
+		this.startItem = this.checkProperty(this.startItem, val.startItem, AscCH.historyitem_Slicer_SetStartItem);
+		this.columnCount = this.checkProperty(this.columnCount, val.columnCount, AscCH.historyitem_Slicer_SetColumnCount);
+		this.showCaption = this.checkProperty(this.showCaption, val.showCaption, AscCH.historyitem_Slicer_SetShowCaption);
+		this.level = this.checkProperty(this.level, val.level, AscCH.historyitem_Slicer_SetLevel);
+		this.style = this.checkProperty(this.style, val.style, AscCH.historyitem_Slicer_SetStyle);
+		this.lockedPosition = this.checkProperty(this.lockedPosition, val.lockedPosition, AscCH.historyitem_Slicer_SetLockedPosition);
+		this.rowHeight = this.checkProperty(this.rowHeight, val.rowHeight, AscCH.historyitem_Slicer_SetRowHeight);
 
 
 		/*res._ascSortOrder = this._ascSortOrder;
@@ -829,6 +834,10 @@
 	CT_slicer.prototype.asc_setShowItemsWithNoDataLast = function (val) {
 		this._ascShowItemsWithNoDataLast = val;
 	};
+	
+	CT_slicer.prototype.asc_setButtonWidth = function (val) {
+		this._ascButtonWidth = val;
+	};
 
 	CT_slicer.prototype.asc_getName = function () {
 		return this.name;
@@ -900,6 +909,13 @@
 
 	CT_slicer.prototype.asc_getShowItemsWithNoDataLast = function () {
 		return this._ascShowItemsWithNoDataLast;
+	};
+	CT_slicer.prototype.asc_getButtonWidth = function () {
+		return this._ascButtonWidth;
+	};
+
+	CT_slicer.prototype.asc_getStylesPictures = function () {
+		return Asc.editor.asc_getSlicerPictures();
 	};
 
 	function CT_slicerCacheDefinition(ws) {
@@ -2170,6 +2186,7 @@
 	prot["asc_setCustomListSort"] = prot.asc_setCustomListSort;
 	prot["asc_setIndicateItemsWithNoData"] = prot.asc_setIndicateItemsWithNoData;
 	prot["asc_setShowItemsWithNoDataLast"] = prot.asc_setShowItemsWithNoDataLast;
+	prot["asc_setButtonWidth"] = prot.asc_setButtonWidth;
 	prot["asc_getName"] = prot.asc_getName;
 	prot["asc_getCaption"] = prot.asc_getCaption;
 	prot["asc_getStartItem"] = prot.asc_getStartItem;
@@ -2186,6 +2203,8 @@
 	prot["asc_getCustomListSort"] = prot.asc_getCustomListSort;
 	prot["asc_getIndicateItemsWithNoData"] = prot.asc_getIndicateItemsWithNoData;
 	prot["asc_getShowItemsWithNoDataLast"] = prot.asc_getShowItemsWithNoDataLast;
+	prot["asc_getButtonWidth"] = prot.asc_getButtonWidth;
+	prot["asc_getStylesPictures"] = prot.asc_getStylesPictures;
 
 	window['Asc']['CT_slicers'] = window['Asc'].CT_slicers = CT_slicers;
 	window['Asc']['CT_slicerCacheDefinition'] = window['Asc'].CT_slicerCacheDefinition = CT_slicerCacheDefinition;
