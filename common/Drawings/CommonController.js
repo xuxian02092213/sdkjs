@@ -8874,6 +8874,10 @@ DrawingObjectsController.prototype =
                 case AscDFH.historyitem_type_SlicerView:
                 {
                     var oSlicer = drawing.getSlicer();
+                    var oSlicerCopy = (oSlicer ? oSlicer.clone() : null);
+                    if(oSlicerCopy) {
+                        oSlicerCopy.asc_setButtonWidth(drawing.getButtonWidth());
+                    }
                     new_slicer_props =
                         {
                             w: drawing.extX,
@@ -8883,7 +8887,7 @@ DrawingObjectsController.prototype =
                             title: drawing.getTitle(),
                             description: drawing.getDescription(),
                             anchor: drawing.getDrawingBaseType(),
-                            slicerProps: (oSlicer ? oSlicer.clone() : null)
+                            slicerProps: oSlicerCopy
                         };
                     if(!slicer_props)
                     {

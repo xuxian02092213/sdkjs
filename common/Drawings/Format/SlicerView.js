@@ -985,6 +985,12 @@
         }
         return oWorkbook.getSlicerByName(this.name);
     };
+    CSlicer.prototype.getButtonWidth = function() {
+        if(!this.buttonsContainer) {
+            return 0;
+        }
+        return this.buttonsContainer.getButtonWidth();
+    };
     
     function CHeader(slicer) {
         AscFormat.CShape.call(this);
