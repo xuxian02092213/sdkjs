@@ -52,7 +52,7 @@
 	var ST_slicerCacheCrossFilter = {
 		None: 0,
 		ShowItemsWithDataAtTop: 1,
-		showItemsWithNoData: 2
+		ShowItemsWithNoData: 2
 	};
 
 	var ST_slicerStyleType = {
@@ -706,19 +706,26 @@
 		this.lockedPosition = this.checkProperty(this.lockedPosition, val.lockedPosition, AscCH.historyitem_Slicer_SetLockedPosition);
 		this.rowHeight = this.checkProperty(this.rowHeight, val.rowHeight, AscCH.historyitem_Slicer_SetRowHeight);
 
+		if (val._ascSortOrder !== undefined) {
+			this.setSortOrder(val._ascSortOrder);
+		}
+		if (val._ascCustomListSort !== undefined) {
+			this.setCustomListSort(val._ascCustomListSort);
+		}
+		if (val._ascHideItemsWithNoData !== undefined) {
+			this.setHideItemsWithNoData(val._ascHideItemsWithNoData);
+		}
 
-		/*res._ascSortOrder = this._ascSortOrder;
-		res._ascCustomListSort = this._ascCustomListSort;
-		res._ascHideItemsWithNoData = this._ascHideItemsWithNoData;
-
-		res._ascIndicateItemsWithNoData = this._ascIndicateItemsWithNoData;
-		res._ascShowItemsWithNoDataLast = this._ascShowItemsWithNoDataLast;*/
+		var crossFilter = this._ascGenerateCrossFilter(val._ascHideItemsWithNoData, val._ascIndicateItemsWithNoData, val._ascShowItemsWithNoDataLast);
+		if (crossFilter !== undefined) {
+			this.setCrossFilter(crossFilter);
+		}
 	};
 
 	CT_slicer.prototype.checkProperty = function (propOld, propNew, type) {
 		if (propOld !== propNew && undefined !== propNew) {
 			History.Add(AscCommonExcel.g_oUndoRedoSlicer, type,
-				this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(null, propOld, propNew));
+				this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, propOld, propNew));
 			return propNew;
 		}
 		return propOld;
@@ -776,6 +783,34 @@
 				return table.crossFilter === ST_tabularSlicerCacheSortOrder.ShowItemsWithDataAtTop || table.crossFilter === null;
 			}
 			return true;
+		}
+	};
+
+	CT_slicer.prototype.setSortOrder = function (val) {
+		this.cacheDefinition.setSortOrder(val);
+	};
+
+	CT_slicer.prototype.setCustomListSort = function (val) {
+		this.cacheDefinition.setCustomListSort(val);
+	};
+
+	CT_slicer.prototype.setHideItemsWithNoData = function (val) {
+		this.cacheDefinition.setHideItemsWithNoData(val);
+	};
+
+	CT_slicer.prototype.setCrossFilter = function (val) {
+		this.cacheDefinition.setCrossFilter(val);
+	};
+
+	CT_slicer.prototype._ascGenerateCrossFilter = function (_ascHideItemsWithNoData, _ascIndicateItemsWithNoData, _ascShowItemsWithNoDataLast) {
+		if (_ascHideItemsWithNoData || (_ascIndicateItemsWithNoData && _ascShowItemsWithNoDataLast)) {
+			return ST_slicerCacheCrossFilter.ShowItemsWithDataAtTop;
+		}
+		if (!_ascIndicateItemsWithNoData && !_ascShowItemsWithNoDataLast) {
+			return ST_slicerCacheCrossFilter.None;
+		}
+		if (_ascIndicateItemsWithNoData && !_ascShowItemsWithNoDataLast) {
+			return ST_slicerCacheCrossFilter.ShowItemsWithNoData;
 		}
 	};
 
@@ -1174,6 +1209,58 @@
 		return res;
 	};
 
+	CT_slicerCacheDefinition.prototype.setSortOrder = function (val) {
+		var oldVal, obj;
+		if (this.tableSlicerCache) {
+			obj = this.tableSlicerCache;
+			oldVal = this.tableSlicerCache.sortOrder;
+		}
+
+		if (obj && oldVal !== val) {
+			obj.setSortOrder(val);
+			History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCacheSortOrder,
+				null, null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val));
+		}
+	};
+
+	CT_slicerCacheDefinition.prototype.setCustomListSort = function (val) {
+		var oldVal, obj;
+		if (this.tableSlicerCache) {
+			obj = this.tableSlicerCache;
+			oldVal = this.tableSlicerCache.customListSort;
+		}
+
+		if (obj && oldVal !== val) {
+			obj.setCustomListSort(val);
+			History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCacheCustomListSort,
+				null, null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val));
+		}
+	};
+
+	CT_slicerCacheDefinition.prototype.setCrossFilter = function (val) {
+		var oldVal, obj;
+		if (this.tableSlicerCache) {
+			obj = this.tableSlicerCache;
+			oldVal = this.tableSlicerCache.crossFilter;
+		}
+
+		if (obj && oldVal !== val) {
+			obj.setCrossFilter(val);
+			History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCacheCrossFilter,
+				null, null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val));
+		}
+	};
+
+	CT_slicerCacheDefinition.prototype.setHideItemsWithNoData = function (val) {
+		//TODO ?
+		var oldVal = this.slicerCacheHideItemsWithNoData;
+		var newVal = val ? [] : null;
+		if (oldVal !== newVal) {
+			this.slicerCacheHideItemsWithNoData = val ? [] : null;
+			History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCacheHideItemsWithNoData,
+				null, null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val));
+		}
+	};
 
 
 	function CT_slicerCacheData() {
@@ -1883,6 +1970,17 @@
 		//TODO history
 		this.column = val;
 	};
+	CT_tableSlicerCache.prototype.setSortOrder = function (val) {
+		this.sortOrder = val;
+	};
+
+	CT_tableSlicerCache.prototype.setCustomListSort = function (val) {
+		this.customListSort = val;
+	};
+
+	CT_slicerCacheDefinition.prototype.setCrossFilter = function (val) {
+		this.crossFilter = val;
+	};
 
 	function CT_tabularSlicerCache() {
 		this.items = [];//TabularSlicerCacheItem
@@ -2237,7 +2335,7 @@
 	prot = ST_slicerCacheCrossFilter;
 	prot['None'] = prot.None;
 	prot['ShowItemsWithDataAtTop'] = prot.ShowItemsWithDataAtTop;
-	prot['showItemsWithNoData'] = prot.showItemsWithNoData;
+	prot['ShowItemsWithNoData'] = prot.ShowItemsWithNoData;
 
 	window['Asc']['ST_slicerStyleType'] = window['Asc'].ST_slicerStyleType = ST_slicerStyleType;
 	prot = ST_slicerStyleType;

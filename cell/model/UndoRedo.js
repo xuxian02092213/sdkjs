@@ -3306,7 +3306,7 @@ function (window, undefined) {
 			return;
 		}
 
-		var slicer;
+		var slicer, slicerCache;
 		switch (Type) {
 			case AscCH.historyitem_Slicer_SetCaption: {
 				slicer = oModel.getSlicerByName(Data.name);
@@ -3351,51 +3351,79 @@ function (window, undefined) {
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetStartItem: {
-				slicer = oModel.getSlicerByName(bUndo ? Data.to : Data.from);
+				slicer = oModel.getSlicerByName(Data.name);
 				if (slicer) {
 					slicer.startItem = bUndo ? Data.from : Data.to;
 				}
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetColumnCount: {
-				slicer = oModel.getSlicerByName(bUndo ? Data.to : Data.from);
+				slicer = oModel.getSlicerByName(Data.name);
 				if (slicer) {
 					slicer.columnCount = bUndo ? Data.from : Data.to;
 				}
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetShowCaption: {
-				slicer = oModel.getSlicerByName(bUndo ? Data.to : Data.from);
+				slicer = oModel.getSlicerByName(Data.name);
 				if (slicer) {
 					slicer.showCaption = bUndo ? Data.from : Data.to;
 				}
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetLevel: {
-				slicer = oModel.getSlicerByName(bUndo ? Data.to : Data.from);
+				slicer = oModel.getSlicerByName(Data.name);
 				if (slicer) {
 					slicer.level = bUndo ? Data.from : Data.to;
 				}
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetStyle: {
-				slicer = oModel.getSlicerByName(bUndo ? Data.to : Data.from);
+				slicer = oModel.getSlicerByName(Data.name);
 				if (slicer) {
 					slicer.style = bUndo ? Data.from : Data.to;
 				}
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetLockedPosition: {
-				slicer = oModel.getSlicerByName(bUndo ? Data.to : Data.from);
+				slicer = oModel.getSlicerByName(Data.name);
 				if (slicer) {
 					slicer.lockedPosition = bUndo ? Data.from : Data.to;
 				}
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetRowHeight: {
-				slicer = oModel.getSlicerByName(bUndo ? Data.to : Data.from);
+				slicer = oModel.getSlicerByName(Data.name);
 				if (slicer) {
 					slicer.rowHeight = bUndo ? Data.from : Data.to;
+				}
+				break;
+			}
+			case AscCH.historyitem_Slicer_SetCacheSortOrder: {
+				slicerCache = oModel.getSlicerCacheByName(bUndo ? Data.to : Data.from);
+				if (slicer) {
+					slicerCache.setSortOrder(bUndo ? Data.from : Data.to);
+				}
+				break;
+			}
+			case AscCH.historyitem_Slicer_SetCacheCustomListSort: {
+				slicerCache = oModel.getSlicerCacheByName(bUndo ? Data.to : Data.from);
+				if (slicer) {
+					slicerCache.setCustomListSort(bUndo ? Data.from : Data.to);
+				}
+				break;
+			}
+			case AscCH.historyitem_Slicer_SetCrossFilter: {
+				slicerCache = oModel.getSlicerCacheByName(bUndo ? Data.to : Data.from);
+				if (slicer) {
+					slicerCache.setCrossFilter(bUndo ? Data.from : Data.to);
+				}
+				break;
+			}
+			case AscCH.historyitem_Slicer_SetCacheHideItemsWithNoData: {
+				slicerCache = oModel.getSlicerCacheByName(bUndo ? Data.to : Data.from);
+				if (slicer) {
+					slicerCache.setHideItemsWithNoData(bUndo ? Data.from : Data.to);
 				}
 				break;
 			}

@@ -245,6 +245,11 @@ function (window, undefined) {
 	window['AscCH'].historyitem_Slicer_SetStyle = 11;
 	window['AscCH'].historyitem_Slicer_SetLockedPosition = 12;
 	window['AscCH'].historyitem_Slicer_SetRowHeight = 13;
+	window['AscCH'].historyitem_Slicer_SetCacheSortOrder = 14;
+	window['AscCH'].historyitem_Slicer_SetCacheCustomListSort = 15;
+	window['AscCH'].historyitem_Slicer_SetCrossFilter = 16;
+	window['AscCH'].historyitem_Slicer_SetCacheHideItemsWithNoData = 17;
+
 
 
 function CHistory()
