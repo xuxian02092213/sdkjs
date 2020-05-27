@@ -588,6 +588,7 @@
 		this.name = val;
 		History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetName,
 			this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(null, oldVal, val));
+		this.ws.workbook.onSlicerChangeName(oldVal, val);
 	};
 	CT_slicer.prototype.setCaption = function (val) {
 		var oldVal = this.caption;
@@ -696,7 +697,9 @@
 	};
 
 	CT_slicer.prototype.set = function (val) {
-		this.type = this.checkProperty(this.type, val.type, AscCH.historyitem_Slicer_SetName);
+		if (this.name !== val.name && val.name !== undefined) {
+			this.setName(val.name);
+		}
 		this.caption = this.checkProperty(this.caption, val.caption, AscCH.historyitem_Slicer_SetCaption);
 		this.startItem = this.checkProperty(this.startItem, val.startItem, AscCH.historyitem_Slicer_SetStartItem);
 		this.columnCount = this.checkProperty(this.columnCount, val.columnCount, AscCH.historyitem_Slicer_SetColumnCount);
