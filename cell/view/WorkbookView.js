@@ -1732,7 +1732,7 @@
   };
   WorkbookView.prototype.getSlicerStylePreview = function(sStyleName, oSlicerStyle, oTableStyle) {
       var nW = 36, nH = 49;
-      var nCanvasW = nW, nCanvasH = nH;
+      var nCanvasW, nCanvasH;
       var r = function (nPix) {
           return AscCommon.AscBrowser.convertToRetinaValue(nPix, true);
       }
@@ -1773,7 +1773,9 @@
           }
           oDrawingContext.setStrokeStyle(oColor);
           oDrawingContext.setLineWidth(1);
+          oDrawingContext.beginPath();
           oDrawingContext.lineHor(r(nTIns + nIns), r(nPos + nBH / 2.0), r(nTIns + nIns + nTW));
+          oDrawingContext.stroke();
           nPos += (nBH + nIns)
       }
       var aBT = [
@@ -1795,7 +1797,9 @@
               }
               oDrawingContext.setStrokeStyle(oColor);
               oDrawingContext.setLineWidth(1);
+              oDrawingContext.beginPath();
               oDrawingContext.lineHor(r(nTIns + nIns), r(nPos + nBH / 2.0), r(nTIns + nIns + nTW));
+              oDrawingContext.stroke();
               nPos += (nIns + nBH);
           }
       }
@@ -1811,47 +1815,35 @@
           else {
               var oGraphics = new AscCommon.CGraphics();
               oGraphics.init(oDrawingContext.ctx, oDrawingContext.getWidth(0), oDrawingContext.getHeight(0),
-                  oDrawingContext.getWidth(0), oDrawingContext.getHeight(0));
+                  oDrawingContext.getWidth(3), oDrawingContext.getHeight(3));
               oGraphics.m_oFontManager = AscCommon.g_fontManager;
               AscCommonExcel.drawFillCell(oDrawingContext, oGraphics, oFill, new AscCommon.asc_CRect(x0, y0, x1 - x0, y1 - y0));
           }
       }
       var oBorder = oDXF.getBorder();
       if(oBorder) {
-          var oSide = oBorder.l;
-          var bStroke = false;
-          if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None && oSide.c) {
-              oDrawingContext.setStrokeStyle(oSide.c);
-              oDrawingContext.setLineWidth(1);
-              oDrawingContext.setLineDash(oSide.getDashSegments());
+          var oS = oBorder.l;
+          if(oS && oS.s !== AscCommon.c_oAscBorderStyles.None && oS.c) {
+              oDrawingContext.setStrokeStyle(oS.c).setLineWidth(1).setLineDash(oS.getDashSegments()).beginPath();
               oDrawingContext.lineVer(x0, y0, y1);
-              bStroke = true;
+              oDrawingContext.stroke();
           }
-          oSide = oBorder.t;
-          if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None && oSide.c) {
-              oDrawingContext.setStrokeStyle(oSide.c);
-              oDrawingContext.setLineWidth(1);
-              oDrawingContext.setLineDash(oSide.getDashSegments());
+          oS = oBorder.t;
+          if(oS && oS.s !== AscCommon.c_oAscBorderStyles.None && oS.c) {
+              oDrawingContext.setStrokeStyle(oS.c).setLineWidth(1).setLineDash(oS.getDashSegments()).beginPath();
               oDrawingContext.lineHor(x0 + 1, y0, x1 - 1);
-              bStroke = true;
+              oDrawingContext.stroke();
           }
-          oSide = oBorder.r;
-          if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None && oSide.c) {
-              oDrawingContext.setStrokeStyle(oSide.c);
-              oDrawingContext.setLineWidth(1);
-              oDrawingContext.setLineDash(oSide.getDashSegments());
+          oS = oBorder.r;
+          if(oS && oS.s !== AscCommon.c_oAscBorderStyles.None && oS.c) {
+              oDrawingContext.setStrokeStyle(oS.c).setLineWidth(1).setLineDash(oS.getDashSegments()).beginPath();
               oDrawingContext.lineVer(x1 - 1, y0, y1);
-              bStroke = true;
+              oDrawingContext.stroke();
           }
-          oSide = oBorder.b;
-          if(oSide && oSide.s !== AscCommon.c_oAscBorderStyles.None && oSide.c) {
-              oDrawingContext.setStrokeStyle(oSide.c);
-              oDrawingContext.setLineWidth(1);
-              oDrawingContext.setLineDash(oSide.getDashSegments());
+          oS = oBorder.b;
+          if(oS && oS.s !== AscCommon.c_oAscBorderStyles.None && oS.c) {
+              oDrawingContext.setStrokeStyle(oS.c).setLineWidth(1).setLineDash(oS.getDashSegments()).beginPath();
               oDrawingContext.lineHor(x0 + 1, y1 - 1, x1 - 1);
-              bStroke = true;
-          }
-          if(bStroke) {
               oDrawingContext.stroke();
           }
       }
