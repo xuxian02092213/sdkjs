@@ -613,6 +613,25 @@
         this.header.setRecalculateInfo();
         this.header.recalculate();
     };
+    CSlicer.prototype.getButtonsContainerWidth = function() {
+        return Math.max(this.extX - LEFT_PADDING - RIGHT_PADDING, 0);
+    };
+    CSlicer.prototype.getButtonsContainerHeight = function() {
+        var nHeight = this.extY;
+        if(this.header) {
+            nHeight -= this.header.extY;
+        }
+        return Math.max(nHeight - TOP_PADDING - BOTTOM_PADDING, 0);
+    };
+    CSlicer.prototype.getWidthByButton = function(dBWidth) {
+        if(this.buttonsContainer) {
+            var dBContainerW = this.buttonsContainer.getWidthByButton(dBWidth);
+            return dBContainerW + LEFT_PADDING + RIGHT_PADDING;
+        }
+        else {
+            return this.extX;
+        }
+    };
     CSlicer.prototype.recalculateButtons = function() {
         if(!this.buttonsContainer) {
             this.buttonsContainer = new CButtonsContainer(this);
@@ -622,16 +641,13 @@
         for(var nValue = 0; nValue < nValuesCount; ++nValue) {
             this.buttonsContainer.addButton(new CButton(this.buttonsContainer));
         }
-        var nWidth = this.extX;
-        var nHeight = this.extY;
         this.buttonsContainer.x = LEFT_PADDING;
         this.buttonsContainer.y = TOP_PADDING;
         if(this.header) {
-            nHeight -= this.header.extY;
             this.buttonsContainer.y += this.header.extY;
         }
-        this.buttonsContainer.extX = Math.max(nWidth - LEFT_PADDING - RIGHT_PADDING, 0);
-        this.buttonsContainer.extY = Math.max(nHeight - TOP_PADDING - BOTTOM_PADDING, 0);
+        this.buttonsContainer.extX = this.getButtonsContainerWidth();
+        this.buttonsContainer.extY = this.getButtonsContainerHeight();
         this.buttonsContainer.recalculate();
     };
     CSlicer.prototype.getColumnsCount = function() {
@@ -989,7 +1005,24 @@
         if(!this.buttonsContainer) {
             return 0;
         }
-        return this.buttonsContainer.getButtonWidth();
+        return this.buttonsContainer.getButtonWidth() * g_dKoef_mm_to_emu + 0.5 >> 0;
+    };
+    CSlicer.prototype.setButtonWidth = function(dWidth) {
+        var bChange = false;
+        if(AscFormat.isRealNumber(dWidth) && dWidth > 0) {
+            var dCurWidth = this.getButtonWidth();
+            if(!AscFormat.fApproxEqual(dCurWidth, dWidth)) {
+                var mmWidth = dWidth * g_dKoef_emu_to_mm;
+                var dNewWidth = this.getWidthByButton(mmWidth);
+                if(!AscFormat.fApproxEqual(dNewWidth, this.extX)) {
+                    AscFormat.CheckSpPrXfrm(this);
+                    this.spPr.xfrm.setExtX(dNewWidth);
+                    this.checkDrawingBaseCoords();
+                    bChange = true;
+                }
+            }
+        }
+        return bChange;
     };
     
     function CHeader(slicer) {
@@ -1874,12 +1907,25 @@
         var dTotalHeight = this.getTotalHeight();
         var dButtonWidth;
         if(dTotalHeight <= this.extY) {
-            dButtonWidth = Math.max(0, this.extX - nSpaceCount * SPACE_BETWEEN) / nColumnCount;
+            dButtonWidth = Math.max(0, this.slicer.getButtonsContainerWidth() - nSpaceCount * SPACE_BETWEEN) / nColumnCount;
         }
         else {
-            dButtonWidth = Math.max(0, this.extX - this.scroll.getWidth() - SPACE_BETWEEN - nSpaceCount * SPACE_BETWEEN) / nColumnCount;
+            dButtonWidth = Math.max(0, this.slicer.getButtonsContainerWidth() - this.scroll.getWidth() - SPACE_BETWEEN - nSpaceCount * SPACE_BETWEEN) / nColumnCount;
         }
         return dButtonWidth;
+    };
+    CButtonsContainer.prototype.getWidthByButton = function (dBWidth) {
+        var nColumnCount = this.getColumnsCount();
+        var nSpaceCount = nColumnCount - 1;
+        var dTotalHeight = this.getTotalHeight();
+        var dWidth;
+        if(dTotalHeight <= this.extY) {
+            dWidth = dBWidth * nColumnCount + nSpaceCount * SPACE_BETWEEN;
+        }
+        else {
+            dWidth =  dBWidth * nColumnCount + this.scroll.getWidth() + SPACE_BETWEEN + nSpaceCount * SPACE_BETWEEN;
+        }
+        return dWidth;
     };
     CButtonsContainer.prototype.getColumnsCount = function () {
         return this.slicer.getColumnsCount();

@@ -899,7 +899,15 @@
 	};
 
 	CT_slicer.prototype.asc_getStyle = function () {
-		return this.style;
+		var sStyle = this.style;
+		if(sStyle) {
+			return sStyle;
+		}
+		var wb = Asc.editor.wbModel;
+		if(wb) {
+			return wb.SlicerStyles.DefaultStyle;
+		}
+		return null;
 	};
 
 	CT_slicer.prototype.asc_getLockedPosition = function () {

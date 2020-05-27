@@ -3762,21 +3762,58 @@ DrawingObjectsController.prototype =
                 this.applyPropsToChartSpace(props.ChartProperties, objects_by_type.charts[i]);
             }
         }
+
+        var aGroups = [];
+        var bCheckConnectors = false;
         if(props.SlicerProperties)
         {
             var aSlicers = objects_by_type.slicers;
             var oAPI = Asc.editor;
             History.StartTransaction();
             var aSlicerNames = [];
+            var bSize = false;
+            var oSlicer;
             for(i = 0; i < aSlicers.length; ++i)
             {
-                aSlicerNames.push(aSlicers[i].getName());
+                oSlicer = aSlicers[i];
+                aSlicerNames.push(oSlicer.getName());
+                bSize |= oSlicer.setButtonWidth(props.SlicerProperties.asc_getButtonWidth());
             }
             oAPI.asc_setSlicers(aSlicerNames, props.SlicerProperties);
+            if(!bSize)
+            {
+                if(AscFormat.isRealNumber(props.Width) || AscFormat.isRealNumber(props.Height))
+                {
+                    for(i = 0; i < aSlicers.length; ++i)
+                    {
+                        oSlicer = aSlicers[i];
+                        var bChanged = false;
+                        if(AscFormat.isRealNumber(props.Width))
+                        {
+                            CheckSpPrXfrm(oSlicer);
+                            oSlicer.spPr.xfrm.setExtX(props.Width);
+                            bChanged = true;
+                        }
+                        if(AscFormat.isRealNumber(props.Height))
+                        {
+                            CheckSpPrXfrm(oSlicer);
+                            oSlicer.spPr.xfrm.setExtY(props.Height);
+                            bChanged = true;
+                        }
+                        bCheckConnectors |= bChanged; 
+                        if(bChanged)
+                        {
+                            if(oSlicer.group)
+                            {
+                                checkObjectInArray(aGroups, oSlicer.group.getMainGroup());
+                            }
+                            oSlicer.checkDrawingBaseCoords();
+                        }
+                    }
+                }
+            }
             History.EndTransaction();
         }
-        var aGroups = [];
-        var bCheckConnectors = false;
         var oApi = editor || Asc['editor'];
         var editorId = oApi.getEditorId();
         var bMoveFlag = true;
