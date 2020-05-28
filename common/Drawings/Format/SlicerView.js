@@ -52,7 +52,7 @@
     var HEADER_BOTTOM_PADDING = HEADER_TOP_PADDING;
     var HEADER_LEFT_PADDING = LEFT_PADDING;
     var HEADER_RIGHT_PADDING = 2*RIGHT_PADDING + 2*HEADER_BUTTON_WIDTH;
-    var SCROLL_WIDTH = 17 * 25.4 / 96;
+    var SCROLL_WIDTH = 15 * 25.4 / 96;
     var SCROLLER_WIDTH = 13 * 25.4 / 96;
 
     var STATE_FLAG_WHOLE = 1;
@@ -2484,14 +2484,14 @@
         graphics.transform3(this.parent.getFullTransformMatrix());
         graphics.p_color(0xCE, 0xCE, 0xCE, 0xFF);
         graphics.b_color1((nColor >> 16) & 0xFF, (nColor >> 8) & 0xFF, nColor & 0xFF, 0xFF);
-        graphics.p_width(0)
         graphics.rect(x, y, extX, extY);
         graphics.df();
-        graphics.ds();
-        //graphics.drawHorLine(1, y, x, x + extX, 0);
-        //graphics.drawHorLine(1, y + extY, x, x + extX, 0);
-        //graphics.drawVerLine(1, x, y, y + extY, 0);
-        //graphics.drawVerLine(1, x + extX, y, y + extY, 0);
+        
+        graphics.p_width(0);
+        graphics.drawHorLine(0, y, x, x + extX, 0);
+        graphics.drawHorLine(0, y + extY, x, x + extX, 0);
+        graphics.drawVerLine(2, x, y, y + extY, 0);
+        graphics.drawVerLine(2, x + extX, y, y + extY, 0);
         graphics.RestoreGrState();
     };
     CScroll.prototype.onMouseMove = function (e, x, y) {
