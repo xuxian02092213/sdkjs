@@ -32,1687 +32,372 @@
 
 "use strict";
 
-(	/**
-* @param {Window} window
-* @param {undefined} undefined
-*/
-function (window, undefined) {
+(function (window, undefined)
+{
 
-    var AscBrowser = window['AscCommon'].AscBrowser;
+	var AscBrowser = window['AscCommon'].AscBrowser;
+	var debug = false;
 
-var debug = false;
+	var ScrollType = {
+		None: 0,
+		Vertical: 1,
+		Horizontal: 2
+	};
+	var ArrowType = {
+		Min: 0,
+		Max: 1
+	};
+	var AnimationType = {
+		ToOver: 0,
+		ToNone: 1
+	};
 
-var ScrollArrowType = {
-    ARROW_TOP:0,
-    ARROW_RIGHT:1,
-    ARROW_BOTTOM:2,
-    ARROW_LEFT:3
-};
-var ScrollOverType = {
-    NONE:0,
-    OVER:1,
-    ACTIVE:2,
-    STABLE:3,
-    LAYER:4
-};
-
-var ArrowStatus = {
-    upLeftArrowHover_downRightArrowNonActive:0,
-    upLeftArrowActive_downRightArrowNonActive:1,
-    upLeftArrowNonActive_downRightArrowHover:2,
-    upLeftArrowNonActive_downRightArrowActive:3,
-    upLeftArrowNonActive_downRightArrowNonActive:4,
-    arrowHover:5
-};
-
-function GetClientWidth( elem ) {
-    var _w = elem.clientWidth;
-    if ( 0 != _w )
-        return _w;
-
-    var _string_w = "" + elem.style.width;
-    if ( -1 < _string_w.indexOf( "%" ) )
-        return 0;
-
-    var _intVal = parseInt( _string_w );
-    if ( !isNaN( _intVal ) && 0 < _intVal )
-        return _intVal;
-
-    return 0;
-}
-function GetClientHeight( elem ) {
-    var _w = elem.clientHeight;
-    if ( 0 != _w )
-        return _w;
-
-    var _string_w = "" + elem.style.height;
-    if ( -1 < _string_w.indexOf( "%" ) )
-        return 0;
-
-    var _intVal = parseInt( _string_w );
-    if ( !isNaN( _intVal ) && 0 < _intVal )
-        return _intVal;
-
-    return 0;
-}
-
-function CArrowDrawer( settings ) {
-    // размер квадратика в пикселах
-    this.Size = 16;
-    this.SizeW = 16;
-    this.SizeH = 16;
-
-    this.SizeNaturalW = this.SizeW;
-    this.SizeNaturalH = this.SizeH;
-
-    this.IsRetina = false;
-
-    // просто рисовать - неправильно. рисуется с антиалиазингом - и получается некрасиво
-    /*this.ColorGradStart = {R:69, G:70, B:71};
-     this.ColorGradEnd = {R:116, G:117, B:118};*/
-
-    function HEXTORGB( colorHEX ) {
-        return {
-            R:parseInt( colorHEX.substring( 1, 3 ), 16 ),
-            G:parseInt( colorHEX.substring( 3, 5 ), 16 ),
-            B:parseInt( colorHEX.substring( 5, 7 ), 16 )
-        }
-    }
-
-    this.ColorGradStart = [];
-    this.ColorGradEnd = [];
-
-    this.ColorGradStart[ScrollOverType.NONE] = HEXTORGB( settings.arrowColor );
-    this.ColorGradEnd[ScrollOverType.NONE] = HEXTORGB( settings.arrowColor );
-
-    this.ColorGradStart[ScrollOverType.STABLE] = HEXTORGB( settings.arrowStableColor );
-    this.ColorGradEnd[ScrollOverType.STABLE] = HEXTORGB( settings.arrowStableColor );
-
-    this.ColorGradStart[ScrollOverType.OVER] = HEXTORGB( settings.arrowOverColor );
-    this.ColorGradEnd[ScrollOverType.OVER] = HEXTORGB( settings.arrowOverColor );
-
-    this.ColorGradStart[ScrollOverType.ACTIVE] = HEXTORGB( settings.arrowActiveColor );
-    this.ColorGradEnd[ScrollOverType.ACTIVE] = HEXTORGB( settings.arrowActiveColor );
-
-    this.ColorBorderNone = settings.arrowBorderColor;
-    this.ColorBorderStable = settings.arrowStableBorderColor;
-    this.ColorBorderOver = settings.arrowOverBorderColor;
-    this.ColorBorderActive = settings.arrowActiveBorderColor;
-
-    this.ColorBackNone = settings.arrowBackgroundColor;
-    this.ColorBackStable = settings.arrowStableBackgroundColor;
-    this.ColorBackOver = settings.arrowOverBackgroundColor;
-    this.ColorBackActive = settings.arrowActiveBackgroundColor;
-
-    // вот такие мега настройки для кастомизации)
-    this.IsDrawBorderInNoneMode = false;
-    this.IsDrawBorders = true;
-
-    // имя - направление стрелки
-    this.ImageLeft = null;
-    this.ImageTop = null;
-    this.ImageRight = null;
-    this.ImageBottom = null;
-
-    this.IsNeedInvertOnActive = settings.isNeedInvertOnActive;
-
-    this.lastArrowStatus1 = -1;
-    this.lastArrowStatus2 = -1;
-    this.startColorFadeInOutStart1 = {R:-1,G:-1,B:-1};
-    this.startColorFadeInOutStart2 = {R:-1,G:-1,B:-1};
-
-    this.fadeInTimeoutFirst = -1;
-    this.fadeOutTimeoutFirst = -1;
-
-    this.fadeInTimeout1 = -1;
-    this.fadeOutTimeout1 = -1;
-    this.fadeInTimeout2 = -1;
-    this.fadeOutTimeout2 = -1;
-
-
-    this.fadeInActive1 = false;
-    this.fadeOutActive1 = false;
-
-    this.fadeInActive2 = false;
-    this.fadeOutActive2 = false;
-
-    this.fadeInFadeOutDelay = settings.fadeInFadeOutDelay || 30;
-
-}
-CArrowDrawer.prototype.InitSize = function ( sizeW, sizeH, is_retina ) {
-    if ( ( sizeH == this.SizeH || sizeW == this.SizeW ) && is_retina == this.IsRetina && null != this.ImageLeft )
-        return;
-
-    this.SizeW = Math.max( sizeW, 1 );
-    this.SizeH = Math.max( sizeH, 1 );
-    this.IsRetina = is_retina;
-
-    this.SizeNaturalW = this.SizeW;
-    this.SizeNaturalH = this.SizeH;
-
-    if ( this.IsRetina ) {
-        this.SizeW <<= 1;
-        this.SizeH <<= 1;
-
-        this.SizeNaturalW <<= 1;
-        this.SizeNaturalH <<= 1;
-    }
-
-    if (null == this.ImageLeft || null == this.ImageTop || null == this.ImageRight || null == this.ImageBottom)
+	function ElementColor(r, g, b)
 	{
-		this.ImageLeft = [document.createElement('canvas'), document.createElement('canvas'), document.createElement('canvas'), document.createElement('canvas')];
-		this.ImageTop = [document.createElement('canvas'), document.createElement('canvas'), document.createElement('canvas'), document.createElement('canvas')];
-		this.ImageRight = [document.createElement('canvas'), document.createElement('canvas'), document.createElement('canvas'), document.createElement('canvas')];
-		this.ImageBottom = [document.createElement('canvas'), document.createElement('canvas'), document.createElement('canvas'), document.createElement('canvas')];
+		this.R = r;
+		this.G = g;
+		this.B = b;
 	}
 
-    this.ImageLeft[ScrollOverType.NONE].width = this.SizeW;
-    this.ImageLeft[ScrollOverType.NONE].height = this.SizeH;
-    this.ImageLeft[ScrollOverType.STABLE].width = this.SizeW;
-    this.ImageLeft[ScrollOverType.STABLE].height = this.SizeH;
-    this.ImageLeft[ScrollOverType.OVER].width = this.SizeW;
-    this.ImageLeft[ScrollOverType.OVER].height = this.SizeH;
-    this.ImageLeft[ScrollOverType.ACTIVE].width = this.SizeW;
-    this.ImageLeft[ScrollOverType.ACTIVE].height = this.SizeH;
+	ElementColor.prototype.fromHEX = function (str)
+	{
+		if (!str || str.length !== 7)
+			return;
+		this.R = parseInt(str.substring(1, 3), 16);
+		this.G = parseInt(str.substring(3, 5), 16);
+		this.B = parseInt(str.substring(5, 7), 16);
+	};
+	ElementColor.prototype.copy = function ()
+	{
+		return new ElementColor(this.R, this.G, this.B);
+	};
+
+	function getAnimationStep(color1, color2, count)
+	{
+		return new ElementColor((color2.R - color1.R) / count, (color2.G - color1.G) / count, (color2.B - color1.B) / count);
+	}
+
+	function ArrowStyle(settings)
+	{
+		this.ColorBackground = new ElementColor(241, 241, 241);
+		this.ColorBolder = new ElementColor(207, 207, 207);
+		this.ColorDecorator = new ElementColor(173, 173, 173);
+
+		this.ColorBackgroundOver = new ElementColor(209, 209, 209);
+		this.ColorBorderOver = new ElementColor(207, 207, 207);
+		this.ColorDecoratorOver = new ElementColor(241, 241, 241);
+
+		this.ColorBackgroundDown = new ElementColor(173, 173, 173);
+		this.ColorBorderDown = new ElementColor(173, 173, 173);
+		this.ColorDecoratorDown = new ElementColor(241, 241, 241);
+
+		this.ColorBackground.fromHEX(settings.arrowBackgroundColor);
+		this.ColorBolder.fromHEX(settings.arrowBorderColor);
+		this.ColorDecorator.fromHEX(settings.arrowColor);
+
+		this.ColorBackgroundOver.fromHEX(settings.arrowOverBackgroundColor);
+		this.ColorBorderOver.fromHEX(settings.arrowOverBorderColor);
+		this.ColorDecoratorOver.fromHEX(settings.arrowOverColor);
+
+		this.ColorBackgroundDown.fromHEX(settings.arrowActiveBackgroundColor);
+		this.ColorBorderDown.fromHEX(settings.arrowActiveBorderColor);
+		this.ColorDecoratorDown.fromHEX(settings.arrowActiveColor);
+	}
+
+	ArrowStyle.getAnimationState = function (state_cur, type)
+	{
+		var state = state_cur;
+		if (!state)
+		{
+			state = new AnimationState();
+			switch (type)
+			{
+				case AnimationType.ToOver:
+				{
+					state.ColorBackground = this.ColorBackground.copy();
+					state.ColorBolder = this.ColorBorder.copy();
+					state.ColorDecorator = this.ColorDecorator.copy();
+					break;
+				}
+				case AnimationType.ToNone:
+				{
+					state.ColorBackground = this.ColorBackgroundOver.copy();
+					state.ColorBolder = this.ColorBorderOver.copy();
+					state.ColorDecorator = this.ColorDecoratorOver.copy();
+					break;
+				}
+				default:
+					break;
+			}
+		}
+		switch (type)
+		{
+			case AnimationType.ToOver:
+			{
+				state.ColorBackgroundEnd = this.ColorBackgroundOver.copy();
+				state.ColorBolderEnd = this.ColorBorderOver.copy();
+				state.ColorDecoratorEnd = this.ColorDecoratorOver.copy();
+				break;
+			}
+			case AnimationType.ToNone:
+			{
+				state.ColorBackgroundEnd = this.ColorBackground.copy();
+				state.ColorBolderEnd = this.ColorBorder.copy();
+				state.ColorDecoratorEnd = this.ColorDecorator.copy();
+				break;
+			}
+			default:
+				break;
+		}
+
+		return state;
+	};
+
+	function ScrollerStyle(settings)
+	{
+		this.ColorBackground = new ElementColor(241, 241, 241);
+		this.ColorBolder = new ElementColor(207, 207, 207);
+		this.ColorDecorator = new ElementColor(207, 207, 207);
+
+		this.ColorBackgroundOver = new ElementColor(207, 207, 207);
+		this.ColorBorderOver = new ElementColor(207, 207, 207);
+		this.ColorDecoratorOver = new ElementColor(241, 241, 241);
+
+		this.ColorBackgroundDown = new ElementColor(173, 173, 173);
+		this.ColorBorderDown = new ElementColor(173, 173, 173);
+		this.ColorDecoratorDown = new ElementColor(241, 241, 241);
+
+		this.ColorBackground.fromHEX(settings.scrollBackgroundColor);
+		this.ColorBolder.fromHEX(settings.strokeStyleNone);
+		this.ColorDecorator.fromHEX(settings.scrollerColor);
+
+		this.ColorBackgroundOver.fromHEX(settings.scrollBackgroundColorHover);
+		this.ColorBorderOver.fromHEX(settings.strokeStyleOver);
+		this.ColorDecoratorOver.fromHEX(settings.scrollerColorOver);
+
+		this.ColorBackgroundDown.fromHEX(settings.scrollBackgroundColorActive);
+		this.ColorBorderDown.fromHEX(settings.strokeStyleActive);
+		this.ColorDecoratorDown.fromHEX(settings.scrollerColorActive);
+	}
+
+	function AnimationState()
+	{
+		this.ColorBackground = null;
+		this.ColorBolder = null;
+		this.ColorDecorator = null;
+
+		this.ColorBackgroundEnd = null;
+		this.ColorBolderEnd = null;
+		this.ColorDecoratorEnd = null;
+
+		this.ColorBackgroundStep = null;
+		this.ColorBolderStep = null;
+		this.ColorDecoratorStep = null;
+	}
+
+	function Arrow(settings)
+	{
+		this.type = ArrowType.Min;
+		this.w = 0; // ширина в пикселах
+		this.h = 0; // высота в пикселах
+		this.onePixSize = 1; // ширина обводки (зависит от AscBrowser.retinaPixelRatio)
+		this.isDown = false; // нажата ли
+		this.animationState = null; // состояние анимации
+		this.style = new ArrowStyle(settings);
+	}
+
+	Arrow.prototype.resize = function (scroll_width, scroll_height)
+	{
+
+	};
+
+	Arrow.prototype.draw = function (context, scroll_width, scroll_height)
+	{
+
+	};
+
+	Arrow.prototype.animationNext = function (context, scroll_width, scroll_height)
+	{
+
+	};
+
+	function Scroller(settings)
+	{
+		this.w = 0; // ширина в пикселах
+		this.h = 0; // высота в пикселах
+		this.onePixSize = 1; // ширина обводки (зависит от AscBrowser.retinaPixelRatio)
+		this.isDown = false; // нажата ли
+		this.animationState = null; // состояние анимации
+		this.minSize = settings.scrollerMin ? settings.scrollerMin : 34;
+		this.maxSize = settings.scrollerMax ? settings.scrollerMax : 99999;
+		this.style = new ScrollerStyle(settings);
+	}
+
+	function ScrollSettings()
+	{
+		this.scroll_settings_id = true;
 
-    this.ImageTop[ScrollOverType.NONE].width = this.SizeW;
-    this.ImageTop[ScrollOverType.NONE].height = this.SizeH;
-    this.ImageTop[ScrollOverType.STABLE].width = this.SizeW;
-    this.ImageTop[ScrollOverType.STABLE].height = this.SizeH;
-    this.ImageTop[ScrollOverType.OVER].width = this.SizeW;
-    this.ImageTop[ScrollOverType.OVER].height = this.SizeH;
-    this.ImageTop[ScrollOverType.ACTIVE].width = this.SizeW;
-    this.ImageTop[ScrollOverType.ACTIVE].height = this.SizeH;
-
-    this.ImageRight[ScrollOverType.NONE].width = this.SizeW;
-    this.ImageRight[ScrollOverType.NONE].height = this.SizeH;
-    this.ImageRight[ScrollOverType.STABLE].width = this.SizeW;
-    this.ImageRight[ScrollOverType.STABLE].height = this.SizeH;
-    this.ImageRight[ScrollOverType.OVER].width = this.SizeW;
-    this.ImageRight[ScrollOverType.OVER].height = this.SizeH;
-    this.ImageRight[ScrollOverType.ACTIVE].width = this.SizeW;
-    this.ImageRight[ScrollOverType.ACTIVE].height = this.SizeH;
-
-    this.ImageBottom[ScrollOverType.NONE].width = this.SizeW;
-    this.ImageBottom[ScrollOverType.NONE].height = this.SizeH;
-    this.ImageBottom[ScrollOverType.STABLE].width = this.SizeW;
-    this.ImageBottom[ScrollOverType.STABLE].height = this.SizeH;
-    this.ImageBottom[ScrollOverType.OVER].width = this.SizeW;
-    this.ImageBottom[ScrollOverType.OVER].height = this.SizeH;
-    this.ImageBottom[ScrollOverType.ACTIVE].width = this.SizeW;
-    this.ImageBottom[ScrollOverType.ACTIVE].height = this.SizeH;
-
-
-    var len = 6;
-    if ( this.SizeH < 6 )
-        return;
-
-    if (this.IsRetina)
-        len <<= 1;
-
-//        else (this.SizeH > 12)
-//        len = this.Size - 8;
-
-    // теперь делаем нечетную длину
-    if ( 0 == (len & 1) )
-        len += 1;
-
-    var countPart = (len + 1) >> 1,
-        plusColor, _data, px,
-        _x = ((this.SizeW - len) >> 1),
-        _y = this.SizeH - ((this.SizeH - countPart) >> 1),
-        _radx = _x + (len >> 1),
-        _rady = _y - (countPart >> 1),
-        ctx_lInactive, ctx_tInactive, ctx_rInactive, ctx_bInactive,
-        r, g, b;
-
-    for ( var index = 0; index < this.ImageTop.length; index++ ) {
-        var __x = _x, __y = _y, _len = len;
-        r = this.ColorGradStart[index].R;
-        g = this.ColorGradStart[index].G;
-        b = this.ColorGradStart[index].B;
-
-        ctx_tInactive = this.ImageTop[index].getContext( '2d' );
-        ctx_lInactive = this.ImageLeft[index].getContext( '2d' );
-        ctx_rInactive = this.ImageRight[index].getContext( '2d' );
-        ctx_bInactive = this.ImageBottom[index].getContext( '2d' );
-
-        plusColor = (this.ColorGradEnd[index].R - this.ColorGradStart[index].R) / countPart;
-
-        _data = ctx_tInactive.createImageData( this.SizeW, this.SizeH );
-        px = _data.data;
-
-        while ( _len > 0 ) {
-            var ind = 4 * ( this.SizeW * __y + __x );
-            for ( var i = 0; i < _len; i++ ) {
-                px[ind++] = r;
-                px[ind++] = g;
-                px[ind++] = b;
-                px[ind++] = 255;
-            }
-
-            r = (r + plusColor) >> 0;
-            g = (g + plusColor) >> 0;
-            b = (b + plusColor) >> 0;
-
-            __x += 1;
-            __y -= 1;
-            _len -= 2;
-        }
-
-        ctx_tInactive.putImageData( _data, 0, -1 );
-
-        ctx_lInactive.translate( _radx, _rady + 1 );
-        ctx_lInactive.rotate( -Math.PI / 2 );
-        ctx_lInactive.translate( -_radx, -_rady );
-        ctx_lInactive.drawImage( this.ImageTop[index], 0, 0 );
-
-        ctx_rInactive.translate( _radx + 1, _rady );
-        ctx_rInactive.rotate( Math.PI / 2 );
-        ctx_rInactive.translate( -_radx, -_rady );
-        ctx_rInactive.drawImage( this.ImageTop[index], 0, 0 );
-
-        ctx_bInactive.translate( _radx + 1, _rady + 1 );
-        ctx_bInactive.rotate( Math.PI );
-        ctx_bInactive.translate( -_radx, -_rady );
-        ctx_bInactive.drawImage( this.ImageTop[index], 0, 0 );
-
-    }
-
-    if ( this.IsRetina ) {
-        this.SizeW >>= 1;
-        this.SizeH >>= 1;
-    }
-};
-CArrowDrawer.prototype.drawArrow = function ( type, mode, ctx, w, h ) {
-
-    ctx.beginPath();
-
-    var startColorFadeIn = _HEXTORGB_( this.ColorBackNone ),
-        startColorFadeOut = _HEXTORGB_( this.ColorBackOver ),
-        that = this,
-        img = this.ImageTop[mode],
-        x = 0, y = 0, is_vertical = true,
-        bottomRightDelta = 1,
-        xDeltaIMG = 0, yDeltaIMG = 0, xDeltaBORDER = 0.5, yDeltaBORDER = 1.5,
-        tempIMG1 = document.createElement( 'canvas' ),
-        tempIMG2 = document.createElement( 'canvas' );
-
-    tempIMG1.width = this.SizeNaturalW;
-    tempIMG1.height = this.SizeNaturalH;
-    tempIMG2.width = this.SizeNaturalW;
-    tempIMG2.height = this.SizeNaturalH;
-
-    var ctx1 = tempIMG1.getContext('2d'),
-        ctx2 = tempIMG2.getContext('2d');
-
-    if (this.IsRetina)
-    {
-        ctx1.setTransform(2, 0, 0, 2, 0, 0);
-        ctx2.setTransform(2, 0, 0, 2, 0, 0);
-    }
-
-    function fadeIn(){
-
-        ctx1.fillStyle = "rgb(" + that.startColorFadeInOutStart1.R + "," +
-                                 that.startColorFadeInOutStart1.G + "," +
-                                 that.startColorFadeInOutStart1.B + ")";
-
-        startColorFadeIn.R -= 2;
-        startColorFadeIn.G -= 2;
-        startColorFadeIn.B -= 2;
-
-        ctx1.rect( x + xDeltaBORDER, y + yDeltaBORDER, strokeW, strokeH );
-        ctx1.fill();
-
-        if ( that.IsDrawBorders ) {
-            ctx.strokeStyle = that.ColorBorderOver;
-            ctx.stroke();
-        }
-
-        ctx1.drawImage( img, x + xDeltaIMG, y + yDeltaIMG, that.SizeW, that.SizeH );
-
-        if ( startColorFadeIn.R >= 207 ) {
-            that.startColorFadeInOutStart1 = startColorFadeIn;
-            that.fadeInTimeout = setTimeout( fadeIn, that.fadeInFadeOutDelay );
-        }
-        else {
-            clearTimeout( that.fadeInTimeout );
-            that.fadeInTimeout = null;
-            that.fadeInActiveFirst = false;
-            startColorFadeIn.R += 2;
-            startColorFadeIn.G += 2;
-            startColorFadeIn.B += 2;
-            that.startColorFadeInOutStart1 = startColorFadeIn;
-        }
-
-    }
-
-    function fadeOut(){
-
-        ctx.fillStyle = "rgb(" + that.startColorFadeInOutStart1.R + "," +
-                                 that.startColorFadeInOutStart1.G + "," +
-                                 that.startColorFadeInOutStart1.B + ")";
-
-        startColorFadeOut.R += 2;
-        startColorFadeOut.G += 2;
-        startColorFadeOut.B += 2;
-
-        ctx.rect( x + xDeltaBORDER, y + yDeltaBORDER, strokeW, strokeH );
-        ctx.fill();
-
-        if ( that.IsDrawBorders ) {
-            ctx.strokeStyle = that.ColorBorderOver;
-            ctx.stroke();
-        }
-
-        ctx.drawImage( img, x + xDeltaIMG, y + yDeltaIMG, that.SizeW, that.SizeH );
-
-        if ( startColorFadeOut.R <= 241 ) {
-            that.startColorFadeInOutStart1 = startColorFadeOut;
-            that.fadeOutTimeout = setTimeout( fadeOut, that.fadeInFadeOutDelay );
-        }
-        else {
-            clearTimeout( that.fadeOutTimeout );
-            that.fadeOutTimeout = null;
-            that.fadeOutActiveFirst = false;
-            startColorFadeOut.R -= 2;
-            startColorFadeOut.G -= 2;
-            startColorFadeOut.B -= 2;
-            that.startColorFadeInOutStart1 = startColorFadeOut;
-        }
-
-    }
-
-    if ( mode === null || mode === undefined ) {
-        mode = ScrollOverType.NONE;
-    }
-
-    switch ( type ) {
-        case ScrollArrowType.ARROW_LEFT:
-        {
-            x = 1;
-            y = -1;
-            is_vertical = false;
-            img = this.ImageLeft[mode];
-            break;
-        }
-        case ScrollArrowType.ARROW_RIGHT:
-        {
-            is_vertical = false;
-            x = w - this.SizeW - bottomRightDelta;
-            y = -1;
-            img = this.ImageRight[mode];
-            break;
-        }
-        case ScrollArrowType.ARROW_BOTTOM:
-        {
-            y = h - this.SizeH - bottomRightDelta - 1;
-            img = this.ImageBottom[mode];
-            break;
-        }
-        default:{
-            y = 0;
-            break;
-        }
-    }
-
-    ctx.lineWidth = 1;
-    var strokeW = is_vertical ? this.SizeW - 1 : this.SizeW - 1;
-    var strokeH = is_vertical ? this.SizeH - 1 : this.SizeH - 1;
-
-    switch ( mode ) {
-        case ScrollOverType.NONE:
-        {
-            if ( this.lastArrowStatus1 == ScrollOverType.OVER ) {
-
-                clearTimeout( this.fadeInTimeout );
-                this.fadeInTimeout = null;
-                clearTimeout( this.fadeOutTimeout );
-                this.fadeOutTimeout = null;
-
-                this.lastArrowStatus1 = mode;
-                this.startColorFadeInOutStart1 = this.startColorFadeInOutStart1.R < 0 ? startColorFadeOut : this.startColorFadeInOutStart1;
-                this.fadeOutActiveFirst = true;
-                fadeOut();
-            }
-            else{
-                ctx.fillStyle = this.ColorBackNone;
-				ctx.fillRect( x + xDeltaBORDER >> 0, y + yDeltaBORDER >> 0, strokeW, strokeH );
-                ctx.beginPath();
-                ctx.drawImage( img, x + xDeltaIMG, y + yDeltaIMG, this.SizeW, this.SizeH );
-                if ( this.IsDrawBorders ) {
-                    ctx.strokeStyle = this.ColorBorderNone;
-                    ctx.rect( x + xDeltaBORDER, y + yDeltaBORDER, strokeW, strokeH );
-                    ctx.stroke();
-                }
-            }
-            break;
-        }
-        case ScrollOverType.STABLE:
-        {
-            if ( this.lastArrowStatus1 == ScrollOverType.OVER ) {
-
-                clearTimeout( this.fadeInTimeout );
-                this.fadeInTimeout = null;
-                clearTimeout( this.fadeOutTimeout );
-                this.fadeOutTimeout = null;
-
-                this.lastArrowStatus1 = mode;
-                this.startColorFadeInOutStart1 = this.startColorFadeInOutStart1.R < 0 ? startColorFadeOut : this.startColorFadeInOutStart1;
-                this.fadeOutActiveFirst = true;
-                fadeOut();
-            }
-            else{
-                ctx.fillStyle = this.ColorBackStable;
-				ctx.fillRect( x + xDeltaBORDER >> 0, y + yDeltaBORDER >> 0, strokeW, strokeH );
-                ctx.beginPath();
-                ctx.drawImage( img, x + xDeltaIMG, y + yDeltaIMG, this.SizeW, this.SizeH );
-                ctx.strokeStyle = this.ColorBackStable;
-                if ( this.IsDrawBorders ) {
-                    ctx.strokeStyle = this.ColorBorderStable;
-                    ctx.rect( x + xDeltaBORDER, y + yDeltaBORDER, strokeW, strokeH );
-                    ctx.stroke();
-                }
-            }
-            break;
-        }
-        case ScrollOverType.OVER:
-        {
-
-            if ( this.lastArrowStatus1 == ScrollOverType.NONE || this.lastArrowStatus1 == ScrollOverType.STABLE ) {
-
-                clearTimeout( this.fadeInTimeout );
-                this.fadeInTimeout = null;
-                clearTimeout( this.fadeOutTimeout );
-                this.fadeOutTimeout = null;
-
-                this.lastArrowStatus1 = mode;
-                this.startColorFadeInOutStart1 = this.startColorFadeInOutStart1.R < 0 ? startColorFadeIn : this.startColorFadeInOutStart1;
-                this.fadeInActiveFirst = true;
-                fadeIn();
-            }
-            else{
-                ctx.beginPath();
-                ctx.fillStyle = this.ColorBackOver;
-
-				ctx.fillRect( x + xDeltaBORDER >> 0, y + yDeltaBORDER >> 0, strokeW, strokeH );
-                ctx.drawImage( img, x + xDeltaIMG, y + yDeltaIMG, this.SizeW, this.SizeH );
-                if ( this.IsDrawBorders ) {
-                    ctx.strokeStyle = this.ColorBorderOver;
-                    ctx.rect( x + xDeltaBORDER, y + yDeltaBORDER, strokeW, strokeH );
-                    ctx.stroke();
-                }
-
-            }
-            break;
-        }
-        case ScrollOverType.ACTIVE:
-        {
-            ctx.beginPath();
-            ctx.fillStyle = this.ColorBackActive;
-			ctx.fillRect( x + xDeltaBORDER >> 0, y + yDeltaBORDER >> 0, strokeW, strokeH );
-
-            if ( !this.IsNeedInvertOnActive ) {
-                ctx.drawImage( img, x + xDeltaIMG, y + yDeltaIMG, this.SizeW, this.SizeH );
-            }
-            else {
-                // slow method
-                var _ctx = img.getContext( "2d" );
-
-                var _data = _ctx.getImageData( 0, 0, this.SizeNaturalW, this.SizeNaturalH );
-                var _data2 = _ctx.getImageData( 0, 0, this.SizeNaturalW, this.SizeNaturalH );
-
-                var _len = 4 * this.SizeNaturalW * this.SizeNaturalH;
-                for ( var i = 0; i < _len; i += 4 ) {
-                    if ( _data.data[i + 3] == 255 ) {
-                        _data.data[i] = 255;// - _data.data[i];
-                        _data.data[i + 1] = 255;// - _data.data[i + 1];
-                        _data.data[i + 2] = 255;// - _data.data[i + 2];
-                    }
-                }
-
-                _ctx.putImageData( _data, 0, 0 );
-                ctx.drawImage( img, x + xDeltaIMG, y + yDeltaIMG, this.SizeW, this.SizeH );
-
-                for ( var i = 0; i < _len; i += 4 ) {
-                    if ( _data.data[i + 3] == 255 ) {
-                        _data.data[i] = 255 - _data.data[i];
-                        _data.data[i + 1] = 255 - _data.data[i + 1];
-                        _data.data[i + 2] = 255 - _data.data[i + 2];
-                    }
-                }
-                _ctx.putImageData( _data2, 0, 0 );
-
-                _data = null;
-                _data2 = null;
-            }
-            if ( this.IsDrawBorders ) {
-                ctx.strokeStyle = this.ColorBorderActive;
-                ctx.rect( x + xDeltaBORDER, y + yDeltaBORDER, strokeW, strokeH );
-                ctx.stroke();
-            }
-            break;
-        }
-        default:{
-            break;
-        }
-    }
-
-    this.lastArrowStatus1 = mode;
-
-};
-CArrowDrawer.prototype.drawTopLeftArrow = function(type,mode,ctx,w,h){
-
-    clearTimeout( this.fadeInTimeout1 );
-    this.fadeInTimeout1 = null;
-    clearTimeout( this.fadeOutTimeout1 );
-    this.fadeOutTimeout1 = null;
-
-    ctx.beginPath();
-
-    var startColorFadeIn = this.startColorFadeInOutStart1.R < 0 ? _HEXTORGB_( this.ColorBackNone ) :  this.startColorFadeInOutStart1,
-        startColorFadeOut = this.startColorFadeInOutStart1.R < 0 ? _HEXTORGB_( this.ColorBackOver ) : this.startColorFadeInOutStart1,
-        that = this,
-        img1 = this.ImageTop[mode],
-        x1 = 0, y1 = 0,
-        is_vertical = true,
-        xDeltaIMG = 0, yDeltaIMG = 0, xDeltaBORDER = 0.5, yDeltaBORDER = 1.5,
-        tempIMG1 = document.createElement( 'canvas' );
-
-    tempIMG1.width = this.SizeNaturalW;
-    tempIMG1.height = this.SizeNaturalH;
-
-    var ctx1 = tempIMG1.getContext('2d');
-    if (this.IsRetina)
-    {
-        ctx1.setTransform(2, 0, 0, 2, 0, 0);
-    }
-
-    function fadeIn(){
-
-        var ctx_piperImg, px, _len;
-
-        ctx1.fillStyle = "rgb(" + that.startColorFadeInOutStart1.R + "," +
-                                  that.startColorFadeInOutStart1.G + "," +
-                                  that.startColorFadeInOutStart1.B + ")";
-
-        startColorFadeIn.R -= 2;
-        startColorFadeIn.G -= 2;
-        startColorFadeIn.B -= 2;
-
-        ctx1.rect( 0.5, 1.5, strokeW, strokeH );
-        ctx1.fill();
-
-        if ( that.IsDrawBorders ) {
-            ctx1.strokeStyle = that.ColorBorderOver;
-            ctx1.stroke();
-        }
-
-        ctx_piperImg = img1.getContext( '2d' );
-        _data = ctx_piperImg.getImageData( 0, 0, img1.width, img1.height );
-        px = _data.data;
-
-        _len = px.length;
-
-        for ( var i = 0; i < _len; i += 4 ) {
-            if ( px[i + 3] == 255 ) {
-                px[i] += 4;
-                px[i + 1] += 4;
-                px[i + 2] += 4;
-            }
-        }
-        ctx_piperImg.putImageData( _data, 0, 0 );
-
-        ctx1.drawImage( img1, 0, 0, that.SizeW, that.SizeH );
-
-        if ( startColorFadeIn.R >= 207 ) {
-            that.startColorFadeInOutStart1 = startColorFadeIn;
-            ctx.drawImage(tempIMG1,x1 + xDeltaIMG,y1 + yDeltaIMG, that.SizeW, that.SizeH);
-            that.fadeInTimeout1 = setTimeout( fadeIn, that.fadeInFadeOutDelay );
-        }
-        else {
-            clearTimeout( that.fadeInTimeout1 );
-            that.fadeInTimeout1 = null;
-            that.fadeInActive1 = false;
-            startColorFadeIn.R += 2;
-            startColorFadeIn.G += 2;
-            startColorFadeIn.B += 2;
-            that.startColorFadeInOutStart1 = startColorFadeIn;
-
-            ctx_piperImg = img1.getContext( '2d' );
-            _data = ctx_piperImg.getImageData( 0, 0, img1.width, img1.height );
-            px = _data.data;
-
-            _len = px.length;
-
-            for ( var i = 0; i < _len; i += 4 ) {
-                if ( px[i + 3] == 255 ) {
-                    px[i] -= 4;
-                    px[i + 1] -= 4;
-                    px[i + 2] -= 4;
-                }
-            }
-            ctx_piperImg.putImageData( _data, 0, 0 );
-        }
-
-    }
-
-    function fadeOut(){
-
-        var ctx_piperImg, px, _len;
-
-        ctx1.fillStyle = "rgb(" + that.startColorFadeInOutStart1.R + "," +
-                                  that.startColorFadeInOutStart1.G + "," +
-                                  that.startColorFadeInOutStart1.B + ")";
-
-        startColorFadeOut.R += 2;
-        startColorFadeOut.G += 2;
-        startColorFadeOut.B += 2;
-
-        ctx1.rect( 0.5, 1.5, strokeW, strokeH  );
-        ctx1.fill();
-
-        if ( that.IsDrawBorders ) {
-            ctx1.strokeStyle = that.ColorBorderOver;
-            ctx1.stroke();
-        }
-
-        ctx_piperImg = img1.getContext( '2d' );
-        _data = ctx_piperImg.getImageData( 0, 0, img1.width, img1.height );
-        px = _data.data;
-
-        _len = px.length;
-
-        for ( var i = 0; i < _len; i += 4 ) {
-            if ( px[i + 3] == 255 ) {
-//                console.log("3 " + i + " " +  " " + px[i])
-                px[i] -= 4;
-                px[i + 1] -= 4;
-                px[i + 2] -= 4;
-            }
-        }
-        ctx_piperImg.putImageData( _data, 0, 0 );
-
-        ctx1.drawImage( img1, 0, 0, that.SizeW, that.SizeH );
-
-        if ( startColorFadeOut.R <= 241 ) {
-            that.startColorFadeInOutStart1 = startColorFadeOut;
-            ctx.drawImage(tempIMG1,x1 + xDeltaIMG,y1 + yDeltaIMG, that.SizeW, that.SizeH);
-            that.fadeOutTimeout1 = setTimeout( fadeOut, that.fadeInFadeOutDelay );
-        }
-        else {
-            clearTimeout( that.fadeOutTimeout1 );
-            that.fadeOutTimeout1 = null;
-            that.fadeOutActive1 = false;
-            startColorFadeOut.R -= 2;
-            startColorFadeOut.G -= 2;
-            startColorFadeOut.B -= 2;
-            that.startColorFadeInOutStart1 = startColorFadeOut;
-
-            ctx_piperImg = img1.getContext( '2d' );
-            _data = ctx_piperImg.getImageData( 0, 0, img1.width, img1.height );
-            px = _data.data;
-
-            _len = px.length;
-
-            for ( var i = 0; i < _len; i += 4 ) {
-                if ( px[i + 3] == 255 ) {
-                    px[i] += 4;
-                    px[i + 1] += 4;
-                    px[i + 2] += 4;
-                }
-            }
-            ctx_piperImg.putImageData( _data, 0, 0 );
-        }
-
-    }
-
-    if ( mode === null || mode === undefined ) {
-        mode = ScrollOverType.NONE;
-    }
-
-    switch ( type ) {
-        case ScrollArrowType.ARROW_LEFT:
-        {
-            x1 = 1;
-            y1 = -1;
-            is_vertical = false;
-            img1 = this.ImageLeft[mode];
-            break;
-        }
-        default:
-        {
-            y1 = 0;
-            img1 = this.ImageTop[mode];
-            break;
-        }
-    }
-
-    ctx.lineWidth = 1;
-    var strokeW = is_vertical ? this.SizeW - 1 : this.SizeW - 1;
-    var strokeH = is_vertical ? this.SizeH - 1 : this.SizeH - 1;
-
-    switch ( mode ) {
-        case ScrollOverType.NONE:
-        {
-            if ( this.lastArrowStatus1 == ScrollOverType.OVER ) {
-
-                switch ( type ) {
-                    case ScrollArrowType.ARROW_LEFT:
-                    {
-                        img1 = this.ImageLeft[ScrollOverType.STABLE];
-                        break;
-                    }
-                    default:
-                    {
-                        img1 = this.ImageTop[ScrollOverType.STABLE];
-                        break;
-                    }
-                }
-
-                this.lastArrowStatus1 = mode;
-                this.startColorFadeInOutStart1 = this.startColorFadeInOutStart1.R < 0 ? startColorFadeOut : this.startColorFadeInOutStart1;
-                this.fadeOutActive1 = true;
-                fadeOut();
-            }
-            else{
-
-                if ( this.lastArrowStatus1 == ScrollOverType.ACTIVE ) {
-
-                    var im, ctx_im, px, _data, c = this.ColorGradStart[ScrollOverType.STABLE];
-
-                    switch ( type ) {
-                        case ScrollArrowType.ARROW_LEFT:
-                        {
-                            im = this.ImageLeft[ScrollOverType.STABLE];
-                            break;
-                        }
-                        default:
-                        {
-                            im = this.ImageTop[ScrollOverType.STABLE];
-                            break;
-                        }
-                    }
-
-                    ctx_im = im.getContext( '2d' );
-                    _data = ctx_im.getImageData( 0, 0, img1.width, img1.height );
-                    px = _data.data;
-
-                    _len = px.length;
-
-                    for ( var i = 0; i < _len; i += 4 ) {
-                        if ( px[i + 3] == 255 ) {
-                            px[i] = c.R;
-                            px[i + 1] = c.G;
-                            px[i + 2] = c.B;
-                        }
-                    }
-
-                    this.startColorFadeInOutStart1 = {R:-1,G:-1,B:-1};
-
-                    ctx_im.putImageData( _data, 0, 0 )
-
-                }
-
-                ctx.beginPath();
-                ctx.fillStyle = this.ColorBackNone;
-                ctx.fillRect( x1 + xDeltaBORDER >> 0, y1 + yDeltaBORDER >> 0, strokeW, strokeH );
-                ctx.drawImage( img1, x1 + xDeltaIMG, y1 + yDeltaIMG, this.SizeW, this.SizeH );
-                if ( this.IsDrawBorders ) {
-                    ctx.strokeStyle = this.ColorBorderNone;
-                    ctx.rect( x1 + xDeltaBORDER, y1 + yDeltaBORDER, strokeW, strokeH );
-                    ctx.stroke();
-                }
-            }
-            break;
-        }
-        case ScrollOverType.STABLE:
-        {
-            if ( this.lastArrowStatus1 == ScrollOverType.OVER ) {
-
-                switch ( type ) {
-                    case ScrollArrowType.ARROW_LEFT:
-                    {
-                        img1 = this.ImageLeft[ScrollOverType.STABLE];
-                        break;
-                    }
-                    default:
-                    {
-                        img1 = this.ImageTop[ScrollOverType.STABLE];
-                        break;
-                    }
-                }
-
-                this.lastArrowStatus1 = mode;
-                this.startColorFadeInOutStart1 = this.startColorFadeInOutStart1.R < 0 ? startColorFadeOut : this.startColorFadeInOutStart1;
-                this.fadeOutActive1 = true;
-                fadeOut();
-            }
-            else{
-
-                if ( this.lastArrowStatus1 != ScrollOverType.STABLE ) {
-
-                    var im, ctx_im, px, _data, c = this.ColorGradStart[ScrollOverType.STABLE];
-
-                    switch ( type ) {
-                        case ScrollArrowType.ARROW_LEFT:
-                        {
-                            im = this.ImageLeft[ScrollOverType.STABLE];
-                            break;
-                        }
-                        default:
-                        {
-                            im = this.ImageTop[ScrollOverType.STABLE];
-                            break;
-                        }
-                    }
-
-                    ctx_im = im.getContext( '2d' );
-                    _data = ctx_im.getImageData( 0, 0, img1.width, img1.height );
-                    px = _data.data;
-
-                    _len = px.length;
-
-                    for ( var i = 0; i < _len; i += 4 ) {
-                        if ( px[i + 3] == 255 ) {
-                            px[i] = c.R;
-                            px[i + 1] = c.G;
-                            px[i + 2] = c.B;
-                        }
-                    }
-
-                    this.startColorFadeInOutStart1 = {R:-1,G:-1,B:-1};
-
-                    ctx_im.putImageData( _data, 0, 0 )
-
-                }
-
-                ctx.beginPath();
-                ctx.fillStyle = this.ColorBackStable;
-                ctx.fillRect( x1 + xDeltaBORDER >> 0, y1 + yDeltaBORDER >> 0, strokeW, strokeH );
-                ctx.drawImage( img1, x1 + xDeltaIMG, y1 + yDeltaIMG, this.SizeW, this.SizeH );
-                if ( this.IsDrawBorders ) {
-                    ctx.strokeStyle = this.ColorBorderStable;
-                    ctx.rect( x1 + xDeltaBORDER, y1 + yDeltaBORDER, strokeW, strokeH );
-                    ctx.stroke();
-                }
-            }
-            break;
-        }
-        case ScrollOverType.OVER:
-        {
-            if ( this.lastArrowStatus1 == ScrollOverType.NONE || this.lastArrowStatus1 == ScrollOverType.STABLE ) {
-
-                switch ( type ) {
-                    case ScrollArrowType.ARROW_LEFT:
-                    {
-                        img1 = this.ImageLeft[ScrollOverType.STABLE];
-                        break;
-                    }
-                    default:
-                    {
-                        img1 = this.ImageTop[ScrollOverType.STABLE];
-                        break;
-                    }
-                }
-
-                this.lastArrowStatus1 = mode;
-                this.startColorFadeInOutStart1 = this.startColorFadeInOutStart1.R < 0 ? startColorFadeIn : this.startColorFadeInOutStart1;
-                this.fadeInActive1 = true;
-                fadeIn();
-            }
-            else{
-                ctx.beginPath();
-                ctx.fillStyle = this.ColorBackOver;
-                ctx.fillRect( x1 + xDeltaBORDER >> 0, y1 + yDeltaBORDER >> 0, strokeW, strokeH );
-                ctx.drawImage( img1, x1 + xDeltaIMG, y1 + yDeltaIMG, this.SizeW, this.SizeH );
-                if ( this.IsDrawBorders ) {
-                    ctx.strokeStyle = this.ColorBorderOver;
-                    ctx.rect( x1 + xDeltaBORDER, y1 + yDeltaBORDER, strokeW, strokeH );
-                    ctx.stroke();
-                }
-            }
-            break;
-        }
-        case ScrollOverType.ACTIVE:
-        {
-            ctx.beginPath();
-            ctx.fillStyle = this.ColorBackActive;
-			ctx.fillRect( x1 + xDeltaBORDER >> 0, y1 + yDeltaBORDER >> 0, strokeW, strokeH );
-
-            if ( !this.IsNeedInvertOnActive ) {
-                ctx.drawImage( img1, x1 + xDeltaIMG, y1 + yDeltaIMG, this.SizeW, this.SizeH );
-            }
-            else {
-                // slow method
-                var _ctx = img1.getContext( "2d" );
-
-                var _data = _ctx.getImageData( 0, 0, this.SizeW, this.SizeH );
-                var _data2 = _ctx.getImageData( 0, 0, this.SizeW, this.SizeH );
-
-                var _len = 4 * this.SizeW * this.SizeH;
-                for ( var i = 0; i < _len; i += 4 ) {
-                    if ( _data.data[i + 3] == 255 ) {
-                        _data.data[i] = 255;// - _data.data[i];
-                        _data.data[i + 1] = 255;// - _data.data[i + 1];
-                        _data.data[i + 2] = 255;// - _data.data[i + 2];
-                    }
-                }
-
-                _ctx.putImageData( _data, 0, 0 );
-                ctx.drawImage( img1, x1 + xDeltaIMG, y1 + yDeltaIMG, this.SizeW, this.SizeH );
-
-                for ( var i = 0; i < _len; i += 4 ) {
-                    if ( _data.data[i + 3] == 255 ) {
-                        _data.data[i] = 255 - _data.data[i];
-                        _data.data[i + 1] = 255 - _data.data[i + 1];
-                        _data.data[i + 2] = 255 - _data.data[i + 2];
-                    }
-                }
-                _ctx.putImageData( _data2, 0, 0 );
-
-                _data = null;
-                _data2 = null;
-            }
-            if ( this.IsDrawBorders ) {
-                ctx.strokeStyle = this.ColorBorderActive;
-                ctx.rect( x1 + xDeltaBORDER, y1 + yDeltaBORDER, strokeW, strokeH );
-                ctx.stroke();
-            }
-            break;
-        }
-        default:{
-            break;
-        }
-    }
-
-    this.lastArrowStatus1 = mode;
-
-};
-CArrowDrawer.prototype.drawBottomRightArrow = function(type,mode,ctx,w,h){
-
-    clearTimeout( this.fadeInTimeout2 );
-    this.fadeInTimeout2 = null;
-    clearTimeout( this.fadeOutTimeout2 );
-    this.fadeOutTimeout2 = null;
-
-    ctx.beginPath();
-
-    var startColorFadeIn = this.startColorFadeInOutStart2.R < 0 ? _HEXTORGB_( this.ColorBackNone ) :  this.startColorFadeInOutStart2,
-        startColorFadeOut =  this.startColorFadeInOutStart2.R < 0 ? _HEXTORGB_( this.ColorBackOver ) : this.startColorFadeInOutStart2,
-        that = this,
-        img1 = this.ImageTop[mode],
-        x1 = 0, y1 = 0,
-        is_vertical = true,
-        bottomRightDelta = 1,
-        xDeltaIMG = 0, yDeltaIMG = 0, xDeltaBORDER = 0.5, yDeltaBORDER = 1.5,
-        tempIMG1 = document.createElement( 'canvas' );
-
-    tempIMG1.width = this.SizeNaturalW;
-    tempIMG1.height = this.SizeNaturalH;
-
-    var ctx1 = tempIMG1.getContext('2d');
-
-    if (this.IsRetina)
-    {
-        ctx1.setTransform(2, 0, 0, 2, 0, 0);
-    }
-
-    function fadeIn(){
-
-        var ctx_piperImg, px, _len;
-
-        ctx1.fillStyle = "rgb(" + that.startColorFadeInOutStart2.R + "," +
-                                  that.startColorFadeInOutStart2.G + "," +
-                                  that.startColorFadeInOutStart2.B + ")";
-
-        startColorFadeIn.R -= 2;
-        startColorFadeIn.G -= 2;
-        startColorFadeIn.B -= 2;
-
-        ctx1.rect( .5, 1.5, strokeW, strokeH );
-        ctx1.fill();
-
-        if ( that.IsDrawBorders ) {
-            ctx1.strokeStyle = that.ColorBorderOver;
-            ctx1.stroke();
-        }
-
-        ctx_piperImg = img1.getContext( '2d' );
-        _data = ctx_piperImg.getImageData( 0, 0, img1.width, img1.height );
-        px = _data.data;
-
-        _len = px.length;
-
-        for ( var i = 0; i < _len; i += 4 ) {
-            if ( px[i + 3] == 255 ) {
-                px[i] += 4;
-                px[i + 1] += 4;
-                px[i + 2] += 4;
-            }
-        }
-        ctx_piperImg.putImageData( _data, 0, 0 );
-
-        ctx1.drawImage( img1, 0, 0, that.SizeW, that.SizeH );
-
-        if ( startColorFadeIn.R >= 207 ) {
-            that.startColorFadeInOutStart2 = startColorFadeIn;
-            ctx.drawImage(tempIMG1,x1 + xDeltaIMG,y1 + yDeltaIMG, that.SizeW, that.SizeH);
-            that.fadeInTimeout2 = setTimeout( fadeIn, that.fadeInFadeOutDelay );
-        }
-        else {
-            clearTimeout( that.fadeInTimeout2 );
-            that.fadeInTimeout2 = null;
-            that.fadeInActive2 = false;
-            startColorFadeIn.R += 2;
-            startColorFadeIn.G += 2;
-            startColorFadeIn.B += 2;
-            that.startColorFadeInOutStart2 = startColorFadeIn;
-
-            ctx_piperImg = img1.getContext( '2d' );
-            _data = ctx_piperImg.getImageData( 0, 0, img1.width, img1.height );
-            px = _data.data;
-
-            _len = px.length;
-
-            for ( var i = 0; i < _len; i += 4 ) {
-                if ( px[i + 3] == 255 ) {
-                    px[i] -= 4;
-                    px[i + 1] -= 4;
-                    px[i + 2] -= 4;
-                }
-            }
-            ctx_piperImg.putImageData( _data, 0, 0 );
-
-        }
-
-    }
-
-    function fadeOut(){
-
-        var ctx_piperImg, px, _len;
-
-        ctx1.fillStyle = "rgb(" + that.startColorFadeInOutStart2.R + "," +
-                                  that.startColorFadeInOutStart2.G + "," +
-                                  that.startColorFadeInOutStart2.B + ")";
-
-        startColorFadeOut.R += 2;
-        startColorFadeOut.G += 2;
-        startColorFadeOut.B += 2;
-
-        ctx1.rect( .5, 1.5, strokeW, strokeH  );
-        ctx1.fill();
-
-        if ( that.IsDrawBorders ) {
-            ctx1.strokeStyle = that.ColorBorderOver;
-            ctx1.stroke();
-        }
-
-        ctx_piperImg = img1.getContext( '2d' );
-        _data = ctx_piperImg.getImageData( 0, 0, img1.width, img1.height );
-        px = _data.data;
-        _len = px.length;
-
-        for ( var i = 0; i < _len; i += 4 ) {
-            if ( px[i + 3] == 255 ) {
-                px[i] -= 4;
-                px[i + 1] -= 4;
-                px[i + 2] -= 4;
-            }
-        }
-
-        ctx_piperImg.putImageData( _data, 0, 0 );
-
-        ctx1.drawImage( img1, 0, 0, that.SizeW, that.SizeH );
-
-        if ( startColorFadeOut.R <= 241 ) {
-            that.startColorFadeInOutStart2 = startColorFadeOut;
-            ctx.drawImage(tempIMG1,x1 + xDeltaIMG,y1 + yDeltaIMG, that.SizeW, that.SizeH);
-            that.fadeOutTimeout2 = setTimeout( fadeOut, that.fadeInFadeOutDelay );
-        }
-        else {
-            clearTimeout( that.fadeOutTimeout2 );
-            that.fadeOutTimeout2 = null;
-            that.fadeOutActive2 = false;
-            startColorFadeOut.R -= 2;
-            startColorFadeOut.G -= 2;
-            startColorFadeOut.B -= 2;
-            that.startColorFadeInOutStart2 = startColorFadeOut;
-
-            ctx_piperImg = img1.getContext( '2d' );
-            _data = ctx_piperImg.getImageData( 0, 0, img1.width, img1.height );
-            px = _data.data;
-
-            _len = px.length;
-
-            for ( var i = 0; i < _len; i += 4 ) {
-                if ( px[i + 3] == 255 ) {
-                    px[i] += 4;
-                    px[i + 1] += 4;
-                    px[i + 2] += 4;
-                }
-            }
-            ctx_piperImg.putImageData( _data, 0, 0 );
-
-        }
-
-    }
-
-    if ( mode === null || mode === undefined ) {
-        mode = ScrollOverType.NONE;
-    }
-
-    switch ( type ) {
-        case ScrollArrowType.ARROW_RIGHT:
-        {
-            is_vertical = false;
-            x1 = w - this.SizeW - bottomRightDelta;
-            y1 = -1;
-            img1 = this.ImageRight[mode];
-
-            break;
-        }
-        case ScrollArrowType.ARROW_BOTTOM:
-        {
-            y1 = h - this.SizeH - bottomRightDelta - 1;
-            img1 = this.ImageBottom[mode];
-
-            break;
-        }
-    }
-
-    ctx.lineWidth = 1;
-    var strokeW = is_vertical ? this.SizeW - 1 : this.SizeW - 1;
-    var strokeH = is_vertical ? this.SizeH - 1 : this.SizeH - 1;
-
-    switch ( mode ) {
-        case ScrollOverType.NONE:
-        {
-            if ( this.lastArrowStatus2 == ScrollOverType.OVER ) {
-
-                switch ( type ) {
-                    case ScrollArrowType.ARROW_RIGHT:
-                    {
-                        img1 = this.ImageRight[ScrollOverType.STABLE];
-                        break;
-                    }
-                    default:
-                    {
-                        img1 = this.ImageBottom[ScrollOverType.STABLE];
-                        break;
-                    }
-                }
-
-                this.lastArrowStatus2 = mode;
-                this.startColorFadeInOutStart2 = this.startColorFadeInOutStart2.R < 0 ? startColorFadeOut : this.startColorFadeInOutStart2;
-                this.fadeOutActive2 = true;
-                fadeOut();
-            }
-            else{
-
-                if ( this.lastArrowStatus2 == ScrollOverType.ACTIVE ) {
-
-                    var im, ctx_im, px, _data, c = this.ColorGradStart[ScrollOverType.STABLE];
-
-                    switch ( type ) {
-                        case ScrollArrowType.ARROW_RIGHT:
-                        {
-                            im = this.ImageRight[ScrollOverType.STABLE];
-                            break;
-                        }
-                        default:
-                        {
-                            im = this.ImageBottom[ScrollOverType.STABLE];
-                            break;
-                        }
-                    }
-
-                    ctx_im = im.getContext( '2d' );
-                    _data = ctx_im.getImageData( 0, 0, img1.width, img1.height );
-                    px = _data.data;
-
-                    _len = px.length;
-
-                    for ( var i = 0; i < _len; i += 4 ) {
-                        if ( px[i + 3] == 255 ) {
-                            px[i] = c.R;
-                            px[i + 1] = c.G;
-                            px[i + 2] = c.B;
-                        }
-                    }
-
-                    this.startColorFadeInOutStart2 = {R:-1,G:-1,B:-1};
-
-                    ctx_im.putImageData( _data, 0, 0 )
-
-                }
-
-                ctx.beginPath();
-                ctx.fillStyle = this.ColorBackNone;
-                ctx.fillRect( x1 + xDeltaBORDER >> 0, y1 + yDeltaBORDER >> 0, strokeW, strokeH );
-                ctx.drawImage( img1, x1 + xDeltaIMG, y1 + yDeltaIMG, this.SizeW, this.SizeH );
-                if ( this.IsDrawBorders ) {
-                    ctx.strokeStyle = this.ColorBorderNone;
-                    ctx.rect( x1 + xDeltaBORDER, y1 + yDeltaBORDER, strokeW, strokeH );
-                    ctx.stroke();
-                }
-            }
-            break;
-        }
-        case ScrollOverType.STABLE:
-        {
-            if ( this.lastArrowStatus2 == ScrollOverType.OVER ) {
-
-                switch ( type ) {
-                    case ScrollArrowType.ARROW_RIGHT:
-                    {
-                        img1 = this.ImageRight[ScrollOverType.STABLE];
-                        break;
-                    }
-                    default:
-                    {
-                        img1 = this.ImageBottom[ScrollOverType.STABLE];
-                        break;
-                    }
-                }
-
-                this.lastArrowStatus2 = mode;
-                this.startColorFadeInOutStart2 = this.startColorFadeInOutStart2.R < 0 ? startColorFadeOut : this.startColorFadeInOutStart2;
-                this.fadeOutActive2 = true;
-                fadeOut();
-            }
-            else{
-
-                if ( this.lastArrowStatus2 != ScrollOverType.STABLE ) {
-
-                    var im, ctx_im, px, _data, c = this.ColorGradStart[ScrollOverType.STABLE];
-
-                    switch ( type ) {
-                        case ScrollArrowType.ARROW_RIGHT:
-                        {
-                            im = this.ImageRight[ScrollOverType.STABLE];
-                            break;
-                        }
-                        default:
-                        {
-                            im = this.ImageBottom[ScrollOverType.STABLE];
-                            break;
-                        }
-                    }
-
-                    ctx_im = im.getContext( '2d' );
-                    _data = ctx_im.getImageData( 0, 0, img1.width, img1.height );
-                    px = _data.data;
-
-                    _len = px.length;
-
-                    for ( var i = 0; i < _len; i += 4 ) {
-                        if ( px[i + 3] == 255 ) {
-                            px[i] = c.R;
-                            px[i + 1] = c.G;
-                            px[i + 2] = c.B;
-                        }
-                    }
-
-                    this.startColorFadeInOutStart2 = {R:-1,G:-1,B:-1};
-
-                    ctx_im.putImageData( _data, 0, 0 )
-
-                }
-
-                ctx.beginPath();
-                ctx.fillStyle = this.ColorBackStable;
-				ctx.fillRect( x1 + xDeltaBORDER >> 0, y1 + yDeltaBORDER >> 0, strokeW, strokeH );
-                ctx.drawImage( img1, x1 + xDeltaIMG, y1 + yDeltaIMG, this.SizeW, this.SizeH );
-                ctx.strokeStyle = this.ColorBackStable;
-                if ( this.IsDrawBorders ) {
-                    ctx.strokeStyle = this.ColorBorderStable;
-                    ctx.rect( x1 + xDeltaBORDER, y1 + yDeltaBORDER, strokeW, strokeH );
-                    ctx.stroke();
-                }
-            }
-            break;
-        }
-        case ScrollOverType.OVER:
-        {
-
-            if ( this.lastArrowStatus2 == ScrollOverType.NONE || this.lastArrowStatus2 == ScrollOverType.STABLE ) {
-
-                switch ( type ) {
-                    case ScrollArrowType.ARROW_RIGHT:
-                    {
-                        img1 = this.ImageRight[ScrollOverType.STABLE];
-                        break;
-                    }
-                    default:
-                    {
-                        img1 = this.ImageBottom[ScrollOverType.STABLE];
-                        break;
-                    }
-                }
-
-                this.lastArrowStatus2 = mode;
-                this.startColorFadeInOutStart2 = this.startColorFadeInOutStart2.R < 0 ? startColorFadeIn : this.startColorFadeInOutStart2;
-                this.fadeInActive2 = true;
-                fadeIn();
-            }
-            else{
-                ctx.beginPath();
-                ctx.fillStyle = this.ColorBackOver;
-				ctx.fillRect( x1 + xDeltaBORDER >> 0, y1 + yDeltaBORDER >> 0, strokeW, strokeH );
-                ctx.drawImage( img1, x1 + xDeltaIMG, y1 + yDeltaIMG, this.SizeW, this.SizeH );
-                if ( this.IsDrawBorders ) {
-                    ctx.strokeStyle = this.ColorBorderOver;
-                    ctx.rect( x1 + xDeltaBORDER, y1 + yDeltaBORDER, strokeW, strokeH );
-                    ctx.stroke();
-                }
-
-            }
-            break;
-        }
-        case ScrollOverType.ACTIVE:
-        {
-            ctx.beginPath();
-            ctx.fillStyle = this.ColorBackActive;
-			ctx.fillRect( x1 + xDeltaBORDER >> 0, y1 + yDeltaBORDER >> 0, strokeW, strokeH );
-
-            if ( !this.IsNeedInvertOnActive ) {
-                ctx.drawImage( img1, x1 + xDeltaIMG, y1 + yDeltaIMG, this.SizeW, this.SizeH );
-            }
-            else {
-                // slow method
-                var _ctx = img1.getContext( "2d" );
-
-                var _data = _ctx.getImageData( 0, 0, this.SizeW, this.SizeH );
-                var _data2 = _ctx.getImageData( 0, 0, this.SizeW, this.SizeH );
-
-                var _len = 4 * this.SizeW * this.SizeH;
-                for ( var i = 0; i < _len; i += 4 ) {
-                    if ( _data.data[i + 3] == 255 ) {
-                        _data.data[i] = 255;// - _data.data[i];
-                        _data.data[i + 1] = 255;// - _data.data[i + 1];
-                        _data.data[i + 2] = 255;// - _data.data[i + 2];
-                    }
-                }
-
-                _ctx.putImageData( _data, 0, 0 );
-                ctx.drawImage( img1, x1 + xDeltaIMG, y1 + yDeltaIMG, this.SizeW, this.SizeH );
-
-                for ( var i = 0; i < _len; i += 4 ) {
-                    if ( _data.data[i + 3] == 255 ) {
-                        _data.data[i] = 255 - _data.data[i];
-                        _data.data[i + 1] = 255 - _data.data[i + 1];
-                        _data.data[i + 2] = 255 - _data.data[i + 2];
-                    }
-                }
-                _ctx.putImageData( _data2, 0, 0 );
-
-                _data = null;
-                _data2 = null;
-            }
-            if ( this.IsDrawBorders ) {
-                ctx.strokeStyle = this.ColorBorderActive;
-                ctx.rect( x1 + xDeltaBORDER, y1 + yDeltaBORDER, strokeW, strokeH );
-                ctx.stroke();
-            }
-            break;
-        }
-        default:{
-            break;
-        }
-    }
-
-    this.lastArrowStatus2 = mode;
-};
-
-function _HEXTORGB_( colorHEX ) {
-    return {
-        R:parseInt( colorHEX.substring( 1, 3 ), 16 ),
-        G:parseInt( colorHEX.substring( 3, 5 ), 16 ),
-        B:parseInt( colorHEX.substring( 5, 7 ), 16 )
-    }
-}
-
-	/**
-	 * @constructor
-	 */
-	function ScrollSettings() {
-		this.showArrows = true;
 		this.screenW = -1;
 		this.screenH = -1;
 		this.screenAddH = 0;
 		this.contentH = undefined;
 		this.contentW = undefined;
-		this.scrollerMinHeight = 34;
-		this.scrollerMaxHeight = 99999;
-		this.scrollerMinWidth = 34;
-		this.scrollerMaxWidth = 99999;
+
+		this.scrollerMin = undefined;
+		this.scrollerMax = undefined;
+
+		this.scrollerColor = undefined;
+		this.scrollerColorOver = undefined;
+		this.scrollerColorActive = undefined;
+		this.scrollBackgroundColor = undefined;
+		this.scrollBackgroundColorHover = undefined;
+		this.scrollBackgroundColorActive = undefined;
+		this.strokeStyleNone = undefined;
+		this.strokeStyleOver = undefined;
+		this.strokeStyleActive = undefined;
+
+		this.arrowColor = undefined;
+		this.arrowBorderColor = undefined;
+		this.arrowBackgroundColor = undefined;
+		this.arrowOverColor = undefined;
+		this.arrowOverBorderColor = undefined;
+		this.arrowOverBackgroundColor = undefined;
+		this.arrowActiveColor = undefined;
+		this.arrowActiveBorderColor = undefined;
+		this.arrowActiveBackgroundColor = undefined;
+
+		this.showArrows = true;
+		this.cornerRadius = 0;
+		this.slimScroll = false;
+		this.alwaysVisible = false;
 		this.initialDelay = 300;
 		this.arrowRepeatFreq = 50;
 		this.trackClickRepeatFreq = 70;
 		this.scrollPagePercent = 1. / 8;
-		this.arrowDim = 13;
 		this.marginScroller = 4;
-		this.scrollerColor = "#f1f1f1";
-		this.scrollerColorOver = "#cfcfcf";
-		this.scrollerColorLayerOver = "#cfcfcf";
-		this.scrollerColorActive = "#ADADAD";
-		this.scrollBackgroundColor = "#f4f4f4";
-		this.scrollBackgroundColorHover = "#f4f4f4";
-		this.scrollBackgroundColorActive = "#f4f4f4";
-		this.strokeStyleNone = "#cfcfcf";
-		this.strokeStyleOver = "#cfcfcf";
-		this.strokeStyleActive = "#ADADAD";
 		this.vscrollStep = 10;
 		this.hscrollStep = 10;
 		this.wheelScrollLines = 1;
-		this.arrowColor = "#ADADAD";
-		this.arrowBorderColor = "#cfcfcf";
-		this.arrowBackgroundColor = "#F1F1F1";
-		this.arrowStableColor = "#ADADAD";
-		this.arrowStableBorderColor = "#cfcfcf";
-		this.arrowStableBackgroundColor = "#F1F1F1";
-		this.arrowOverColor = "#f1f1f1";
-		this.arrowOverBorderColor = "#cfcfcf";
-		this.arrowOverBackgroundColor = "#cfcfcf";
-		this.arrowActiveColor = "#f1f1f1";
-		this.arrowActiveBorderColor = "#ADADAD";
-		this.arrowActiveBackgroundColor = "#ADADAD";
-		this.fadeInFadeOutDelay = 20;
-		this.piperColor = "#cfcfcf";
-		this.piperColorHover = "#f1f1f1";
-		this.arrowSizeW = 13;
-		this.arrowSizeH = 13;
-		this.cornerRadius = 0;
-		this.slimScroll = false;
-		this.alwaysVisible = false;
-		this.isNeedInvertOnActive = false;
 	}
 
-	/**
-	 * @constructor
-	 */
-	function ScrollObject( elemID, settings, dbg ) {
-		if ( dbg )
-			debug = dbg;
-		this.that = this;
+	function ScrollObject(elemID, settings, scrollType)
+	{
+		if (settings.scroll_settings_id)
+			this.settings = settings;
+		else
+		{
+			this.settings = new ScrollSettings();
+			for (var opt in settings)
+				this.settings[opt] = settings[opt];
+		}
 
-		this.settings = settings;
-		this.ArrowDrawer = new CArrowDrawer( this.settings );
+		if (this.settings.showArrows)
+		{
+			this.arrowMin = new Arrow(this.settings);
+			this.arrowMax = new Arrow(this.settings);
+		}
 
-		this.mouseUp = false;
-		this.mouseDown = false;
+		this.scroller = new Scroller(this.settings);
+		this.scrollType = scrollType;
+		if (undefined === this.scrollType)
+			this.scrollType = ScrollType.None;
+		this.scrollTypeAttack = this.scrollType;
 
-		this.that.mouseover = false;
-
-		this.that.mouseOverOut = -1;
-
-		this.scrollerMouseDown = false;
-		this.scrollerStatus = ScrollOverType.NONE;
-		this.lastScrollerStatus = this.scrollerStatus;
-
-		this.moveble = false;
-		this.lock = false;
 		this.scrollTimeout = null;
-
-		this.StartMousePosition = {x:0, y:0};
-		this.EndMousePosition = {x:0, y:0};
-
-		this.dragMinY = 0;
-		this.dragMaxY = 0;
-
-		this.scrollVCurrentY = 0;
-		this.scrollHCurrentX = 0;
-		this.arrowPosition = 0;
-
-		this.verticalTrackHeight = 0;
-		this.horizontalTrackWidth = 0;
-
-		this.paneHeight = 0;
-		this.paneWidth = 0;
-
-		this.maxScrollY = 0;
-		this.maxScrollX = 0;
-		this.maxScrollY2 = 0;
-		this.maxScrollX2 = 0;
-
-		this.scrollCoeff = 0;
-
-		this.scroller = {x:0, y:1, h:0, w:0};
 
 		this.canvas = null;
 		this.context = null;
 
+		this.width = 1;
+		this.heigth = 1;
+
+		this.scrollerMargin = this.settings.marginScroller;
+
+		this.position = 0;
+		this.positionMax = 0;
+
 		this.eventListeners = [];
 
-		this.IsRetina = false;
-		this.canvasW = 1;
-		this.canvasH = 1;
-
-		this.ScrollOverType1 = -1;
-		this.ScrollOverType2 = -1;
-
-		this.fadeInActive = false;
-		this.fadeOutActive = false;
-		this.fadeInTimeout = null;
-		this.fadeOutTimeout = null;
-		this.startColorFadeInStart = _HEXTORGB_(this.settings.scrollerColor).R;
-		this.startColorFadeOutStart = _HEXTORGB_(this.settings.scrollerColorOver).R;
-		this.startColorFadeInOutStart = -1;
-
-		this.IsRetina = AscBrowser.isCustomScalingAbove2();
-
-		this.piperImgVert = [document.createElement( 'canvas' ), document.createElement( 'canvas' )];
-		this.piperImgHor = [document.createElement( 'canvas' ), document.createElement( 'canvas' )];
-
-		this.piperImgVert[0].height = 13;
-		this.piperImgVert[1].height = 13;
-		this.piperImgVert[0].width = 5;
-		this.piperImgVert[1].width = 5;
-
-		this.piperImgHor[0].width = 13;
-		this.piperImgHor[1].width = 13;
-		this.piperImgHor[0].height = 5;
-		this.piperImgHor[1].height = 5;
-
 		this.disableCurrentScroll = false;
-
-		if(this.settings.slimScroll){
-			this.piperImgVert[0].width =
-				this.piperImgVert[1].width =
-					this.piperImgHor[0].height =
-						this.piperImgHor[1].height = 3;
-		}
-
-		var r, g, b, ctx_piperImg, _data, px, k;
-		r = _HEXTORGB_( this.settings.piperColor );
-		g = r.G;
-		b = r.B;
-		r = r.R;
-
-		k = this.piperImgVert[0].width * 4;
-
-		for ( var index = 0; index < this.piperImgVert.length; index++ ) {
-			ctx_piperImg = this.piperImgVert[index].getContext( '2d' );
-			_data = ctx_piperImg.createImageData( this.piperImgVert[index].width, this.piperImgVert[index].height );
-			px = _data.data;
-
-			for ( var i = 0; i < this.piperImgVert[index].width * this.piperImgVert[index].height * 4; ) {
-				px[i++] = r;
-				px[i++] = g;
-				px[i++] = b;
-				px[i++] = 255;
-				i = ( i % k === 0 ) ? i + k : i
-			}
-
-			ctx_piperImg.putImageData( _data, 0, 0 );
-
-			ctx_piperImg = this.piperImgHor[index].getContext( '2d' );
-
-			_data = ctx_piperImg.createImageData( this.piperImgHor[index].width, this.piperImgHor[index].height );
-			px = _data.data;
-
-			for ( var i = 0; i < this.piperImgHor[index].width * this.piperImgHor[index].height * 4; ) {
-				px[i++] = r;
-				px[i++] = g;
-				px[i++] = b;
-				px[i++] = 255;
-				i = ( i % 4 === 0 && i % 52 !== 0 ) ? i + 4 : i
-			}
-
-			ctx_piperImg.putImageData( _data, 0, 0 )
-
-			r = _HEXTORGB_( this.settings.piperColorHover );
-			g = r.G;
-			b = r.B;
-			r = r.R;
-
-		}
-
-		this._init( elemID );
+		this._init(elemID);
 	}
 
-	ScrollObject.prototype._init = function ( elemID ) {
-		if ( !elemID ) return false;
+	ScrollObject.prototype.clientWidth = function (elem)
+	{
+		var _w = elem.clientWidth;
+		if (0 != _w)
+			return _w;
 
-		var holder = document.getElementById( elemID );
+		var _string_w = "" + elem.style.width;
+		if (-1 < _string_w.indexOf("%"))
+			return 0;
 
-		if ( holder.getElementsByTagName( 'canvas' ).length == 0 ){
-			this.canvas = holder.appendChild( document.createElement( "CANVAS" ) );
+		var _intVal = parseInt(_string_w);
+		if (!isNaN(_intVal) && 0 < _intVal)
+			return _intVal;
+
+		return 0;
+	};
+	ScrollObject.prototype.clientHeight = function (elem)
+	{
+		var _w = elem.clientWidth;
+		if (0 != _w)
+			return _w;
+
+		var _string_w = "" + elem.style.width;
+		if (-1 < _string_w.indexOf("%"))
+			return 0;
+
+		var _intVal = parseInt(_string_w);
+		if (!isNaN(_intVal) && 0 < _intVal)
+			return _intVal;
+
+		return 0;
+	};
+
+	ScrollObject.prototype._init = function ( elemID )
+    {
+		if (!elemID)
+		    return false;
+
+		var holder = document.getElementById(elemID);
+
+		if (holder.getElementsByTagName('canvas').length === 0)
+		{
+			this.canvas = holder.appendChild(document.createElement("CANVAS"));
 		}
-		else {
+		else
+        {
 			this.canvas = holder.children[1];
 		}
 
-		this.canvas.style.width = "100%";
-		this.canvas.style.height = "100%";
+		this.width = this.clientWidth(this.canvas.parentNode);
+		this.heigth = this.clientHeight(this.canvas.parentNode);
 
-		this.canvas.that = this;
+		this.canvas.style.width = this.width;
+		this.canvas.style.height = this.heigth;
+		AscCommon.calculateCanvasSize(this.canvas);
+
 		this.canvas.style.zIndex = 100;
 		this.canvas.style.position = "absolute";
 		this.canvas.style.top = "0px";
 		this.canvas.style["msTouchAction"] = "none";
-		if ( navigator.userAgent.toLowerCase().indexOf( "webkit" ) != -1 ){
+		if (AscBrowser.isWebkit)
 			this.canvas.style.webkitUserSelect = "none";
+
+		this.context = this.canvas.getContext('2d');
+
+		var arrowSize = Math.min(this.width, this.heigth);
+		if (this.settings.showArrows)
+			this.scrollerMargin = arrowSize + 2;
+
+		var maxScrollY = holder.firstElementChild.clientHeight - this.settings.screenH > 0 ? holder.firstElementChild.clientHeight - this.settings.screenH : 0;
+		var maxScrollH = holder.firstElementChild.clientWidth - this.settings.screenW > 0 ? holder.firstElementChild.clientWidth - this.settings.screenW : 0;
+
+		if (this.scrollType === ScrollType.None)
+		{
 		}
 
-		this.context = this.canvas.getContext( '2d' );
-		if ( !this.IsRetina ){
-			this.context.setTransform( 1, 0, 0, 1, 0, 0 );
-		}
-		else{
-			this.context.setTransform( 2, 0, 0, 2, 0, 0 );
-		}
-
-		if ( this.settings.showArrows ){
-			this.arrowPosition = this.settings.arrowDim + 2;
-		}
-		else{
-			this.arrowPosition = this.settings.marginScroller;
-		}
-
-		this._setDimension( holder.clientHeight, holder.clientWidth );
 		this.maxScrollY = this.maxScrollY2 = holder.firstElementChild.clientHeight - this.settings.screenH > 0 ? holder.firstElementChild.clientHeight - this.settings.screenH : 0;
 		this.maxScrollX = this.maxScrollX2 = holder.firstElementChild.clientWidth - this.settings.screenW > 0 ? holder.firstElementChild.clientWidth - this.settings.screenW : 0;
 
@@ -1727,11 +412,11 @@ function _HEXTORGB_( colorHEX ) {
 		this.RecalcScroller();
 
 		AscCommon.addMouseEvent(this.canvas, "down", this.evt_mousedown);
-        AscCommon.addMouseEvent(this.canvas, "move", this.evt_mousemove);
-        AscCommon.addMouseEvent(this.canvas, "up", this.evt_mouseup);
-        AscCommon.addMouseEvent(this.canvas, "over", this.evt_mouseover);
-        AscCommon.addMouseEvent(this.canvas, "out", this.evt_mouseout);
-        this.canvas.onmousewheel = this.evt_mousewheel;
+		AscCommon.addMouseEvent(this.canvas, "move", this.evt_mousemove);
+		AscCommon.addMouseEvent(this.canvas, "up", this.evt_mouseup);
+		AscCommon.addMouseEvent(this.canvas, "over", this.evt_mouseover);
+		AscCommon.addMouseEvent(this.canvas, "out", this.evt_mouseout);
+		this.canvas.onmousewheel = this.evt_mousewheel;
 
 		var _that = this;
 		this.canvas.ontouchstart = function ( e ) {
@@ -1757,16 +442,17 @@ function _HEXTORGB_( colorHEX ) {
 		this._drawArrow();
 		this._draw();
 
-		return true;
+        return true;
 	};
-    ScrollObject.prototype.disableCurrentScroll = function() {
-        this.disableCurrentScroll = true;
-    };
+
+	ScrollObject.prototype.disableCurrentScroll = function() {
+		this.disableCurrentScroll = true;
+	};
 	ScrollObject.prototype.checkDisableCurrentScroll = function() {
-        var ret = this.disableCurrentScroll;
-        this.disableCurrentScroll = false;
-        return ret;
-    };
+		var ret = this.disableCurrentScroll;
+		this.disableCurrentScroll = false;
+		return ret;
+	};
 	ScrollObject.prototype.getMousePosition = function ( evt ) {
 		// get canvas position
 		var obj = this.canvas;
@@ -1873,12 +559,12 @@ function _HEXTORGB_( colorHEX ) {
 		var _parentClientH = GetClientHeight( this.canvas.parentNode );
 
 		var _firstChildW = 0;
-        var _firstChildH = 0;
-        if (this.canvas.parentNode)
-        {
-            _firstChildW = GetClientWidth(this.canvas.parentNode.firstElementChild);
-            _firstChildH = GetClientHeight(this.canvas.parentNode.firstElementChild);
-        }
+		var _firstChildH = 0;
+		if (this.canvas.parentNode)
+		{
+			_firstChildW = GetClientWidth(this.canvas.parentNode.firstElementChild);
+			_firstChildH = GetClientHeight(this.canvas.parentNode.firstElementChild);
+		}
 
 		this._setDimension( _parentClientH, _parentClientW );
 		this.maxScrollY = this.maxScrollY2 = _firstChildH - settings.screenH > 0 ? _firstChildH - settings.screenH : 0;
@@ -1922,7 +608,7 @@ function _HEXTORGB_( colorHEX ) {
 		this._draw();
 	};
 	ScrollObject.prototype.Reinit = function ( settings, pos ) {
-	    var size;
+		var size;
 		this._setDimension( this.canvas.parentNode.clientHeight, this.canvas.parentNode.clientWidth );
 
 		size = this.canvas.parentNode.firstElementChild.clientHeight - (settings.screenH || this.canvas.parentNode.offsetHeight);
@@ -1956,17 +642,17 @@ function _HEXTORGB_( colorHEX ) {
 		}
 
 		if ( that.scrollVCurrentY !== pos || bIsAttack === true ) {
-            var oldPos = that.scrollVCurrentY;
-		    that.scrollVCurrentY = pos;
-		    evt.scrollD = evt.scrollPositionY = that.scrollVCurrentY;
+			var oldPos = that.scrollVCurrentY;
+			that.scrollVCurrentY = pos;
+			evt.scrollD = evt.scrollPositionY = that.scrollVCurrentY;
 			evt.maxScrollY = that.maxScrollY;
 			that.handleEvents( "onscrollvertical", evt );
 			if (that.checkDisableCurrentScroll()) {
-			    // prevented...
-                that.scrollVCurrentY = oldPos;
-                return;
-            }
-            that._draw();
+				// prevented...
+				that.scrollVCurrentY = oldPos;
+				return;
+			}
+			that._draw();
 		}
 		else if ( that.scrollVCurrentY === pos && pos > 0 && !this.reinit && !this.moveble && !this.lock ) {
 			evt.pos = pos;
@@ -2902,11 +1588,11 @@ function _HEXTORGB_( colorHEX ) {
 	/*events*/
 	ScrollObject.prototype.evt_mousemove = function ( e ) {
 
-        if (this.style)
-            this.style.cursor = "default";
+		if (this.style)
+			this.style.cursor = "default";
 
-        var arrowStat = ArrowStatus.arrowHover;
-        var evt = e || window.event;
+		var arrowStat = ArrowStatus.arrowHover;
+		var evt = e || window.event;
 
 		if ( evt.preventDefault )
 			evt.preventDefault();
@@ -3367,7 +2053,6 @@ function _HEXTORGB_( colorHEX ) {
 		handle( that );
 	};
 
-    //---------------------------------------------------------export---------------------------------------------------
 	window["AscCommon"].ScrollSettings = ScrollSettings;
-    window["AscCommon"].ScrollObject = ScrollObject;
+	window["AscCommon"].ScrollObject = ScrollObject;
 })(window);

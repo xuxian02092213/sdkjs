@@ -235,7 +235,7 @@ function CControl()
             this.HtmlElement.style.width 	= _W + "px";
             this.HtmlElement.style.height 	= _H + "px";
 
-            if (api.CheckRetinaElement2 && api.CheckRetinaElement2(this.HtmlElement))
+            if (/*api.CheckRetinaElement2 && api.CheckRetinaElement2(this.HtmlElement)*/this.HtmlElement.tagName === "CANVAS")
             {
                 AscCommon.calculateCanvasSize(this.HtmlElement);
             }
