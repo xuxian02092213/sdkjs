@@ -247,7 +247,7 @@ function (window, undefined) {
 	window['AscCH'].historyitem_Slicer_SetRowHeight = 13;
 	window['AscCH'].historyitem_Slicer_SetCacheSortOrder = 14;
 	window['AscCH'].historyitem_Slicer_SetCacheCustomListSort = 15;
-	window['AscCH'].historyitem_Slicer_SetCrossFilter = 16;
+	window['AscCH'].historyitem_Slicer_SetCacheCrossFilter = 16;
 	window['AscCH'].historyitem_Slicer_SetCacheHideItemsWithNoData = 17;
 
 

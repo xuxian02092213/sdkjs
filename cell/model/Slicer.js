@@ -762,15 +762,15 @@
 	};
 
 	CT_slicer.prototype.getHideItemsWithNoData = function () {
-		this.cacheDefinition.getHideItemsWithNoData();
+		return this.cacheDefinition.getHideItemsWithNoData();
 	};
 
 	CT_slicer.prototype.getIndicateItemsWithNoData = function () {
-		this.cacheDefinition.getIndicateItemsWithNoData();
+		return this.cacheDefinition.getIndicateItemsWithNoData();
 	};
 
 	CT_slicer.prototype.getShowItemsWithNoDataLast = function () {
-		this.cacheDefinition.getShowItemsWithNoDataLast();
+		return this.cacheDefinition.getShowItemsWithNoDataLast();
 	};
 
 	CT_slicer.prototype.setSortOrder = function (val) {
@@ -922,7 +922,7 @@
 		if (table) {
 			return table.crossFilter;
 		}
-		return ST_tabularSlicerCacheSortOrder.ShowItemsWithDataAtTop;
+		return ST_slicerCacheCrossFilter.ShowItemsWithDataAtTop;
 	};
 
 	CT_slicer.prototype.asc_getCustomListSort = function () {
@@ -1275,7 +1275,7 @@
 		} else {
 			var table = this.getTableSlicerCache();
 			if (table) {
-				return table.crossFilter !== ST_tabularSlicerCacheSortOrder.None || table.crossFilter === null;
+				return table.crossFilter !== ST_slicerCacheCrossFilter.None || table.crossFilter === null;
 			}
 			return true;
 		}
@@ -1288,7 +1288,7 @@
 		} else {
 			var table = this.getTableSlicerCache();
 			if (table) {
-				return table.crossFilter === ST_tabularSlicerCacheSortOrder.ShowItemsWithDataAtTop || table.crossFilter === null;
+				return table.crossFilter === ST_slicerCacheCrossFilter.ShowItemsWithDataAtTop || table.crossFilter === null;
 			}
 			return true;
 		}

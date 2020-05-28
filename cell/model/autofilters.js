@@ -4282,11 +4282,6 @@
 					worksheet.workbook.dependencyFormulas.unlockRecal();
 				}
 
-				var fullValues = sortObj ? sortObj.fullValues && !hideItemsWithNoData : null;
-				var isAscending = sortObj ? sortObj.sortOrder : true;
-				var indicateItemsWithNoData = sortObj ? sortObj.indicateItemsWithNoData : null;
-				var showItemsWithNoDataLast = sortObj ? sortObj.showItemsWithNoDataLast : null;
-
 				//sort
 				var _values;
 				if (fullValues && !showItemsWithNoDataLast) {

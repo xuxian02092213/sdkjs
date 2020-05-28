@@ -3413,7 +3413,7 @@ function (window, undefined) {
 				}
 				break;
 			}
-			case AscCH.historyitem_Slicer_SetCrossFilter: {
+			case AscCH.historyitem_Slicer_SetCacheCrossFilter: {
 				slicerCache = oModel.getSlicerCacheByName(bUndo ? Data.to : Data.from);
 				if (slicer) {
 					slicerCache.setCrossFilter(bUndo ? Data.from : Data.to);
