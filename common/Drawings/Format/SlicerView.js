@@ -301,10 +301,10 @@
     };
     CSlicerData.prototype.getString = function (nIndex) {
         var oValue = this.getValue(nIndex);
-        if(oValue && typeof oValue.text === "string") {
+        if(oValue && typeof oValue.text === "string" && oValue.text.length > 0) {
             return oValue.text;
         }
-        return "";
+        return AscCommon.translateManager.getValue("(blank)");
     };
     CSlicerData.prototype.onViewUpdate = function () {
         var oWorksheet = this.slicer.getWorksheet();

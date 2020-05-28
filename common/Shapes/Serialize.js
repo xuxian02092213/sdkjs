@@ -7382,6 +7382,14 @@ function BinaryPPTYLoader()
             }
             _slicer.spPr.setXfrm(_xfrm);
             _xfrm.setParent(_slicer.spPr);
+            if(AscCommon.isRealObject(_nvGraphicFramePr) )
+            {
+                _slicer.setNvSpPr(_nvGraphicFramePr);
+                if(AscFormat.isRealNumber(_nvGraphicFramePr.locks))
+                {
+                    _slicer.setLocks(_nvGraphicFramePr.locks);
+                }
+            }
             return _slicer;
         }
 
