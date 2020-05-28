@@ -78,7 +78,7 @@
 			this.day = null;
 			this.repeats = 1;
 
-			this.hiddenType = undefined;
+			this.hiddenByOtherColumns = undefined;
 		}
 		AutoFiltersOptionsElements.prototype = {
 			constructor: AutoFiltersOptionsElements,
@@ -137,7 +137,6 @@
 			asc_getMonth: function () { return this.month; },
 			asc_getDay: function () { return this.day; },
 			asc_getRepeats: function () { return this.repeats; },
-			asc_getHiddenType: function () { return this.hiddenType; },
 			
 			asc_setVal: function (val) { this.val = val; },
 			asc_setVisible: function (val) { this.visible = val; },
@@ -146,8 +145,7 @@
 			asc_setYear: function (val) { this.year = val; },
 			asc_setMonth: function (val) { this.month = val; },
 			asc_setDay: function (val) { this.day = val; },
-			asc_setRepeats: function (val) { this.repeats = val; },
-			asc_setHiddenType: function (val) { this.hiddenType = val; },
+			asc_setRepeats: function (val) { this.repeats = val; }
 		};
 
 		var g_oAutoFiltersOptionsProperties = {
@@ -4120,14 +4118,21 @@
 				}
 			},
 
-			getOpenAndClosedValues: function (filter, colId, doOpenHide, fullValues, isAscending) {
+			getOpenAndClosedValues: function (filter, colId, doOpenHide, sortObj) {
 				var isTablePart = !filter.isAutoFilter(), autoFilter = filter.getAutoFilter(), ref = filter.Ref;
 				var worksheet = this.worksheet, textIndexMap = {}, isDateTimeFormat, dataValue, values = [];
-				//для срезов необходимо отображать все значения, в тч скрытые другими фильтрами в данной таблице
-				//флаг fullValues - для срезов
 				var _hideValues = [], textIndexMapHideValues = {};
 
-				var addValueToMenuObj = function (val, text, visible, count, _arr, hiddenType) {
+				//FOR SLICER
+				//для срезов необходимо отображать все значения, в тч скрытые другими фильтрами в данной таблице
+				//флаг fullValues - для срезов
+				var hideItemsWithNoData = sortObj ? sortObj.hideItemsWithNoData : null;
+				var fullValues = sortObj ? sortObj.fullValues && !hideItemsWithNoData : null;
+				var isAscending = sortObj ? sortObj.sortOrder : true;
+				var indicateItemsWithNoData = sortObj ? sortObj.indicateItemsWithNoData : null;
+				var showItemsWithNoDataLast = sortObj ? sortObj.showItemsWithNoDataLast : null;
+
+				var addValueToMenuObj = function (val, text, visible, count, _arr, hiddenByOtherColumns) {
 					var res = new AutoFiltersOptionsElements();
 					res.asc_setVisible(visible);
 					res.asc_setVal(val);
@@ -4138,7 +4143,7 @@
 						res.asc_setMonth(dataValue.month);
 						res.asc_setDay(dataValue.d);
 					}
-					res.asc_setHiddenType(hiddenType);
+					res.hiddenByOtherColumns = hiddenByOtherColumns;
 
 					_arr[count] = res;
 				};
@@ -4246,19 +4251,17 @@
 							textIndexMap[textLowerCase] = count;
 							count++;
 						} else if (fullValues) {
-							//ввожу дополнительный тип для отображения значений в срезах
-							//0 - скрыт данным фильтром и другим, 1 - скрыт только другим фильтром
-							//необходимо ввести константу
+							//hiddenByOtherColumns - ввожу дополнительный тип для отображения значений в срезах
 							if (textIndexMapHideValues.hasOwnProperty(textLowerCase)) {
 								continue;
 							}
 
-							var hiddenType = 0;
+							/*var hiddenByOtherColumns = false;
 							if (!currentFilterColumn.isHideValue(isDateTimeFormat ? val : text, isDateTimeFormat)) {
-								hiddenType = 1;
-							}
+								hiddenByOtherColumns = true;
+							}*/
 							textIndexMapHideValues[textLowerCase] =  _hideValues.length;
-							addValueToMenuObj(val, text, false, _hideValues.length, _hideValues, hiddenType);
+							addValueToMenuObj(val, text, false, _hideValues.length, _hideValues, indicateItemsWithNoData);
 						}
 					} else {
 						hideValue(false, i);
@@ -4278,10 +4281,24 @@
 				if (doOpenHide) {
 					worksheet.workbook.dependencyFormulas.unlockRecal();
 				}
-				var _values = this._sortArrayMinMax(values, isAscending);
-				if(fullValues) {
-					_values = _values.concat(this._sortArrayMinMax(_hideValues, isAscending));
+
+				var fullValues = sortObj ? sortObj.fullValues && !hideItemsWithNoData : null;
+				var isAscending = sortObj ? sortObj.sortOrder : true;
+				var indicateItemsWithNoData = sortObj ? sortObj.indicateItemsWithNoData : null;
+				var showItemsWithNoDataLast = sortObj ? sortObj.showItemsWithNoDataLast : null;
+
+				//sort
+				var _values;
+				if (fullValues && !showItemsWithNoDataLast) {
+					_values = values.concat(_hideValues);
+					_values = this._sortArrayMinMax(_values, isAscending);
+				} else {
+					_values = this._sortArrayMinMax(values, isAscending);
+					if(fullValues) {
+						_values = _values.concat(this._sortArrayMinMax(_hideValues, isAscending));
+					}
 				}
+
 				return {values: _values, automaticRowCount: automaticRowCount, ignoreCustomFilter: ignoreCustomFilter};
 			},
 

@@ -723,6 +723,8 @@
 		if (crossFilter !== undefined) {
 			this.setCrossFilter(crossFilter);
 		}
+
+		this.ws.workbook.onSlicerUpdate(this.name);
 	};
 
 	CT_slicer.prototype.checkProperty = function (propOld, propNew, type) {
@@ -760,33 +762,15 @@
 	};
 
 	CT_slicer.prototype.getHideItemsWithNoData = function () {
-		return null !== this.cacheDefinition.slicerCacheHideItemsWithNoData;
+		this.cacheDefinition.getHideItemsWithNoData();
 	};
 
 	CT_slicer.prototype.getIndicateItemsWithNoData = function () {
-		var hideItemsWithNoData = this.asc_getHideItemsWithNoData();
-		if (hideItemsWithNoData) {
-			return true;
-		} else {
-			var table = this.cacheDefinition.getTableSlicerCache();
-			if (table) {
-				return table.crossFilter !== ST_tabularSlicerCacheSortOrder.None || table.crossFilter === null;
-			}
-			return true;
-		}
+		this.cacheDefinition.getIndicateItemsWithNoData();
 	};
 
 	CT_slicer.prototype.getShowItemsWithNoDataLast = function () {
-		var hideItemsWithNoData = this.asc_getHideItemsWithNoData();
-		if (hideItemsWithNoData) {
-			return true;
-		} else {
-			var table = this.cacheDefinition.getTableSlicerCache();
-			if (table) {
-				return table.crossFilter === ST_tabularSlicerCacheSortOrder.ShowItemsWithDataAtTop || table.crossFilter === null;
-			}
-			return true;
-		}
+		this.cacheDefinition.getShowItemsWithNoDataLast();
 	};
 
 	CT_slicer.prototype.setSortOrder = function (val) {
@@ -1125,8 +1109,15 @@
 				if (table) {
 					var colId = table.getColIdByName(tableCache.column);
 					if (colId !== null) {
-						var sortOrder = this.tableSlicerCache.sortOrder === ST_tabularSlicerCacheSortOrder.Ascending;
-						res = this.ws.autoFilters.getOpenAndClosedValues(table, colId, null, true, sortOrder);
+						var sortObj = {};
+						sortObj.fullValues = true;
+						sortObj.sortOrder = this.tableSlicerCache.sortOrder === ST_tabularSlicerCacheSortOrder.Ascending;
+						sortObj.hideItemsWithNoData = this.getHideItemsWithNoData();
+						sortObj.indicateItemsWithNoData = this.getIndicateItemsWithNoData();
+						sortObj.showItemsWithNoDataLast = this.getShowItemsWithNoDataLast();
+
+						res = this.ws.autoFilters.getOpenAndClosedValues(table, colId, null, sortObj);
+
 					}
 				}
 				break;
@@ -1270,6 +1261,36 @@
 			this.slicerCacheHideItemsWithNoData = val ? [] : null;
 			History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCacheHideItemsWithNoData,
 				null, null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val));
+		}
+	};
+
+	CT_slicerCacheDefinition.prototype.getHideItemsWithNoData = function () {
+		return null !== this.slicerCacheHideItemsWithNoData;
+	};
+
+	CT_slicerCacheDefinition.prototype.getIndicateItemsWithNoData = function () {
+		var hideItemsWithNoData = this.getHideItemsWithNoData();
+		if (hideItemsWithNoData) {
+			return true;
+		} else {
+			var table = this.getTableSlicerCache();
+			if (table) {
+				return table.crossFilter !== ST_tabularSlicerCacheSortOrder.None || table.crossFilter === null;
+			}
+			return true;
+		}
+	};
+
+	CT_slicerCacheDefinition.prototype.getShowItemsWithNoDataLast = function () {
+		var hideItemsWithNoData = this.getHideItemsWithNoData();
+		if (hideItemsWithNoData) {
+			return true;
+		} else {
+			var table = this.getTableSlicerCache();
+			if (table) {
+				return table.crossFilter === ST_tabularSlicerCacheSortOrder.ShowItemsWithDataAtTop || table.crossFilter === null;
+			}
+			return true;
 		}
 	};
 
