@@ -4368,9 +4368,9 @@
 					var isNumericA = isNumeric(a.val);
 					var isNumericB = isNumeric(b.val);
 					if (a.val === "") {
-						return (isAscending || isAscending === undefined) ? 1 : -1;
+						return 1;
 					} else if (b.val === "") {
-						return (isAscending || isAscending === undefined) ? -1 : 1;
+						return  1;
 					} else if ((isNumericA && isNumericB) || (!isNumericA && !isNumericB)) {
 						return (isAscending || isAscending === undefined) ? (a.val - b.val) : (b.val - a.val);
 					} else if (!isNumericA) {
