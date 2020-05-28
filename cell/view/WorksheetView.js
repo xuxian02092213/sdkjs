@@ -20042,9 +20042,12 @@
 		var t = this;
 		var type, name;
 
-		var callback = function (_obj) {
-			//добавляем в структуру
+		var callback = function (success) {
+			if (!success) {
+				return;
+			}
 
+			//добавляем в структуру
 			for (var i = 0; i < arr.length; i++) {
 				var slicer = t.model.insertSlicer(arr[i], name, type);
 				arr[i] = slicer.name;
@@ -20054,16 +20057,25 @@
 
 		//чтобы лишний раз не проверять - может быть взять информацию из cellinfo?
 		var obj = this.model.autoFilters.getTableByActiveCell();
+		var lockRanges = [], colRange;
 		if (obj) {
 			type = window['AscCommonExcel'].insertSlicerType.table;
 			name = obj.DisplayName;
+			for (var k = 0; k < arr.length; k++) {
+				colRange = this.model.getTableRangeColumnByName(name, arr[k]);
+				if (colRange) {
+					lockRanges.push(colRange);
+				}
+			}
 		} else if (false/*obj = getPivotByactiveCell*/) {
 			type = window['AscCommonExcel'].insertSlicerType.pivotTable;
 		}
 
-		//TODO lock
-		//+ lock def names
-		callback(obj);
+		this.isLockedCells(lockRanges, null, function(success) {
+			if (success) {
+				t._isLockedDefNames(callback);
+			}
+		});
 	};
 
 	WorksheetView.prototype.deleteSlicer = function (name) {

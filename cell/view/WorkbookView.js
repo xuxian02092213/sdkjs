@@ -2739,7 +2739,7 @@
       {
         tableRange = table.Ref;
       }
-    } else {
+    } else if (oldName) {
       var slicerCache = ws.model.getSlicerCacheByCacheName(oldName.Name);
       if (slicerCache) {
         tableRange = slicerCache.getRange();

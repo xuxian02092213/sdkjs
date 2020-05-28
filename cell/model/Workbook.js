@@ -6267,6 +6267,21 @@
 		}
 		return res;
 	};
+	Worksheet.prototype.getTableRangeColumnByName = function(tableName, columnName){
+		var res = null;
+		if(!this.TableParts || !tableName)
+			return res;
+
+		for(var i = 0; i < this.TableParts.length; i++)
+		{
+			if(this.TableParts[i].DisplayName.toLowerCase() === tableName.toLowerCase())
+			{
+				res = this.TableParts[i].getTableRangeColumnByName(columnName);
+				break;
+			}
+		}
+		return res;
+	};
 	Worksheet.prototype.isApplyFilterBySheet = function () {
 		var res = false;
 
