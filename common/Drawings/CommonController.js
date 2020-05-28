@@ -3778,6 +3778,17 @@ DrawingObjectsController.prototype =
                 oSlicer = aSlicers[i];
                 aSlicerNames.push(oSlicer.getName());
                 bSize |= oSlicer.setButtonWidth(props.SlicerProperties.asc_getButtonWidth());
+                var bLocked = props.SlicerProperties.asc_getLockedPosition() === true;
+                if(bLocked)
+                {
+                    oSlicer.setLockValue(AscFormat.LOCKS_MASKS.noMove, true);
+                    oSlicer.setLockValue(AscFormat.LOCKS_MASKS.noResize, true);
+                }
+                else
+                {
+                    oSlicer.setLockValue(AscFormat.LOCKS_MASKS.noMove, undefined);
+                    oSlicer.setLockValue(AscFormat.LOCKS_MASKS.noResize, undefined);
+                }
             }
             oAPI.asc_setSlicers(aSlicerNames, props.SlicerProperties);
             if(!bSize)
