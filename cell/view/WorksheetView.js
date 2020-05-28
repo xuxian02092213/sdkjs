@@ -20071,7 +20071,7 @@
 			type = window['AscCommonExcel'].insertSlicerType.pivotTable;
 		}
 
-		this.isLockedCells(lockRanges, null, function(success) {
+		this._isLockedCells(lockRanges, null, function(success) {
 			if (success) {
 				t._isLockedDefNames(callback);
 			}
