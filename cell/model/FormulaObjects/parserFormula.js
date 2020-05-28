@@ -867,7 +867,8 @@ parserHelp.setDigitSeparator(AscCommon.g_oDefaultCultureInfo.NumberDecimalSepara
 		return this;
 	};
 	cError.prototype.toLocaleString = function () {
-		switch (this.value) {
+		var val = this.value ? this.value.toUpperCase() : this.value;
+		switch (val) {
 			case cErrorOrigin["value"]:
 			case cErrorType.wrong_value_type: {
 				return cErrorLocal["value"];
@@ -1208,6 +1209,32 @@ parserHelp.setDigitSeparator(AscCommon.g_oDefaultCultureInfo.NumberDecimalSepara
 
 		return arr;
 	};
+	cArea.prototype.getFullArray = function (emptyReplaceOn) {
+		var arr = new cArray();
+		var elemsNoEmpty = this.getMatrixNoEmpty();
+		var bbox = this.getBBox0();
+		if (!emptyReplaceOn) {
+			emptyReplaceOn = new cEmpty();
+		}
+		var elem;
+		for (var i = bbox.r1; i <= bbox.r2; i++) {
+			if ( !arr.array[i - bbox.r1] ) {
+				arr.addRow();
+			}
+			for (var j = bbox.c1; j <= bbox.c2; j++) {
+				if (elemsNoEmpty && elemsNoEmpty[i - bbox.r1] && elemsNoEmpty[i - bbox.r1][j - bbox.c1]) {
+					elem = elemsNoEmpty[i - bbox.r1][j - bbox.c1];
+				}
+				if (!elem || elem.type === cElementType.empty) {
+					elem = emptyReplaceOn;
+				}
+
+				arr.addElement(elem);
+			}
+		}
+
+		return arr;
+	};
 	cArea.prototype.getMatrixNoEmpty = function () {
 		var arr = [], r = this.getRange(), res;
 		r._foreachNoEmpty(function (cell, i, j, r1, c1) {
@@ -1535,6 +1562,32 @@ parserHelp.setDigitSeparator(AscCommon.g_oDefaultCultureInfo.NumberDecimalSepara
 				arr[k][i - r1][j - c1] = res;
 			});
 		}
+		return arr;
+	};
+	cArea3D.prototype.getFullArray = function (emptyReplaceOn) {
+		var arr = new cArray();
+		var elemsNoEmpty = this.getMatrixNoEmpty();
+		var bbox = this.getBBox0();
+		if (!emptyReplaceOn) {
+			emptyReplaceOn = new cEmpty();
+		}
+		var elem;
+		for (var i = bbox.r1; i <= bbox.r2; i++) {
+			if ( !arr.array[i - bbox.r1] ) {
+				arr.addRow();
+			}
+			for (var j = bbox.c1; j <= bbox.c2; j++) {
+				if (elemsNoEmpty && elemsNoEmpty[0] && elemsNoEmpty[0][i - bbox.r1] && elemsNoEmpty[0][i - bbox.r1][j - bbox.c1]) {
+					elem = elemsNoEmpty[0][i - bbox.r1][j - bbox.c1];
+				}
+				if (!elem || elem.type === cElementType.empty) {
+					elem = emptyReplaceOn;
+				}
+
+				arr.addElement(elem);
+			}
+		}
+
 		return arr;
 	};
 	cArea3D.prototype.getMatrixNoEmpty = function () {

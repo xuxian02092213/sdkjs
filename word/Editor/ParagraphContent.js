@@ -205,6 +205,10 @@ CRunElementBase.prototype.Set_WidthVisible = function(WidthVisible)
 {
 	this.WidthVisible = (WidthVisible * TEXTWIDTH_DIVIDER) | 0;
 };
+CRunElementBase.prototype.Set_Width        = function(Width)
+{
+	this.Width = (Width * TEXTWIDTH_DIVIDER) | 0;
+};
 CRunElementBase.prototype.Is_RealContent   = function()
 {
 	return true;
@@ -261,6 +265,14 @@ CRunElementBase.prototype.IsDot = function()
 {
 	return false;
 };
+/**
+ * @param {CRunElementBase} oElement
+ * @returns {boolean}
+ */
+CRunElementBase.prototype.IsEqual = function(oElement)
+{
+	return (this.Type === oElement.Type)
+};
 
 /**
  * Класс представляющий текстовый символ
@@ -294,8 +306,14 @@ ParaText.prototype.Set_CharCode = function(CharCode)
 	if (AscFonts.IsCheckSymbols)
 		AscFonts.FontPickerByCharacter.getFontBySymbol(this.Value);
 };
-ParaText.prototype.Draw = function(X, Y, Context)
+ParaText.prototype.Draw = function(X, Y, Context, PDSE, oTextPr)
 {
+	if (undefined !== this.LGap)
+	{
+		this.private_DrawGapsBackground(X, Y, Context, PDSE, oTextPr);
+		X += this.LGap;
+	}
+
 	var CharCode = this.Value;
 
 	var FontKoef = 1;
@@ -388,6 +406,10 @@ ParaText.prototype.Can_AddNumbering = function()
 ParaText.prototype.Copy = function()
 {
 	return new ParaText(this.Value);
+};
+ParaText.prototype.IsEqual = function(oElement)
+{
+	return (oElement.Type === this.Type && this.Value === oElement.Value);
 };
 ParaText.prototype.Is_NBSP = function()
 {
@@ -503,6 +525,75 @@ ParaText.prototype.IsDot = function()
 {
 	return !!(this.Value === 0x002E);
 };
+ParaText.prototype.SetGaps = function(nLeftGap, nRightGap)
+{
+	this.LGap = nLeftGap;
+	this.RGap = nRightGap;
+
+	this.Width += ((nLeftGap + nRightGap) * TEXTWIDTH_DIVIDER) | 0;
+};
+ParaText.prototype.ResetGapBackground = function()
+{
+	this.RGapCount     = undefined;
+	this.RGapCharCode  = undefined;
+	this.RGapCharWidth = undefined;
+	this.RGapShift     = undefined;
+	this.RGapFontSlot  = undefined;
+	this.RGapFont      = undefined;
+};
+ParaText.prototype.SetGapBackground = function(nCount, nCharCode, nCombWidth, oContext, sFont, oTextPr, oTheme)
+{
+	this.RGapCount    = nCount;
+	this.RGapCharCode = nCharCode;
+	this.RGapFontSlot = g_font_detector.Get_FontClass(nCharCode, oTextPr.RFonts.Hint, oTextPr.Lang.EastAsia, oTextPr.CS, oTextPr.RTL);
+
+	if (sFont)
+	{
+		this.RGapFont = sFont;
+
+		var oCurTextPr = oTextPr.Copy();
+		oCurTextPr.SetFontFamily(sFont);
+
+		oContext.SetTextPr(oCurTextPr, oTheme);
+		oContext.SetFontSlot(this.RGapFontSlot, oTextPr.Get_FontKoef());
+	}
+
+	this.RGapCharWidth = Math.max(oContext.MeasureCode(nCharCode).Width + oTextPr.Spacing, 0);
+	this.RGapShift     = Math.max(nCombWidth, this.RGapCharWidth);
+
+	if (sFont)
+		oContext.SetTextPr(oTextPr, oTheme);
+};
+ParaText.prototype.private_DrawGapsBackground = function(X, Y, oContext, PDSE, oTextPr)
+{
+	if (this.RGapFont)
+	{
+		var oCurTextPr = oTextPr.Copy();
+		oCurTextPr.SetFontFamily(this.RGapFont);
+
+		oContext.SetTextPr(oCurTextPr, PDSE.Theme);
+		oContext.SetFontSlot(this.RGapFontSlot, oTextPr.Get_FontKoef());
+	}
+
+	if (this.RGap && this.RGapCount)
+	{
+		X += this.Width / TEXTWIDTH_DIVIDER;
+		var nShift = (this.RGapShift - this.RGapCharWidth) / 2;
+
+		for (var nIndex = 0; nIndex < this.RGapCount; ++nIndex)
+		{
+			X -= nShift + this.RGapCharWidth;
+
+			oContext.FillTextCode(X, Y, this.RGapCharCode);
+
+			X -= nShift;
+		}
+	}
+
+	if (this.RGapFont)
+		oContext.SetTextPr(oTextPr, PDSE.Theme);
+};
+
 
 /**
  * Класс представляющий пробелбный символ
@@ -522,10 +613,16 @@ ParaSpace.prototype = Object.create(CRunElementBase.prototype);
 ParaSpace.prototype.constructor = ParaSpace;
 
 ParaSpace.prototype.Type = para_Space;
-ParaSpace.prototype.Draw = function(X, Y, Context)
+ParaSpace.prototype.Draw = function(X, Y, Context, PDSE, oTextPr)
 {
 	if (undefined !== editor && editor.ShowParaMarks)
 	{
+		if (undefined !== this.LGap)
+		{
+			this.private_DrawGapsBackground(X, Y, Context, PDSE, oTextPr);
+			X += this.LGap;
+		}
+
 		Context.SetFontSlot(fontslot_ASCII, this.Get_FontKoef());
 		Context.FillText(X, Y, String.fromCharCode(0x00B7));
 	}
@@ -612,6 +709,17 @@ ParaSpace.prototype.ResetCondensedWidth = function()
 {
 	this.Width = this.WidthOrigin;
 };
+ParaSpace.prototype.SetGaps = function(nLeftGap, nRightGap)
+{
+	this.LGap = nLeftGap;
+	this.RGap = nRightGap;
+
+	this.Width       += ((nLeftGap + nRightGap) * TEXTWIDTH_DIVIDER) | 0;
+	this.WidthOrigin += ((nLeftGap + nRightGap) * TEXTWIDTH_DIVIDER) | 0;
+};
+ParaSpace.prototype.ResetGapBackground = ParaText.prototype.ResetGapBackground;
+ParaSpace.prototype.SetGapBackground = ParaText.prototype.SetGapBackground;
+ParaSpace.prototype.private_DrawGapsBackground = ParaText.prototype.private_DrawGapsBackground;
 
 
 /**
@@ -717,6 +825,10 @@ ParaSym.prototype.Can_AddNumbering = function()
 ParaSym.prototype.Copy = function()
 {
 	return new ParaSym(this.Char, this.FontFamily);
+};
+ParaSym.prototype.IsEqual = function(oElement)
+{
+	return (this.Type === oElement.Type && this.Char === oElement.Char && this.FontFamily === oElement.FontFamily);
 };
 ParaSym.prototype.Write_ToBinary = function(Writer)
 {
@@ -1141,6 +1253,10 @@ ParaNewLine.prototype.Can_AddNumbering = function()
 ParaNewLine.prototype.Copy = function()
 {
 	return new ParaNewLine(this.BreakType);
+};
+ParaNewLine.prototype.IsEqual = function(oElement)
+{
+	return (oElement.Type === this.Type && this.BreakType === oElement.BreakType);
 };
 /**
  * Функция проверяет особый случай, когда у нас PageBreak, после которого в параграфе ничего не идет
@@ -1819,6 +1935,10 @@ ParaFootnoteReference.prototype.Copy = function(oPr)
 	oRef.NumFormat = this.NumFormat;
 
 	return oRef;
+};
+ParaFootnoteReference.prototype.IsEqual = function(oElement)
+{
+	return (oElement.Type === this.Type && this.Footnote === oElement.Footnote && oElement.CustomMark === this.CustomMark);
 };
 ParaFootnoteReference.prototype.Write_ToBinary = function(Writer)
 {

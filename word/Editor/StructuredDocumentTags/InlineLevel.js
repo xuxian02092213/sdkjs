@@ -96,6 +96,19 @@ CInlineLevelSdt.prototype.Add = function(Item)
 	}
 
 	this.private_ReplacePlaceHolderWithContent();
+
+	var oTextFormRun;
+	if (this.IsTextForm())
+	{
+		if (Item.Type !== para_Text && Item.Type !== para_Space)
+			return;
+
+		oTextFormRun = this.MakeSingleRunElement(false);
+
+		if (this.Pr.TextForm.MaxCharacters > 0 && oTextFormRun.GetElementsCount() >= this.Pr.TextForm.MaxCharacters)
+			return;
+	}
+
 	CParagraphContentWithParagraphLikeContent.prototype.Add.apply(this, arguments);
 };
 CInlineLevelSdt.prototype.Copy = function(isUseSelection, oPr)
@@ -225,14 +238,22 @@ CInlineLevelSdt.prototype.Add_ToContent = function(Pos, Item, UpdatePosition)
 {
 	History.Add(new CChangesParaFieldAddItem(this, Pos, [Item]));
 	CParagraphContentWithParagraphLikeContent.prototype.Add_ToContent.apply(this, arguments);
+
+	var sKey = this.GetFormKey();
+	if (sKey)
+		this.GetLogicDocument().OnChangeForm(sKey, this);
 };
 CInlineLevelSdt.prototype.Remove_FromContent = function(Pos, Count, UpdatePosition)
 {
 	// Получим массив удаляемых элементов
 	var DeletedItems = this.Content.slice(Pos, Pos + Count);
 	History.Add(new CChangesParaFieldRemoveItem(this, Pos, DeletedItems));
-
 	CParagraphContentWithParagraphLikeContent.prototype.Remove_FromContent.apply(this, arguments);
+
+	var sKey = this.GetFormKey();
+	if (sKey)
+		this.GetLogicDocument().OnChangeForm(sKey, this);
+
 };
 CInlineLevelSdt.prototype.Split = function (ContentPos, Depth)
 {
@@ -335,10 +356,10 @@ CInlineLevelSdt.prototype.Remove = function(nDirection, bOnAddText)
 		if (bOnAddText || !this.Paragraph.LogicDocument.IsFillingFormMode())
 			this.private_ReplacePlaceHolderWithContent();
 
-		return;
+		return true;
 	}
 
-	CParagraphContentWithParagraphLikeContent.prototype.Remove.call(this, nDirection, bOnAddText);
+	var bResult = CParagraphContentWithParagraphLikeContent.prototype.Remove.call(this, nDirection, bOnAddText);
 
 	if (this.Is_Empty()
 		&& this.Paragraph
@@ -349,7 +370,10 @@ CInlineLevelSdt.prototype.Remove = function(nDirection, bOnAddText)
 		|| (this === this.Paragraph.LogicDocument.CheckInlineSdtOnDelete)))
 	{
 		this.private_ReplaceContentWithPlaceHolder();
+		return true;
 	}
+
+	return bResult;
 };
 CInlineLevelSdt.prototype.Shift_Range = function(Dx, Dy, _CurLine, _CurRange)
 {
@@ -561,11 +585,14 @@ CInlineLevelSdt.prototype.Document_UpdateInterfaceState = function()
 };
 CInlineLevelSdt.prototype.SetParagraph = function(oParagraph)
 {
+	if (this.GetTextFormPr() && this.GetLogicDocument())
+		this.GetLogicDocument().RegisterForm(this);
+
 	CParagraphContentWithParagraphLikeContent.prototype.SetParagraph.apply(this, arguments);
 };
 CInlineLevelSdt.prototype.Apply_TextPr = function(TextPr, IncFontSize, ApplyToAll)
 {
-	if (this.IsPlaceHolder() || ApplyToAll || this.IsSelectedAll())
+	if (this.IsPlaceHolder() || ApplyToAll || this.IsSelectedAll() || this.IsDropDownList() || this.IsComboBox() || this.IsCheckBox() || this.IsDatePicker() || this.IsTextForm())
 	{
 		if (undefined !== IncFontSize)
 		{
@@ -589,7 +616,7 @@ CInlineLevelSdt.prototype.Apply_TextPr = function(TextPr, IncFontSize, ApplyToAl
 		}
 	}
 
-	if (this.IsDropDownList() || this.IsComboBox() || this.IsCheckBox() || this.IsDatePicker())
+	if (this.IsDropDownList() || this.IsComboBox() || this.IsCheckBox() || this.IsDatePicker() || this.IsTextForm())
 		CParagraphContentWithParagraphLikeContent.prototype.Apply_TextPr.call(this, TextPr, IncFontSize, true);
 	else
 		CParagraphContentWithParagraphLikeContent.prototype.Apply_TextPr.call(this, TextPr, IncFontSize, ApplyToAll);
@@ -650,7 +677,7 @@ CInlineLevelSdt.prototype.private_ReplacePlaceHolderWithContent = function(bMath
 	if (this.IsContentControlTemporary())
 		this.RemoveContentControlWrapper();
 };
-CInlineLevelSdt.prototype.private_ReplaceContentWithPlaceHolder = function()
+CInlineLevelSdt.prototype.private_ReplaceContentWithPlaceHolder = function(isSelect)
 {
 	if (this.IsPlaceHolder())
 		return;
@@ -660,7 +687,9 @@ CInlineLevelSdt.prototype.private_ReplaceContentWithPlaceHolder = function()
 	var isUseSelection = this.IsSelectionUse();
 
 	this.private_FillPlaceholderContent();
-	this.SelectContentControl();
+
+	if (false !== isSelect)
+		this.SelectContentControl();
 
 	if (isUseSelection)
 		this.SelectAll();
@@ -727,9 +756,9 @@ CInlineLevelSdt.prototype.ReplacePlaceHolderWithContent = function(bMathRun)
 {
 	this.private_ReplacePlaceHolderWithContent(bMathRun);
 };
-CInlineLevelSdt.prototype.ReplaceContentWithPlaceHolder = function()
+CInlineLevelSdt.prototype.ReplaceContentWithPlaceHolder = function(isSelect)
 {
-	this.private_ReplaceContentWithPlaceHolder();
+	this.private_ReplaceContentWithPlaceHolder(isSelect);
 };
 //----------------------------------------------------------------------------------------------------------------------
 // Выставление настроек
@@ -1054,10 +1083,17 @@ CInlineLevelSdt.prototype.GetCheckBoxPr = function()
  */
 CInlineLevelSdt.prototype.ToggleCheckBox = function()
 {
-	if (!this.IsCheckBox())
+	if (!this.IsCheckBox() || (this.IsRadioButton() && true === this.Pr.CheckBox.Checked))
 		return;
 
-	var isChecked = !this.Pr.CheckBox.Checked;
+	var oLogicDocument = this.GetLogicDocument();
+	if (oLogicDocument || this.IsRadioButton() || this.GetFormKey())
+		oLogicDocument.OnChangeForm(this.IsRadioButton() ? this.Pr.CheckBox.GroupKey : this.GetFormKey(), this);
+
+	this.SetCheckBoxChecked(!this.Pr.CheckBox.Checked);
+};
+CInlineLevelSdt.prototype.SetCheckBoxChecked = function(isChecked)
+{
 	History.Add(new CChangesSdtPrCheckBoxChecked(this, this.Pr.CheckBox.Checked, isChecked));
 	this.Pr.CheckBox.Checked = isChecked;
 
@@ -1496,8 +1532,58 @@ CInlineLevelSdt.prototype.private_UpdateDatePickerContent = function()
 	if (oRun)
 		oRun.AddText(sText);
 };
+/**
+ * Является ли данный контейнер специальной текстовой формой
+ * @returns {boolean}
+ */
+CInlineLevelSdt.prototype.IsTextForm = function()
+{
+	return (undefined !== this.Pr.TextForm);
+};
+CInlineLevelSdt.prototype.SetTextFormPr = function(oPr)
+{
+	if (undefined === this.Pr.TextForm || !this.Pr.TextForm.IsEqual(oPr))
+	{
+		var _oPr = oPr ? oPr.Copy() : undefined;
+		History.Add(new CChangesSdtPrTextForm(this, this.Pr.TextForm, _oPr));
+		this.Pr.TextForm = _oPr;
+	}
+};
+CInlineLevelSdt.prototype.GetTextFormPr = function()
+{
+	return this.Pr.TextForm;
+};
+/**
+ * Применяем к данному контейнеру настройки того, что это специальный контйенер для даты
+ * @param oPr {CSdtDatePickerPr}
+ */
+CInlineLevelSdt.prototype.ApplyTextFormPr = function(oPr)
+{
+	this.SetTextFormPr(oPr);
+
+	if (!this.IsTextForm())
+		return;
+
+	if (this.IsPlaceHolder())
+		this.private_FillPlaceholderContent();
+	else
+		this.private_UpdateTextFormContent();
+};
+CInlineLevelSdt.prototype.private_UpdateTextFormContent = function()
+{
+	if (!this.Pr.TextForm)
+		return;
+
+	if (this.IsPlaceHolder())
+		this.ReplacePlaceHolderWithContent();
+
+	this.MakeSingleRunElement();
+};
 CInlineLevelSdt.prototype.Document_Is_SelectionLocked = function(CheckType)
 {
+	if (this.GetFormKey() && this.GetLogicDocument())
+		this.GetLogicDocument().CheckSelectionLockedByFormKey(CheckType, this.GetFormKey(), this.GetParagraph());
+
 	if (AscCommon.changestype_Paragraph_TextProperties === CheckType
 		|| ((AscCommon.changestype_Drawing_Props === CheckType || AscCommon.changestype_Image_Properties === CheckType)
 		&& this.IsPicture()))
@@ -1586,7 +1672,7 @@ CInlineLevelSdt.prototype.Get_ParentTextTransform = function()
 };
 CInlineLevelSdt.prototype.AcceptRevisionChanges = function(Type, bAll)
 {
-	if (this.IsCheckBox() || this.IsDropDownList() || this.IsComboBox() || this.IsPicture() || this.IsDatePicker())
+	if (this.IsCheckBox() || this.IsDropDownList() || this.IsComboBox() || this.IsPicture() || this.IsDatePicker() || this.IsTextForm())
 	{
 		Type = undefined;
 		bAll = true;
@@ -1596,7 +1682,7 @@ CInlineLevelSdt.prototype.AcceptRevisionChanges = function(Type, bAll)
 };
 CInlineLevelSdt.prototype.RejectRevisionChanges = function(Type, bAll)
 {
-	if (this.IsCheckBox() || this.IsDropDownList() || this.IsComboBox() || this.IsPicture() || this.IsDatePicker())
+	if (this.IsCheckBox() || this.IsDropDownList() || this.IsComboBox() || this.IsPicture() || this.IsDatePicker() || this.IsTextForm())
 	{
 		Type = undefined;
 		bAll = true;

@@ -803,6 +803,17 @@ CSelectedContent.prototype.CreateNewCommentsGuid = function(DocumentComments)
 		}
 	}
 };
+CSelectedContent.prototype.GetText = function(oPr)
+{
+	var sText = "";
+	for (var nIndex = 0, nCount = this.Elements.length; nIndex < nCount; ++nIndex)
+	{
+		var oElement = this.Elements[nIndex].Element;
+		if (oElement.IsParagraph())
+			sText += oElement.GetText(oPr);
+	}
+	return sText;
+};
 
 
 CSelectedContent.prototype.ConvertToPresentation = function(Parent)
@@ -2348,6 +2359,8 @@ function CDocument(DrawingDocument, isMainLogicDocument)
 		isFastCollaboration : false
 	};
 
+	this.SpecialForms = {}; // Список специальных форм в документе
+
 	this.LastBulletList   = undefined; // Последний примененный маркированный список
 	this.LastNumberedList = undefined; // Последний примененный нумерованный список
 
@@ -2875,6 +2888,9 @@ CDocument.prototype.FinalizeAction = function(isCheckEmptyAction)
 	if (this.TrackMoveId)
 		this.private_FinalizeCheckTrackMove();
 
+	if (this.Action.Additional.FormChange)
+		this.private_FinalizeFormChange();
+
 	//------------------------------------------------------------------------------------------------------------------
 
 	var isAllPointsEmpty = true;
@@ -2998,6 +3014,107 @@ CDocument.prototype.private_FinalizeCheckTrackMove = function()
 
 		this.Action.Recalculate = true;
 	}
+};
+CDocument.prototype.private_FinalizeFormChange = function()
+{
+	this.Action.Additional.FormChangeStart = true;
+
+	for (var sKey in this.Action.Additional.FormChange)
+	{
+		var oForm = this.Action.Additional.FormChange[sKey].Form;
+		var oPr   = this.Action.Additional.FormChange[sKey].Pr;
+
+		if (!oForm.IsUseInDocument())
+			continue;
+
+		if (oForm.IsCheckBox())
+		{
+			var isChecked = oForm.GetCheckBoxPr().Checked;
+			if (oForm.IsRadioButton())
+			{
+				for (var sId in this.SpecialForms)
+				{
+					var oTempForm = this.SpecialForms[sId];
+					if (!oTempForm.IsUseInDocument())
+						continue;
+
+					if (oTempForm !== oForm && oTempForm.IsRadioButton() && sKey === oTempForm.GetCheckBoxPr().GroupKey)
+					{
+						if (oTempForm.GetCheckBoxPr().Checked)
+							oTempForm.SetCheckBoxChecked(false);
+					}
+				}
+			}
+			else
+			{
+				for (var sId in this.SpecialForms)
+				{
+					var oTempForm = this.SpecialForms[sId];
+					if (!oTempForm.IsUseInDocument())
+						continue;
+
+					if (oTempForm !== oForm && oTempForm.IsCheckBox() && (!oTempForm.IsRadioButton()) && sKey === oTempForm.GetFormKey())
+					{
+						if (isChecked !== oTempForm.GetCheckBoxPr().Checked)
+							oTempForm.ToggleCheckBox();
+					}
+				}
+			}
+		}
+		else if (oForm.IsPicture())
+		{
+			for (var sId in this.SpecialForms)
+			{
+				var oTempForm = this.SpecialForms[sId];
+				if (!oTempForm.IsUseInDocument())
+					continue;
+
+				if (oTempForm !== oForm && sKey === oTempForm.GetFormKey() && oTempForm.IsPicture())
+				{
+					var arrDrawings = oTempForm.GetAllDrawingObjects();
+					if (arrDrawings.length > 0)
+					{
+						var oPicture = arrDrawings[0].GetPicture();
+						if (oPicture)
+							oPicture.setBlipFill(AscFormat.CreateBlipFillRasterImageId(oPr));
+					}
+				}
+			}
+		}
+		else
+		{
+			var isPlaceHolder = oForm.IsPlaceHolder();
+
+			var oSrcRun = !isPlaceHolder ? oForm.MakeSingleRunElement(false) : null;
+
+			for (var sId in this.SpecialForms)
+			{
+				var oTempForm = this.SpecialForms[sId];
+
+				if (!oTempForm.IsUseInDocument() || oTempForm.IsPicture() || oTempForm.IsCheckBox())
+					continue;
+
+				if (oTempForm !== oForm && sKey === oTempForm.GetFormKey())
+				{
+					if (isPlaceHolder)
+					{
+						if (!oTempForm.IsPlaceHolder())
+							oTempForm.ReplaceContentWithPlaceHolder(false);
+					}
+					else
+					{
+						if (oTempForm.IsPlaceHolder())
+							oTempForm.ReplacePlaceHolderWithContent();
+
+						var oDstRun = oTempForm.MakeSingleRunElement(false);
+						oDstRun.CopyTextFormContent(oSrcRun);
+					}
+				}
+			}
+		}
+	}
+
+	delete this.Action.Additional.FormChangeStart;
 };
 /**
  * Данная функция предназначена для отключения пересчета. Это может быть полезно, т.к. редактор всегда запускает
@@ -8410,6 +8527,12 @@ CDocument.prototype.InsertContent = function(SelectedContent, NearPos)
 	}
 	else if (para_Run === LastClass.Type)
 	{
+		if (LastClass.GetParentForm())
+		{
+			LastClass.AddText(SelectedContent.GetText({ParaEndToSpace : false}), ParaNearPos.NearPos.ContentPos.Data[ParaNearPos.Classes.length - 1]);
+			return;
+		}
+
 		var NearContentPos = NearPos.ContentPos;
 		// Сначала найдем номер элемента, начиная с которого мы будем производить вставку
 		var DstIndex       = -1;
@@ -12094,6 +12217,29 @@ CDocument.prototype.IsSelectionLocked = function(nCheckType, oAdditionalData, is
 {
 	return this.Document_Is_SelectionLocked(nCheckType, oAdditionalData, isDontLockInFastMode, isIgnoreCanEditFlag);
 };
+CDocument.prototype.CheckSelectionLockedByFormKey = function(nCheckType, sKey, oSkipParagraph)
+{
+	for (var sId in this.SpecialForms)
+	{
+		var oForm = this.SpecialForms[sId];
+		if (oForm && oForm.IsUseInDocument() && oForm.GetParagraph() && oForm.GetParagraph() !== oSkipParagraph && oForm.GetFormKey() === sKey)
+		{
+			if (oForm.IsPicture())
+			{
+				var arrDrawings = oForm.GetAllDrawingObjects();
+				for (var nIndex = 0, nCount = arrDrawings.length; nIndex < nCount; ++nIndex)
+				{
+					arrDrawings[nIndex].Lock.Check(arrDrawings[nIndex].GetId());
+				}
+			}
+			else
+			{
+				var oFormParagraph = oForm.GetParagraph();
+				oFormParagraph.Lock.Check(oFormParagraph.GetId());
+			}
+		}
+	}
+};
 /**
  * Начинаем составную проверку на залоченность объектов
  * @param [isIgnoreCanEditFlag=false] игнорируем ли запрет на редактирование
@@ -14996,6 +15142,56 @@ CDocument.prototype.AddContentControlDatePicker = function(oPr)
 
 	oCC.ApplyDatePickerPr(oPr);
 	oCC.SelectContentControl();
+	return oCC;
+};
+/**
+ * Добавляем специальную текстовую форму
+ * @param oPr {?CSdtTextFormPr}
+ * @returns {CInlineLevelSdt | CBlockLevelSdt | null}
+ */
+CDocument.prototype.AddContentControlTextForm = function(oPr)
+{
+	if (!oPr)
+		oPr = new CSdtTextFormPr();
+
+	this.RemoveSelection();
+	var oCC = this.AddContentControl(c_oAscSdtLevelType.Inline);
+
+	if (oPr.Comb)
+	{
+		if (!oPr.MaxCharacters || !oPr.MaxCharacters <= 0)
+			oPr.MaxCharacters = 12;
+
+		var oDocPart
+		if (oPr.CombPlaceholderSymbol)
+			oCC.SetPlaceholderText(String.fromCharCode(oPr.CombPlaceholderSymbol));
+		else
+			oCC.SetPlaceholder(c_oAscDefaultPlaceholderName.TextForm);
+
+		if (oDocPart && oPr.CombPlaceholderFont)
+		{
+			oDocPart.SelectAll();
+			oDocPart.AddToParagraph(new ParaTextPr({
+				RFonts : {
+					Ascii    : {Name : oPr.CombPlaceholderFont, Index : -1},
+					EastAsia : {Name : oPr.CombPlaceholderFont, Index : -1},
+					HAnsi    : {Name : oPr.CombPlaceholderFont, Index : -1},
+					CS       : {Name : oPr.CombPlaceholderFont, Index : -1}
+				}
+			}));
+			oDocPart.RemoveSelection();
+		}
+	}
+
+	if (!oCC)
+		return null;
+
+	oCC.ApplyTextFormPr(oPr);
+	oCC.MoveCursorToStartPos();
+
+	this.UpdateSelection();
+	this.UpdateTracks();
+
 	return oCC;
 };
 /**
@@ -22215,6 +22411,41 @@ CDocument.prototype.AddParaMath = function(nType)
 
 	this.UpdateSelection();
 	this.UpdateInterface();
+};
+/**
+ * Регистрируем специальные формы для заполнения
+ * @param oForm
+ */
+CDocument.prototype.RegisterForm = function(oForm)
+{
+	if (oForm)
+	{
+		if (oForm.IsForm())
+			this.SpecialForms[oForm.GetId()] = oForm;
+		else
+			delete this.SpecialForms[oForm.GetId()];
+
+	}
+};
+/**
+ * Сохраняем информацию о том, что форма с заданным ключом была изменена
+ * @param {string} sKey
+ * @param {CInlineLevelSdt | CBlockLevelSdt} oForm
+ * @param oPr
+ */
+CDocument.prototype.OnChangeForm = function(sKey, oForm, oPr)
+{
+	if (!this.Action.Start || (this.Action.Additional && true === this.Action.Additional.FormChangeStart))
+		return;
+
+	if (!this.Action.Additional.FormChange)
+		this.Action.Additional.FormChange = {};
+
+
+	if (this.Action.Additional.FormChange[sKey])
+		return;
+
+	this.Action.Additional.FormChange[sKey] = {Form : oForm, Pr : oPr};
 };
 
 function CDocumentSelectionState()

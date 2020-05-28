@@ -1255,6 +1255,10 @@ ParaDrawing.prototype.Copy = function(oPr)
 		c.Set_ParaMath(this.ParaMath.Copy());
 	return c;
 };
+ParaDrawing.prototype.IsEqual = function(oElement)
+{
+	return false;
+};
 ParaDrawing.prototype.Get_Id = function()
 {
 	return this.Id;
@@ -2888,6 +2892,14 @@ ParaDrawing.prototype.GetAllSeqFieldsByType = function(sType, aFields)
 ParaDrawing.prototype.IsPicture = function()
 {
 	return (this.GraphicObj.getObjectType() === AscDFH.historyitem_type_ImageShape);
+};
+/**
+ * Получаем объект картинки, если автофигура является картинкой
+ * @returns {?CImageShape}
+ */
+ParaDrawing.prototype.GetPicture = function()
+{
+	return this.GraphicObj.getObjectType() === AscDFH.historyitem_type_ImageShape ? this.GraphicObj : null;
 };
 
 /**

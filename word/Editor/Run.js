@@ -1380,6 +1380,11 @@ ParaRun.prototype.GetLogicDocument = function()
 // Добавляем элемент в позицию с сохранием в историю
 ParaRun.prototype.Add_ToContent = function(Pos, Item, UpdatePosition)
 {
+	if (this.GetTextForm() && this.GetTextForm().Comb)
+		this.RecalcInfo.Measure = true;
+
+	this.CheckParentFormKey();
+
 	if (-1 === Pos)
 		Pos = this.Content.length;
 
@@ -1448,10 +1453,17 @@ ParaRun.prototype.Add_ToContent = function(Pos, Item, UpdatePosition)
     this.CollaborativeMarks.Update_OnAdd( Pos );
 
     this.RecalcInfo.OnAdd(Pos);
+
+    //if (this.Parent && this.Parent.GetFormKey && this.Parent)
 };
 
 ParaRun.prototype.Remove_FromContent = function(Pos, Count, UpdatePosition)
 {
+	if (this.GetTextForm() && this.GetTextForm().Comb)
+		this.RecalcInfo.Measure = true;
+
+	this.CheckParentFormKey();
+
 	for (var nIndex = Pos, nCount = Math.min(Pos + Count, this.Content.length); nIndex < nCount; ++nIndex)
 	{
 		if (this.Content[nIndex].PreDelete)
@@ -1527,6 +1539,8 @@ ParaRun.prototype.Remove_FromContent = function(Pos, Count, UpdatePosition)
  */
 ParaRun.prototype.ConcatToContent = function(arrNewItems)
 {
+	this.CheckParentFormKey();
+
 	for (var nIndex = 0, nCount = arrNewItems.length; nIndex < nCount; ++nIndex)
 	{
 		if (arrNewItems[nIndex].SetParent)
@@ -1552,6 +1566,9 @@ ParaRun.prototype.AddText = function(sString, nPos)
 {
 	var nCharPos = undefined !== nPos && null !== nPos && -1 !== nPos ? nPos : this.Content.length;
 
+	var oTextForm = this.GetTextForm();
+	var nMax = oTextForm ? oTextForm.MaxCharacters : 0;
+
 	if (this.IsMathRun())
 	{
 		for (var oIterator = sString.getUnicodeIterator(); oIterator.check(); oIterator.next())
@@ -1562,6 +1579,44 @@ ParaRun.prototype.AddText = function(sString, nPos)
 			oMathText.add(nCharCode);
 			this.AddToContent(nCharPos++, oMathText);
 		}
+	}
+	else if (nMax > 0)
+	{
+		var nMaxLetters = nMax - nPos;
+
+		var arrLetters = [], nLettersCount = 0;
+		for (var oIterator = sString.getUnicodeIterator(); oIterator.check(); oIterator.next())
+		{
+			if (nLettersCount >= nMaxLetters)
+				break;
+
+			var nCharCode = oIterator.value();
+
+			if (9 === nCharCode) // \t
+				continue;
+			else if (10 === nCharCode) // \n
+				continue;
+			else if (13 === nCharCode) // \r
+				continue;
+			else if (32 === nCharCode) // space
+			{
+				nLettersCount++;
+				arrLetters.push(new ParaSpace());
+			}
+			else
+			{
+				nLettersCount++;
+				arrLetters.push(new ParaText(nCharCode));
+			}
+		}
+
+		for (var nIndex = 0; nIndex < arrLetters.length; ++nIndex)
+		{
+			this.AddToContent(nCharPos++, arrLetters[nIndex], true);
+		}
+
+		if (this.Content.length > nMax)
+			this.RemoveFromContent(nMax, this.Content.length - nMax, true);
 	}
 	else
 	{
@@ -1734,6 +1789,29 @@ ParaRun.prototype.Recalculate_CurPos = function(X, Y, CurrentRun, _CurRange, _Cu
 
             X += Item.Get_WidthVisible();
         }
+
+        if (CurrentRun && this.Content.length > 0)
+		{
+			if (Pos === this.Content.length)
+			{
+				var Item = this.Content[Pos - 1];
+				if (Item.RGap)
+				{
+					if (Item.RGapCount)
+					{
+						X -= Item.RGapCount * Item.RGapShift - (Item.RGapShift - Item.RGapCharWidth) / 2;
+					}
+					else
+					{
+						X -= Item.RGap;
+					}
+				}
+			}
+			else if (this.Content[Pos].LGap)
+			{
+				X += this.Content[Pos].LGap;
+			}
+		}
     }
 
 	var bNearFootnoteReference = this.IsCurPosNearFootEndnoteReference();
@@ -2755,7 +2833,63 @@ ParaRun.prototype.Recalculate_MeasureContent = function()
 		});
 	}
 
-	if (this.RecalcInfo.Measure)
+	var nMaxComb   = -1;
+	var nCombWidth = null;
+	var oTextForm  = this.GetTextForm();
+	if (oTextForm && oTextForm.Comb)
+	{
+		nMaxComb = oTextForm.MaxCharacters;
+
+		if (undefined === oTextForm.Width)
+			nCombWidth = 0;
+		else if (oTextForm.Width < 0)
+			nCombWidth = this.TextAscent * (Math.abs(oTextForm.Width) / 100);
+		else
+			nCombWidth = AscCommon.TwipsToMM(oTextForm.Width);
+
+		if (!nCombWidth || nCombWidth < 0)
+			nCombWidth = this.TextAscent;
+	}
+
+	if (nCombWidth && nMaxComb > 0)
+	{
+		for (var nPos = 0, nCount = this.Content.length; nPos < nCount; ++nPos)
+		{
+			this.private_MeasureElement(nPos, oTextPr, oTheme, oInfoMathText);
+
+			var Item = this.Content[nPos];
+			if (para_Space === this.Content[nPos].Type || para_Text === this.Content[nPos].Type)
+			{
+				var nLeftGap  = 0;
+				var nRightGap = 0;
+
+				var nWidth = Item.Get_Width();
+
+				if (Item.Get_Width() < nCombWidth)
+				{
+					nLeftGap  = (nCombWidth - nWidth) / 2;
+					nRightGap = (nCombWidth - nWidth) / 2;
+				}
+
+				Item.ResetGapBackground();
+				if (nPos === nCount - 1 && nCount < nMaxComb)
+				{
+					if (oTextForm.CombPlaceholderSymbol)
+					{
+						Item.SetGapBackground(nMaxComb - nCount, oTextForm.CombPlaceholderSymbol, nCombWidth, g_oTextMeasurer, oTextForm.CombPlaceholderFont, oTextPr, oTheme);
+						nRightGap += (nMaxComb - nCount) * Item.RGapShift;
+					}
+					else
+					{
+						nRightGap += (nMaxComb - nCount) * nCombWidth;
+					}
+				}
+
+				Item.SetGaps(nLeftGap, nRightGap);
+			}
+		}
+	}
+	else if (this.RecalcInfo.Measure)
 	{
 		for (var nPos = 0, nCount = this.Content.length; nPos < nCount; ++nPos)
 		{
@@ -5716,7 +5850,7 @@ ParaRun.prototype.Draw_Elements = function(PDSE)
             {
                 if (para_Drawing != ItemType || Item.Is_Inline())
                 {
-                    Item.Draw(X, Y - this.YOffset, pGraphics, PDSE);
+                    Item.Draw(X, Y - this.YOffset, pGraphics, PDSE, CurTextPr);
                     X += Item.Get_WidthVisible();
                 }
 
@@ -5753,7 +5887,7 @@ ParaRun.prototype.Draw_Elements = function(PDSE)
             }
             case para_Space:
             {
-                Item.Draw( X, Y - this.YOffset, pGraphics );
+                Item.Draw( X, Y - this.YOffset, pGraphics, PDSE, CurTextPr );
 
                 X += Item.Get_WidthVisible();
 
@@ -6485,12 +6619,18 @@ ParaRun.prototype.Get_ParaContentPosByXY = function(SearchPos, Depth, _CurLine, 
 				}
 			}
 
+			if (Item.RGap)
+				TempDx -= Item.RGap;
+
 			SearchPos.CurX += TempDx;
 
 			// Заглушка для знака параграфа и конца строки
 			Diff = SearchPos.X - SearchPos.CurX;
 			if ((Math.abs(Diff) < SearchPos.DiffX + 0.001 && (SearchPos.CenterMode || SearchPos.X > SearchPos.CurX)) && InMathText == false)
 			{
+				if (Item.RGap)
+					Diff = Math.min(Diff, Diff - Item.RGap);
+
 				if (para_End === ItemType)
 				{
 					SearchPos.End = true;
@@ -6510,6 +6650,10 @@ ParaRun.prototype.Get_ParaContentPosByXY = function(SearchPos, Depth, _CurLine, 
 					Result = true;
 				}
 			}
+
+			if (Item.RGap)
+				SearchPos.CurX += Item.RGap;
+
 		}
 	}
 
@@ -10966,6 +11110,8 @@ ParaRun.prototype.GetLineByPosition = function(nPos)
  */
 ParaRun.prototype.PreDelete = function()
 {
+	this.SetParent(null);
+
 	for (var nIndex = 0, nCount = this.Content.length; nIndex < nCount; ++nIndex)
 	{
 		if (this.Content[nIndex].PreDelete)
@@ -11777,6 +11923,65 @@ ParaRun.prototype.GetFirstRunElementPos = function(nType, oStartPos, oEndPos, nD
 		}
 	}
 	return false;
+};
+ParaRun.prototype.GetTextForm = function()
+{
+	var oTextFormPr = this.Parent instanceof CInlineLevelSdt && this.Parent.IsTextForm() ? this.Parent.GetTextFormPr() : null;
+	if (!oTextFormPr)
+		return null;
+
+	return oTextFormPr;
+};
+ParaRun.prototype.CheckParentFormKey = function(oPr)
+{
+	var sKey = this.Parent instanceof CInlineLevelSdt && this.Parent.IsForm() ? this.Parent.GetFormKey() : null;
+	var oLogicDocument = this.GetLogicDocument();
+	if (sKey && oLogicDocument)
+		oLogicDocument.OnChangeForm(sKey, this.Parent, oPr);
+};
+ParaRun.prototype.GetParentForm = function()
+{
+	return (this.Parent instanceof CInlineLevelSdt && this.Parent.IsForm() ? this.Parent : null);
+};
+ParaRun.prototype.CopyTextFormContent = function(oRun)
+{
+	var nRunLen = oRun.Content.length;
+
+	var oTextForm = this.GetTextForm();
+	if (oTextForm && undefined !== oTextForm.MaxCharacters && oTextForm.MaxCharacters > 0)
+		nRunLen = Math.min(oTextForm.MaxCharacters, nRunLen);
+
+	// Упрощенный вариант сравнения двух контентов. Сравниваем просто начало и конец
+
+	var nStart = 0;
+	var nEnd   = 0;
+
+	var nCount = Math.min(this.Content.length, oRun.Content.length);
+
+	for (var nPos = 0; nPos < nCount; ++nPos)
+	{
+		if (this.Content[nPos].IsEqual(oRun.Content[nPos]))
+			nStart = nPos + 1;
+		else
+			break;
+	}
+
+	nCount -= nStart;
+	for (var nPos = 0; nPos < nCount; ++nPos)
+	{
+		if (this.Content[this.Content.length - 1 - nPos].IsEqual(oRun.Content[nRunLen - 1 - nPos]))
+			nEnd = nPos + 1;
+		else
+			break;
+	}
+
+	if (this.Content.length - nStart - nEnd > 0)
+		this.RemoveFromContent(nStart, this.Content.length - nStart - nEnd);
+
+	for (var nPos = nStart, nEndPos = nRunLen - nEnd; nPos < nEndPos; ++nPos)
+	{
+		this.AddToContent(nPos, oRun.Content[nPos].Copy());
+	}
 };
 
 function CParaRunStartState(Run)

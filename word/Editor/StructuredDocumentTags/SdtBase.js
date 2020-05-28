@@ -100,6 +100,8 @@ CSdtBase.prototype.SetPlaceholderText = function(sText)
 
 	if (this.IsPlaceHolder())
 		this.private_FillPlaceholderContent();
+
+	return oDocPart;
 };
 /**
  * Выставляем параметр, что данный контрол должен быть простым текстовым
@@ -178,4 +180,46 @@ CSdtBase.prototype.SetContentControlTemporary = function(isTemporary)
 CSdtBase.prototype.IsContentControlTemporary = function()
 {
 	return this.Pr.Temporary;
+};
+/**
+ *
+ * @param {CSdtFormPr} oFormPr
+ */
+CSdtBase.prototype.SetFormPr = function(oFormPr)
+{
+	if ((!this.Pr.FormPr && oFormPr) || this.Pr.FormPr.IsEqual(oFormPr))
+	{
+		History.Add(new CChangesSdtPrFormPr(this, this.Pr.FormPr, oFormPr));
+		this.Pr.FormPr = oFormPr;
+
+		var oLogicDocument = this.GetLogicDocument();
+		if (oLogicDocument)
+			oLogicDocument.RegisterForm(this);
+	}
+}
+/**
+ * @returns {boolean}
+ */
+CSdtBase.prototype.IsForm = function()
+{
+	return (undefined !== this.Pr.FormPr);
+};
+/**
+ * Получаем ключ для специальной формы, если он задан
+ * @returns {?string}
+ */
+CSdtBase.prototype.GetFormKey = function()
+{
+	if (!this.IsForm())
+		return undefined;
+
+	return (this.Pr.FormPr.Key);
+};
+/**
+ * Проверяем, является ли заданный контрол радио-кнопкой
+ * @returns {boolean}
+ */
+CSdtBase.prototype.IsRadioButton = function()
+{
+	return !!(this.IsCheckBox() && this.Pr.CheckBox && this.Pr.CheckBox.GroupKey);
 };

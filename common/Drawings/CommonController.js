@@ -3735,9 +3735,19 @@ DrawingObjectsController.prototype =
 
         if(typeof props.ImageUrl === "string" && props.ImageUrl.length > 0)
         {
+            var oImg;
             for(i = 0; i < objects_by_type.images.length; ++i)
             {
-                objects_by_type.images[i].setBlipFill(CreateBlipFillRasterImageId(props.ImageUrl));
+                oImg = objects_by_type.images[i];
+                oImg.setBlipFill(CreateBlipFillRasterImageId(props.ImageUrl));
+                if(oImg.parent instanceof ParaDrawing)
+                {
+                    var oRun = oImg.parent.GetRun();
+                    if(oRun)
+                    {
+                        oRun.CheckParentFormKey(props.ImageUrl)
+                    }
+                }
             }
         }
         if(props.resetCrop)
@@ -8136,7 +8146,7 @@ DrawingObjectsController.prototype =
         var ret_array = [];
         for(var _index = 0; _index < _arr_selected_objects.length; ++_index)
         {
-            if(_arr_selected_objects[_index].getObjectType() === AscDFH.historyitem_type_GroupShape
+            if(_arr_selected_objects[_index].getObjectType() === AscDFH.historyitem_type_GroupShape && _arr_selected_objects[_index].canUnGroup()
                 && (!_arr_selected_objects[_index].parent || _arr_selected_objects[_index].parent && (!_arr_selected_objects[_index].parent.Is_Inline || !_arr_selected_objects[_index].parent.Is_Inline())))
             {
                 if(!(bRetArray === true))

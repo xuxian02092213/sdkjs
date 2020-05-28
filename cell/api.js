@@ -1120,13 +1120,20 @@ var editor;
   };
 
   // GoTo
-  spreadsheet_api.prototype.goTo = function(action) {
-    var comment = this.wbModel.getComment(action && action['data']);
+  spreadsheet_api.prototype._goToComment = function(data) {
+    var comment = this.wbModel.getComment(data);
     if (comment) {
       this.asc_showWorksheet(this.wbModel.getWorksheetById(comment.wsId).getIndex());
       this.asc_selectComment(comment.nId);
       this.asc_showComment(comment.nId);
     }
+  };
+  spreadsheet_api.prototype._goToBookmark = function(data) {
+    // Disable edit because if there is no name, we will try to create it
+    var tmp = this.restrictions;
+    this.restrictions = Asc.c_oAscRestrictionType.None;
+    this.asc_findCell(data);
+    this.restrictions = tmp;
   };
 
   /////////////////////////////////////////////////////////////////////////

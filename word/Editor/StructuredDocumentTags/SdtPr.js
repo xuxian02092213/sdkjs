@@ -72,6 +72,7 @@ function CSdtPr()
 	this.DropDown = undefined;
 	this.Date     = undefined;
 	this.Equation = false;
+	this.TextForm = undefined;
 
 	this.TextPr = new CTextPr();
 
@@ -80,6 +81,8 @@ function CSdtPr()
 
 	this.Text      = false;
 	this.Temporary = false;
+
+	this.FormPr = undefined;
 }
 
 CSdtPr.prototype.Copy = function()
@@ -108,6 +111,8 @@ CSdtPr.prototype.Copy = function()
 	if (this.Date)
 		oPr.Date = this.Date.Copy();
 
+	if (this.TextForm)
+		oPr.TextForm = this.TextForm.Copy();
 
 	oPr.TextPr = this.TextPr.Copy();
 
@@ -248,6 +253,12 @@ CSdtPr.prototype.Write_ToBinary = function(Writer)
 		Flags |= 524288;
 	}
 
+	if (undefined !== this.TextForm)
+	{
+		this.TextForm.WriteToBinary(Writer);
+		Flags |= 1048576;
+	}
+
 	var EndPos = Writer.GetCurPosition();
 	Writer.Seek(StartPos);
 	Writer.WriteLong(Flags);
@@ -334,6 +345,12 @@ CSdtPr.prototype.Read_FromBinary = function(Reader)
 
 	if (Flags & 524288)
 		this.Temporary = Reader.GetBool();
+
+	if (Flags & 1048576)
+	{
+		this.TextForm = new CSdtTextFormPr();
+		this.TextForm.ReadFromBinary(oReader);
+	}
 };
 CSdtPr.prototype.IsBuiltInDocPart = function()
 {
@@ -651,6 +668,7 @@ function CSdtCheckBoxPr()
 	this.UncheckedSymbol = Asc.c_oAscSdtCheckBoxDefaults.UncheckedSymbol;
 	this.CheckedFont     = Asc.c_oAscSdtCheckBoxDefaults.CheckedFont;
 	this.UncheckedFont   = Asc.c_oAscSdtCheckBoxDefaults.UncheckedFont;
+	this.GroupKey        = undefined;
 }
 CSdtCheckBoxPr.prototype.Copy = function()
 {
@@ -661,6 +679,7 @@ CSdtCheckBoxPr.prototype.Copy = function()
 	oCopy.CheckedFont     = this.CheckedFont;
 	oCopy.UncheckedSymbol = this.UncheckedSymbol;
 	oCopy.UncheckedFont   = this.UncheckedFont;
+	oCopy.GroupKey        = this.GroupKey;
 
 	return oCopy;
 };
@@ -671,7 +690,8 @@ CSdtCheckBoxPr.prototype.IsEqual = function(oOther)
 		|| oOther.CheckedSymbol !== this.CheckedSymbol
 		|| oOther.CheckedFont !== this.CheckedFont
 		|| oOther.UncheckedSymbol !== this.UncheckedSymbol
-		|| oOther.UncheckedFont !== this.UncheckedFont)
+		|| oOther.UncheckedFont !== this.UncheckedFont
+		|| oOther.GroupKey !== this.GroupKey)
 		return false;
 
 	return true;
@@ -683,6 +703,16 @@ CSdtCheckBoxPr.prototype.WriteToBinary = function(oWriter)
 	oWriter.WriteLong(this.CheckedSymbol);
 	oWriter.WriteString2(this.UncheckedFont);
 	oWriter.WriteLong(this.UncheckedSymbol);
+
+	if (undefined !== this.GroupKey)
+	{
+		oWriter.WriteBool(true);
+		oWriter.WriteString2(this.GroupKey);
+	}
+	else
+	{
+		oWriter.WriteBool(false);
+	}
 };
 CSdtCheckBoxPr.prototype.ReadFromBinary = function(oReader)
 {
@@ -691,6 +721,9 @@ CSdtCheckBoxPr.prototype.ReadFromBinary = function(oReader)
 	this.CheckedSymbol   = oReader.GetLong();
 	this.UncheckedFont   = oReader.GetString2();
 	this.UncheckedSymbol = oReader.GetLong();
+
+	if (oReader.GetBool())
+		this.GroupKey = oReader.GetString2();
 };
 CSdtCheckBoxPr.prototype.Write_ToBinary = function(oWriter)
 {
@@ -731,6 +764,14 @@ CSdtCheckBoxPr.prototype.GetUncheckedFont = function()
 CSdtCheckBoxPr.prototype.SetUncheckedFont = function(sFont)
 {
 	this.UncheckedFont = sFont;
+};
+CSdtCheckBoxPr.prototype.GetGroupKey = function()
+{
+	return this.GroupKey;
+};
+CSdtCheckBoxPr.prototype.SetGroupKey = function(sKey)
+{
+	this.GroupKey = sKey;
 };
 
 /**
@@ -1002,6 +1043,192 @@ CSdtDatePickerPr.prototype.GetFormatsExamples = function()
 	];
 };
 
+/**
+ * Клосс с настройками для текстовой формы
+ * @constructor
+ */
+function CSdtTextFormPr(nMax, isComb, nWidth, nSymbol, sFont)
+{
+	this.MaxCharacters         = undefined !== nMax ? nMax : -1;
+	this.Comb                  = undefined !== isComb ? isComb : false;
+	this.Width                 = nWidth;
+	this.CombPlaceholderSymbol = nSymbol;
+	this.CombPlaceholderFont   = sFont;
+}
+CSdtTextFormPr.prototype.Copy = function()
+{
+	var oText = new CSdtTextFormPr();
+
+	oText.MaxCharacters         = this.MaxCharacters;
+	oText.Comb                  = this.Comb;
+	oText.Width                 = this.Width;
+	oText.CombPlaceholderSymbol = this.CombPlaceholderSymbol;
+	oText.CombPlaceholderFont   = this.CombPlaceholderFont;
+
+	return oText;
+};
+CSdtTextFormPr.prototype.WriteToBinary = function(oWriter)
+{
+	oWriter.WriteLong(this.MaxCharacters);
+	oWriter.WriteBool(this.Comb);
+	oWriter.WriteLong(this.Width);
+
+	if (undefined !== this.CombPlaceholderSymbol)
+	{
+		oWriter.WriteBool(true);
+		oWriter.WriteLong(this.CombPlaceholderSymbol);
+	}
+	else
+	{
+		oWriter.WriteBool(false);
+	}
+
+	if (undefined !== this.CombPlaceholderFont)
+	{
+		oWriter.WriteBool(true);
+		oWriter.WriteString2(this.CombPlaceholderFont);
+	}
+	else
+	{
+		oWriter.WriteBool(false);
+	}
+};
+CSdtTextFormPr.prototype.ReadFromBinary = function(oReader)
+{
+	this.MaxCharacters = oReader.GetLong();
+	this.Comb          = oReader.GetBool();
+	this.Width         = oReader.GetLong();
+
+	if (oReader.GetBool())
+		this.CombPlaceholderSymbol = oReader.GetLong();
+
+	if (oReader.GetBool())
+		this.CombPlaceholderFont = oReader.GetString2();
+};
+CSdtTextFormPr.prototype.Write_ToBinary = function(oWriter)
+{
+	this.WriteToBinary(oWriter);
+};
+CSdtTextFormPr.prototype.Read_FromBinary = function(oReader)
+{
+	this.ReadFromBinary(oReader);
+};
+
+function CSdtFormPr(sKey, sLabel, sHelpText, isRequired)
+{
+	this.Key      = sKey;
+	this.Label    = sLabel;
+	this.HelpText = sHelpText;
+	this.Required = isRequired;
+}
+CSdtFormPr.prototype.Copy = function()
+{
+	var oFormPr = new CSdtFormPr();
+
+	oFormPr.Key      = this.Key;
+	oFormPr.Label    = this.Label;
+	oFormPr.HelpText = this.HelpText;
+	oFormPr.Required = this.Required;
+
+	return oFormPr;
+};
+CSdtFormPr.prototype.IsEqual = function(oOther)
+{
+	return (this.Key === oOther.Key && this.Label === oOther.Label && this.HelpText === oOther.HelpText && this.Required === oOther.Required);
+};
+CSdtFormPr.prototype.WriteToBinary = function(oWriter)
+{
+	var nStartPos = oWriter.GetCurPosition();
+	oWriter.Skip(4);
+	var nFlags = 0;
+
+	if (undefined !== this.Key)
+	{
+		oWriter.WriteString2(this.Key);
+		nFlags |= 1;
+	}
+
+	if (undefined !== this.Label)
+	{
+		oWriter.WriteString2(this.Label);
+		nFlags |= 2;
+	}
+
+	if (undefined !== this.HelpText)
+	{
+		oWriter.WriteString2(this.HelpText);
+		nFlags |= 4;
+	}
+
+	if (undefined !== this.Required)
+	{
+		Writer.WriteBool(this.Required);
+		nFlags |= 8;
+	}
+
+	var nEndPos = oWriter.GetCurPosition();
+	oWriter.Seek(nStartPos);
+	oWriter.WriteLong(nFlags);
+	oWriter.Seek(nEndPos);
+};
+CSdtFormPr.prototype.ReadFromBinary = function(oReader)
+{
+	var nFlags = oReader.GetLong();
+
+	if (nFlags & 1)
+		this.Key = oReader.GetString2();
+
+	if (nFlags & 2)
+		this.Label = oReader.GetString2();
+
+	if (nFlags & 4)
+		this.HelpText = oReader.GetString2();
+
+	if (nFlags & 8)
+		this.Required = Reader.GetBool();
+};
+CSdtFormPr.prototype.Write_ToBinary = function(oWriter)
+{
+	this.WriteToBinary(oWriter);
+};
+CSdtFormPr.prototype.Read_FromBinary = function(oReader)
+{
+	this.ReadFromBinary(oReader);
+};
+CSdtFormPr.prototype.GetKey = function()
+{
+	return this.Key;
+};
+CSdtFormPr.prototype.SetKey = function(sKey)
+{
+	this.Key = sKey;
+};
+CSdtFormPr.prototype.GetLabel = function()
+{
+	return this.Label;
+};
+CSdtFormPr.prototype.SetLabel = function(sLabel)
+{
+	this.Label = sLabel;
+};
+CSdtFormPr.prototype.GetHelpText = function()
+{
+	return this.HelpText;
+};
+CSdtFormPr.prototype.SetHelpText = function(sText)
+{
+	this.HelpText = sText;
+};
+CSdtFormPr.prototype.GetRequired = function()
+{
+	return this.Required;
+};
+CSdtFormPr.prototype.SetRequired = function(isRequired)
+{
+	this.Required = isRequired;
+};
+
+
 //--------------------------------------------------------export--------------------------------------------------------
 window['AscCommonWord']        = window['AscCommonWord'] || {};
 window['AscCommonWord'].CSdtPr = CSdtPr;
@@ -1048,6 +1275,8 @@ CSdtCheckBoxPr.prototype['get_UncheckedSymbol'] = CSdtCheckBoxPr.prototype.GetUn
 CSdtCheckBoxPr.prototype['put_UncheckedSymbol'] = CSdtCheckBoxPr.prototype.SetUncheckedSymbol;
 CSdtCheckBoxPr.prototype['get_UncheckedFont']   = CSdtCheckBoxPr.prototype.GetUncheckedFont;
 CSdtCheckBoxPr.prototype['put_UncheckedFont']   = CSdtCheckBoxPr.prototype.SetUncheckedFont;
+CSdtCheckBoxPr.prototype['get_GroupKey']        = CSdtCheckBoxPr.prototype.GetGroupKey;
+CSdtCheckBoxPr.prototype['put_GroupKey']        = CSdtCheckBoxPr.prototype.SetGroupKey;
 
 window['AscCommon'].CSdtComboBoxPr    = CSdtComboBoxPr;
 window['AscCommon']['CSdtComboBoxPr'] = CSdtComboBoxPr;
@@ -1072,3 +1301,15 @@ CSdtDatePickerPr.prototype['get_Calendar']        = CSdtDatePickerPr.prototype.G
 CSdtDatePickerPr.prototype['put_Calendar']        = CSdtDatePickerPr.prototype.SetCalendar;
 CSdtDatePickerPr.prototype['get_FormatsExamples'] = CSdtDatePickerPr.prototype.GetFormatsExamples;
 CSdtDatePickerPr.prototype['get_String']          = CSdtDatePickerPr.prototype.ToString;
+
+window['AscCommon'].CSdtFormPr    = CSdtFormPr;
+window['AscCommon']['CSdtFormPr'] = CSdtFormPr;
+
+CSdtFormPr.prototype['get_Key']      = CSdtFormPr.prototype.GetKey;
+CSdtFormPr.prototype['put_Key']      = CSdtFormPr.prototype.SetKey;
+CSdtFormPr.prototype['get_Label']    = CSdtFormPr.prototype.GetLabel;
+CSdtFormPr.prototype['put_Label']    = CSdtFormPr.prototype.SetLabel;
+CSdtFormPr.prototype['get_HelpText'] = CSdtFormPr.prototype.GetHelpText;
+CSdtFormPr.prototype['put_HelpText'] = CSdtFormPr.prototype.SetHelpText;
+CSdtFormPr.prototype['get_Required'] = CSdtFormPr.prototype.GetRequired;
+CSdtFormPr.prototype['put_Required'] = CSdtFormPr.prototype.SetRequired;
