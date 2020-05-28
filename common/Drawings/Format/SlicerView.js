@@ -268,6 +268,12 @@
             return null;
         }
         return oValue.val;
+    }; 
+    CSlicerData.prototype.getHiddenByOther = function(oValue) {
+        if(!oValue) {
+            return false;
+        }
+        return oValue.hiddenByOtherColumns === true;
     };
     CSlicerData.prototype.getVisible = function(oValue) {
         if(!oValue) {
@@ -279,12 +285,13 @@
         var oValue = this.getValue(nIndex);
         if(oValue) {
             var nState = 0;
-            if(this.getVal(oValue) !== null) {
+            if(this.getHiddenByOther(oValue) === false) {
                 nState |= STATE_FLAG_DATA;
             }
             if(this.getVisible(oValue) !== false) {
                 nState |=STATE_FLAG_SELECTED;
             }
+            
             return nState;
         }
         return STYLE_TYPE.WHOLE;
