@@ -4373,9 +4373,18 @@
 						return 1;
 					} else if (b.val === "") {
 						return  1;
-					} else if ((isNumericA && isNumericB) || (!isNumericA && !isNumericB)) {
+					} else if (isNumericA && isNumericB) {
 						return (isAscending || isAscending === undefined) ? (a.val - b.val) : (b.val - a.val);
-					} else if (!isNumericA) {
+					} else if (!isNumericA && !isNumericB) {
+						var _cmp = 0;
+						if (a.val > b.val){
+							_cmp = 1;
+						}
+						if (a.val < b.val) {
+							_cmp = -1;
+						}
+						return (isAscending || isAscending === undefined) ? _cmp : -_cmp;
+					} else if (!isNumericA && isNumericB) {
 						return (isAscending || isAscending === undefined) ? 1 : -1;
 					} else {
 						return (isAscending || isAscending === undefined) ? -1 : 1;
