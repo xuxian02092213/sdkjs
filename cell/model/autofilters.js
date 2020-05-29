@@ -4226,17 +4226,18 @@
 
 						var _hiddenByOtherFilter = autoFilter.hiddenByAnotherFilter(worksheet, colId, i, ref.c1);
 						textIndexMapHideValues[textLowerCase] =  _hideValues.length;
-						addValueToMenuObj(val, text, !_hiddenByOtherFilter, _hideValues.length, _hideValues);
+						addValueToMenuObj(val, text, _hiddenByOtherFilter, _hideValues.length, _hideValues, indicateItemsWithNoData);
 						continue;
 					}
 
 					//apply filter by current button
+					var visible;
 					if (null !== currentFilterColumn) {
 						if (!autoFilter.hiddenByAnotherFilter(worksheet, colId, i, ref.c1))//filter another button
 						{
 							//filter current button
 							var checkValue = isDateTimeFormat ? val : text;
-							var visible = false;
+							visible = false;
 							if (!isCustomFilter && !currentFilterColumn.isHideValue(checkValue, isDateTimeFormat)) {
 								hideValue(false, i);
 								visible = true;
@@ -4258,12 +4259,12 @@
 								continue;
 							}
 
-							/*var hiddenByOtherColumns = false;
+							visible = false;
 							if (!currentFilterColumn.isHideValue(isDateTimeFormat ? val : text, isDateTimeFormat)) {
-								hiddenByOtherColumns = true;
-							}*/
+								visible = true;
+							}
 							textIndexMapHideValues[textLowerCase] =  _hideValues.length;
-							addValueToMenuObj(val, text, false, _hideValues.length, _hideValues, indicateItemsWithNoData);
+							addValueToMenuObj(val, text, visible, _hideValues.length, _hideValues, indicateItemsWithNoData);
 						}
 					} else {
 						hideValue(false, i);
