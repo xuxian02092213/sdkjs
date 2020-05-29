@@ -8060,9 +8060,11 @@
 				new AscCommonExcel.UndoRedoData_FromTo(slicerObj.obj, null));
 			this.workbook.onSlicerDelete(name);
 			res = true;
-			var cache = slicerObj.obj.getCacheDefinition();
-			if (cache && null === this.getSlicersByCacheName(cache.name)) {
-				this.workbook.dependencyFormulas.delTableName(cache.name);
+			if (!this.workbook.bUndoChanges && !this.workbook.bRedoChanges) {
+				var cache = slicerObj.obj.getCacheDefinition();
+				if (cache && null === this.getSlicersByCacheName(cache.name)) {
+					this.workbook.dependencyFormulas.delTableName(cache.name);
+				}
 			}
 		}
 

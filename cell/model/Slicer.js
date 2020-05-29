@@ -1008,7 +1008,7 @@
 			var _res = false;
 			if (wb.getSlicerCacheByCacheName(_name)) {
 				_res = true;
-			} else if (wb.getDefinesNames(name)) {
+			} else if (wb.getDefinesNames(_name)) {
 				_res = true;
 			}
 
@@ -1016,13 +1016,14 @@
 		};
 
 		//TODO перевод - проверить на другом языке?
-		name = "Slicer_" + name;
 		var index = 1;
-		while (checkAlreadyAdd(name)) {
-			name += index;
+		name = "Slicer_" + name;
+		var newName = name;
+		while (checkAlreadyAdd(newName)) {
+			newName = name + index;
 			index++;
 		}
-		return name;
+		return newName;
 	};
 
 	CT_slicerCacheDefinition.prototype.toStream = function (s, tableIds, historySerialize) {
