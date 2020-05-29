@@ -4223,8 +4223,10 @@
 						if (textIndexMapHideValues.hasOwnProperty(textLowerCase)) {
 							continue;
 						}
+
+						var _hiddenByOtherFilter = autoFilter.hiddenByAnotherFilter(worksheet, colId, i, ref.c1);
 						textIndexMapHideValues[textLowerCase] =  _hideValues.length;
-						addValueToMenuObj(val, text, false, _hideValues.length, _hideValues);
+						addValueToMenuObj(val, text, !_hiddenByOtherFilter, _hideValues.length, _hideValues);
 						continue;
 					}
 
