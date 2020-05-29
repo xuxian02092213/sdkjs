@@ -724,7 +724,12 @@
 			this.setCrossFilter(crossFilter);
 		}
 
-		this.ws.workbook.onSlicerUpdate(this.name);
+		var slicers = this.ws.getSlicersByCacheName(this.cacheDefinition.name);
+		if (slicers) {
+			for (var i = 0; i < slicers.length; i++) {
+				this.ws.workbook.onSlicerUpdate(slicers[i].name);
+			}
+		}
 	};
 
 	CT_slicer.prototype.checkProperty = function (propOld, propNew, type) {
