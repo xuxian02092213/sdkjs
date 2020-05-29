@@ -8944,6 +8944,8 @@ DrawingObjectsController.prototype =
                         {
                             w: drawing.extX,
                             h: drawing.extY,
+                            x: drawing.x,
+                            y: drawing.y,
                             locked: locked,
                             lockAspect: lockAspect,
                             title: drawing.getTitle(),
@@ -8972,6 +8974,11 @@ DrawingObjectsController.prototype =
                             slicer_props.w = null;
                         if(slicer_props.h != null && slicer_props.h !== new_slicer_props.h)
                             slicer_props.h = null;
+                        
+                        if(slicer_props.x != null && slicer_props.x !== new_slicer_props.x)
+                            slicer_props.x = null;
+                        if(slicer_props.y != null && slicer_props.y !== new_slicer_props.y)
+                            slicer_props.y = null;
 
                         if(slicer_props.locked || new_slicer_props.locked)
                             slicer_props.locked = true;
@@ -9447,6 +9454,7 @@ DrawingObjectsController.prototype =
             slicer_props.Locked = props.slicerProps.locked === true;
             slicer_props.lockAspect = props.slicerProps.lockAspect;
             slicer_props.anchor = props.slicerProps.anchor;
+            slicer_props.Position = new Asc.CPosition({X: props.slicerProps.x, Y: props.slicerProps.y});
             if(!bParaLocked)
             {
                 bParaLocked = slicer_props.Locked;
