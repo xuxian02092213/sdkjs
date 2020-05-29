@@ -3189,6 +3189,15 @@
 		}
 		return null;
 	};
+	Workbook.prototype.getSlicerCacheByCacheName = function (name) {
+		for (var i = 0, l = this.aWorksheets.length; i < l; ++i) {
+			var cache = this.aWorksheets[i].getSlicerCacheByCacheName(name);
+			if (cache) {
+				return cache;
+			}
+		}
+		return null;
+	};
 	Workbook.prototype.getSlicerStyle = function (name) {
 		var slicer = this.getSlicerByName(name);
 		if (slicer) {

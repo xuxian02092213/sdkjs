@@ -969,7 +969,7 @@
 			case insertSlicerType.table: {
 				this.sourceName = name;
 				//TODO для генерации имени нужна отдельная функция
-				this.name = "Slicer_" + name;
+				this.name = this.generateSlicerCacheName(name);
 				this.tableSlicerCache = new CT_tableSlicerCache();
 				this.tableSlicerCache.tableId = obj_name;
 				this.tableSlicerCache.column = name;
@@ -1000,6 +1000,29 @@
 			}
 		}
 		this._type = type;
+	};
+
+	CT_slicerCacheDefinition.prototype.generateSlicerCacheName = function (name) {
+		var wb = this.ws.workbook;
+		var checkAlreadyAdd = function (_name) {
+			var _res = false;
+			if (wb.getSlicerCacheByCacheName(_name)) {
+				_res = true;
+			} else if (wb.getDefinesNames(name)) {
+				_res = true;
+			}
+
+			return _res;
+		};
+
+		//TODO перевод - проверить на другом языке?
+		name = "Slicer_" + name;
+		var index = 1;
+		while (checkAlreadyAdd(name)) {
+			name += index;
+			index++;
+		}
+		return name;
 	};
 
 	CT_slicerCacheDefinition.prototype.toStream = function (s, tableIds, historySerialize) {
