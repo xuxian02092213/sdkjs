@@ -3306,7 +3306,7 @@ function (window, undefined) {
 			return;
 		}
 
-		var slicer, slicerCache;
+		var slicer, slicerCache, updateByCacheName = null;
 		switch (Type) {
 			case AscCH.historyitem_Slicer_SetCaption: {
 				slicer = oModel.getSlicerByName(Data.name);
@@ -3337,9 +3337,10 @@ function (window, undefined) {
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetCacheName: {
-				slicer = oModel.getSlicerByName(Data.name);
+				slicer = oModel.getSlicerByName(bUndo ? Data.to : Data.from);
 				if (slicer) {
 					slicer.setCacheName(bUndo ? Data.from : Data.to);
+					updateByCacheName = false;
 				}
 				break;
 			}
@@ -3347,6 +3348,8 @@ function (window, undefined) {
 				slicer = oModel.getSlicerByName(bUndo ? Data.to : Data.from);
 				if (slicer) {
 					slicer.setName(bUndo ? Data.from : Data.to);
+					this.wb.onSlicerUpdate(bUndo ? Data.from : Data.to);
+					updateByCacheName = false;
 				}
 				break;
 			}
@@ -3400,35 +3403,49 @@ function (window, undefined) {
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetCacheSortOrder: {
-				slicerCache = oModel.getSlicerCacheByName(bUndo ? Data.to : Data.from);
-				if (slicer) {
+				slicerCache = oModel.getSlicerCacheByName(Data.name);
+				if (slicerCache) {
 					slicerCache.setSortOrder(bUndo ? Data.from : Data.to);
+					updateByCacheName = Data.name;
 				}
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetCacheCustomListSort: {
-				slicerCache = oModel.getSlicerCacheByName(bUndo ? Data.to : Data.from);
-				if (slicer) {
+				slicerCache = oModel.getSlicerCacheByName(Data.name);
+				if (slicerCache) {
 					slicerCache.setCustomListSort(bUndo ? Data.from : Data.to);
+					updateByCacheName = Data.name;
 				}
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetCacheCrossFilter: {
-				slicerCache = oModel.getSlicerCacheByName(bUndo ? Data.to : Data.from);
-				if (slicer) {
+				slicerCache = oModel.getSlicerCacheByName(Data.name);
+				if (slicerCache) {
 					slicerCache.setCrossFilter(bUndo ? Data.from : Data.to);
+					updateByCacheName = Data.name;
 				}
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetCacheHideItemsWithNoData: {
 				slicerCache = oModel.getSlicerCacheByName(bUndo ? Data.to : Data.from);
-				if (slicer) {
+				if (slicerCache) {
 					slicerCache.setHideItemsWithNoData(bUndo ? Data.from : Data.to);
+					updateByCacheName = Data.name;
 				}
 				break;
 			}
 		}
-		//this.wb.onSlicerUpdate(bUndo ? Data.from.name : Data.to.name);
+
+		if (updateByCacheName === null && slicer) {
+			this.wb.onSlicerUpdate(bUndo ? Data.from.name : Data.to.name);
+		} else if (updateByCacheName) {
+			var slicers = oModel.getSlicersByCacheName(Data.name);
+			if (slicers) {
+				for (var i = 0; i < slicers.length; i++) {
+					this.wb.onSlicerUpdate(slicers[i].name);
+				}
+			}
+		}
 	};
 
 	//----------------------------------------------------------export----------------------------------------------------

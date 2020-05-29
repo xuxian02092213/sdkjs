@@ -1097,6 +1097,7 @@
 
 									//перерисовываем фильтры, находящиеся на одном уровне с данным фильтром
 									t._resetTablePartStyle(worksheet.TableParts[l].Ref);
+									t.updateSlicer(worksheet.TableParts[l].DisplayName);
 									break;
 								}
 							}
@@ -1107,6 +1108,7 @@
 							if (cloneData.TableStyleInfo) {
 								worksheet.addTablePart.push(cloneData);
 								t._setColorStyleTable(cloneData.Ref, cloneData, null, true);
+								t.updateSlicer(cloneData.DisplayName);
 							} else {
 								worksheet.AutoFilter = cloneData;
 							}
@@ -4373,7 +4375,7 @@
 					if (a.val === "") {
 						return 1;
 					} else if (b.val === "") {
-						return  1;
+						return  -1;
 					} else if (isNumericA && isNumericB) {
 						return (isAscending || isAscending === undefined) ? (a.val - b.val) : (b.val - a.val);
 					} else if (!isNumericA && !isNumericB) {

@@ -3214,6 +3214,16 @@
 		}
 		return null;
 	};
+	Workbook.prototype.getSlicersByCacheName = function (name) {
+		var res = [];
+		for (var i = 0, l = this.aWorksheets.length; i < l; ++i) {
+			var slicers = this.aWorksheets[i].getSlicersByCacheName(name);
+			if (slicers) {
+				res = res.concat(slicers);
+			}
+		}
+		return res;
+	};
 	Workbook.prototype.getDrawingDocument = function() {
 		return this.DrawingDocument;
 	};
