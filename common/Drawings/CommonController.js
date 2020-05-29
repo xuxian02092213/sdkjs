@@ -4049,6 +4049,26 @@ DrawingObjectsController.prototype =
                     }
                     objects_by_type.charts[i].checkDrawingBaseCoords();
                 }
+                var aSlicers = objects_by_type.slicers;
+                for(i = 0; i < aSlicers.length; ++i)
+                {
+                    var oSlicer = aSlicers[i];
+                    CheckSpPrXfrm(oSlicer);
+                    if(AscFormat.isRealNumber(props.Position.X))
+                    {
+                        oSlicer.spPr.xfrm.setOffX(props.Position.X);
+                    }
+                    if(AscFormat.isRealNumber(props.Position.Y))
+                    {
+                        oSlicer.spPr.xfrm.setOffY(props.Position.Y);
+                    }
+                    
+                    if(oSlicer.group)
+                    {
+                        checkObjectInArray(aGroups, oSlicer.group.getMainGroup());
+                    }
+                    oSlicer.checkDrawingBaseCoords();
+                }
             }
             if(editorId === AscCommon.c_oEditorId.Presentation || editorId === AscCommon.c_oEditorId.Spreadsheet){
                 bCheckConnectors = true;
