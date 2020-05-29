@@ -1245,7 +1245,7 @@
 		if (obj && oldVal !== val) {
 			obj.setSortOrder(val);
 			History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCacheSortOrder,
-				null, null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val));
+				this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val));
 		}
 	};
 
@@ -1259,7 +1259,7 @@
 		if (obj && oldVal !== val) {
 			obj.setCustomListSort(val);
 			History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCacheCustomListSort,
-				null, null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val));
+				this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val));
 		}
 	};
 
@@ -1273,7 +1273,7 @@
 		if (obj && oldVal !== val) {
 			obj.setCrossFilter(val);
 			History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCacheCrossFilter,
-				null, null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val));
+				this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val));
 		}
 	};
 
@@ -1284,7 +1284,7 @@
 		if (oldVal !== newVal) {
 			this.slicerCacheHideItemsWithNoData = val ? [] : null;
 			History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCacheHideItemsWithNoData,
-				null, null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val));
+				this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, val));
 		}
 	};
 
@@ -2115,7 +2115,7 @@
 		var oldVal = this.column;
 		this.column = val;
 		History.Add(AscCommonExcel.g_oUndoRedoSlicer, AscCH.historyitem_Slicer_SetCacheSourceName,
-			null, null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, this.column));
+			this.ws.getId(), null, new AscCommonExcel.UndoRedoData_Slicer(this.name, oldVal, this.column));
 	};
 
 	function CT_slicerCacheOlapLevelName() {
