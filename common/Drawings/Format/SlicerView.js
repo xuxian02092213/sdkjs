@@ -149,6 +149,7 @@
         this.view = null;
         this.values = null;
         this.locked = false;
+        this.styleName = null;
     }
     CSlicerCache.prototype.setView = function(oView) {
         this.view = oView;
@@ -158,6 +159,9 @@
     };
     CSlicerCache.prototype.setLocked = function(bVal) {
         this.locked = bVal;
+    };
+    CSlicerCache.prototype.setStyleName = function(sVal) {
+        this.styleName = sVal;
     };
     CSlicerCache.prototype.getView = function() {
         return this.view;
@@ -171,12 +175,94 @@
     CSlicerCache.prototype.getLocked = function() {
         return this.locked;
     };
+    CSlicerCache.prototype.getStyleName = function() {
+        return this.styleName;
+    };
     CSlicerCache.prototype.clear = function() {
         this.values = null;
         this.view = null;
+        this.styleName = null;
     };
+ 
     CSlicerCache.prototype.hasData = function() {
         return this.values !== null && this.view !== null;
+    };
+    CSlicerCache.prototype.save = function() {
+        var oRet = new CSlicerCache();
+        if(this.values) {
+            oRet.values = this.values;
+        }
+        if(this.view) {
+            oRet.view = this.view;
+        }
+        if(this.styleName) {
+            oRet.styleName = this.styleName;
+        }
+        return oRet;
+    };
+    CSlicerCache.prototype.getValues = function() {
+        if(Array.isArray(this.values)) {
+            return this.values;
+        }
+        return [];
+    };
+    CSlicerCache.prototype.getValuesCount = function () {
+        return this.getValues().length;
+    };
+    CSlicerCache.prototype.getCaption = function() {
+        if(this.view && typeof this.view.caption === "string") {
+            return this.view.caption;
+        }
+        return "";
+    };
+    CSlicerCache.prototype.getShowCaption = function() {
+        if(this.view) {
+            return this.view.showCaption !== false;
+        }
+        return false;
+    };
+    CSlicerCache.prototype.getColumnsCount = function() {
+        if(this.view && AscFormat.isRealNumber(this.view.columnCount)) {
+            return this.view.columnCount;
+        }
+        return 1;
+    };
+    CSlicerCache.prototype.getButtonHeight = function() {
+        if(this.view && AscFormat.isRealNumber(this.view.rowHeight)) {
+            return this.view.rowHeight * g_dKoef_emu_to_mm;
+        }
+        return 0.26 * 25.4;
+    };
+    CSlicerCache.prototype.getValue = function (nIndex) {
+        if(nIndex > -1 && nIndex < this.getValuesCount()) {
+            return this.getValues()[nIndex];
+        }
+        return null;
+    };
+    CSlicerCache.prototype.getVal = function(oValue) {
+        if(!oValue) {
+            return null;
+        }
+        return oValue.val;
+    };
+    CSlicerCache.prototype.getHiddenByOther = function(oValue) {
+        if(!oValue) {
+            return false;
+        }
+        return oValue.hiddenByOtherColumns === true;
+    };
+    CSlicerCache.prototype.getVisible = function(oValue) {
+        if(!oValue) {
+            return null;
+        }
+        return oValue.visible !== false;
+    };
+    CSlicerCache.prototype.getString = function (nIndex) {
+        var oValue = this.getValue(nIndex);
+        if(oValue && typeof oValue.text === "string" && oValue.text.length > 0) {
+            return oValue.text;
+        }
+        return AscCommon.translateManager.getValue("(blank)");
     };
     
     function CSlicerData(slicer) {
@@ -190,6 +276,7 @@
         var oData = this.retrieveData();
         this.values = oData.getValues();
         this.view = oData.getView();
+        this.styleName = oData.getStyleName();
     };
     CSlicerData.prototype.retrieveData = function() {
         var oData = new CSlicerCache();
@@ -211,7 +298,8 @@
             return oData
         }
         oData.setValues(oValues.values);
-        oData.setView(oView);
+        oData.setView(oView.clone());
+        oData.setStyleName(this.slicer.getStyleName());
         return oData;
     };
     CSlicerData.prototype.checkData = function() {
@@ -221,65 +309,23 @@
     };
     CSlicerData.prototype.getValues = function() {
         this.checkData();
-        if(Array.isArray(this.values)) {
-            return this.values;
-        }
-        return [];
-    };
-    CSlicerData.prototype.getValuesCount = function () {
-        return this.getValues().length;
+        return CSlicerCache.prototype.getValues.call(this);
     };
     CSlicerData.prototype.getCaption = function() {
         this.checkData();
-        if(this.view && typeof this.view.caption === "string") {
-            return this.view.caption;
-        }
-        return "";
+        return CSlicerCache.prototype.getCaption.call(this);
     };
     CSlicerData.prototype.getShowCaption = function() {
         this.checkData();
-        if(this.view) {
-            return this.view.showCaption !== false;
-        }
-        return false;
+        return CSlicerCache.prototype.getShowCaption.call(this);
     };
     CSlicerData.prototype.getColumnsCount = function() {
         this.checkData();
-        if(this.view && AscFormat.isRealNumber(this.view.columnCount)) {
-            return this.view.columnCount;
-        }
-        return 1;
+        return CSlicerCache.prototype.getColumnsCount.call(this);
     };
     CSlicerData.prototype.getButtonHeight = function() {
         this.checkData();
-        if(this.view && AscFormat.isRealNumber(this.view.rowHeight)) {
-            return this.view.rowHeight * g_dKoef_emu_to_mm;
-        }
-        return 0.26 * 25.4;
-    };
-    CSlicerData.prototype.getValue = function (nIndex) {
-        if(nIndex > -1 && nIndex < this.getValuesCount()) {
-            return this.getValues()[nIndex];
-        }
-        return null;
-    };
-    CSlicerData.prototype.getVal = function(oValue) {
-        if(!oValue) {
-            return null;
-        }
-        return oValue.val;
-    }; 
-    CSlicerData.prototype.getHiddenByOther = function(oValue) {
-        if(!oValue) {
-            return false;
-        }
-        return oValue.hiddenByOtherColumns === true;
-    };
-    CSlicerData.prototype.getVisible = function(oValue) {
-        if(!oValue) {
-            return null;
-        }
-        return oValue.visible !== false;
+        return CSlicerCache.prototype.getButtonHeight.call(this);
     };
     CSlicerData.prototype.getButtonState = function (nIndex) {
         var oValue = this.getValue(nIndex);
@@ -306,13 +352,7 @@
         }
         return true;
     };
-    CSlicerData.prototype.getString = function (nIndex) {
-        var oValue = this.getValue(nIndex);
-        if(oValue && typeof oValue.text === "string" && oValue.text.length > 0) {
-            return oValue.text;
-        }
-        return AscCommon.translateManager.getValue("(blank)");
-    };
+
     CSlicerData.prototype.onViewUpdate = function () {
         var oWorksheet = this.slicer.getWorksheet();
         if(!oWorksheet) {
@@ -357,6 +397,46 @@
         else {
             this.slicer.removeAllButtonsTmpState();
         }
+    };
+    CSlicerData.prototype.onDataUpdate = function() {
+        var oOldCache = this.save();
+        this.clear();
+        if(this.needUpdateValues(oOldCache)) {
+            this.slicer.handleUpdateExtents();
+            this.slicer.recalculate();
+        }
+        else {
+            this.slicer.removeAllButtonsTmpState();
+        }
+        this.slicer.unsubscribeFromEvents();
+        this.slicer.onUpdate(this.slicer.bounds);
+    };
+    CSlicerData.prototype.needUpdateValues = function(oOldCache) {
+        var nCount = this.getValuesCount();
+        if(nCount !== oOldCache.getValuesCount()) {
+            return true;
+        }
+        for(var nValue = 0; nValue < nCount; ++nValue) {
+            if(this.getString(nValue) !== oOldCache.getString(nValue)) {
+                return true;
+            }
+        }
+        if(!AscFormat.fApproxEqual(this.getButtonHeight(), oOldCache.getButtonHeight())) {
+            return true;
+        }
+        if(this.getColumnsCount() !== oOldCache.getColumnsCount()) {
+            return true;
+        }
+        if(this.getShowCaption() !== oOldCache.getShowCaption()) {
+            return true;
+        }
+        if(this.getCaption() !== oOldCache.getCaption()) {
+            return true;
+        }
+        if(this.getStyleName() !== oOldCache.getStyleName()) {
+            return true;
+        }
+        return false;
     };
     
     function CSlicer() {
@@ -430,20 +510,29 @@
         }
         return this.buttonsContainer.getViewButtonState(nIndex);
     };
-    CSlicer.prototype.getDXF = function(nType) {
+    CSlicer.prototype.getStyleName = function() {
         var oWorkbook = this.getWorkbook();
         if(!oWorkbook) {
             return null;
         }
         var oSlicerStyles = oWorkbook.SlicerStyles;
-        var oTableStyles = oWorkbook.TableStyles;
         var sStyleName = oWorkbook.getSlicerStyle(this.name);
         if(!sStyleName) {
             sStyleName = oSlicerStyles.DefaultStyle;
         }
+        return sStyleName;
+    };
+    CSlicer.prototype.getDXF = function(nType) {
+        var oWorkbook = this.getWorkbook();
+        if(!oWorkbook) {
+            return null;
+        }
+        var sStyleName = this.getStyleName();
         if(!sStyleName) {
             return null;
         }
+        var oSlicerStyles = oWorkbook.SlicerStyles;
+        var oTableStyles = oWorkbook.TableStyles;
         var oStyle;
         var oDXF = null;
         if(nType === STYLE_TYPE.WHOLE || nType === STYLE_TYPE.HEADER) {
@@ -528,7 +617,7 @@
         var oFill;
         var oDXF = this.getDXF(nType);
         if(oDXF) {
-            var oFill = oDXF.getFill();
+            oFill = oDXF.getFill();
             if(oFill || nType !== STYLE_TYPE.WHOLE) {
                 return oFill;
             }
@@ -787,12 +876,7 @@
         this.onViewUpdate();
     };
     CSlicer.prototype.onDataUpdate = function() {
-        this.data.clear();
-        this.removeAllButtonsTmpState();
-        this.handleUpdateExtents();
-        this.recalculate();
-        this.onUpdate(this.bounds);
-        this.unsubscribeFromEvents();
+        this.data.onDataUpdate();
     };
     CSlicer.prototype.removeAllButtonsTmpState = function() {
         if(this.buttonsContainer) {
@@ -1728,23 +1812,17 @@
     function CButton(parent) {
         CButtonBase.call(this, parent);
         this.textBoxes = {};
-            for(var key in STYLE_TYPE) {
-                if(STYLE_TYPE.hasOwnProperty(key)) {
-                    this.createTextBody();
-                    this.textBoxes[STYLE_TYPE[key]] = this.txBody;
-                }
-            }
-            this.bodyPr = new AscFormat.CBodyPr();
-            this.bodyPr.setDefault();
-            this.bodyPr.anchor = 1;//vertical align ctr
-            this.bodyPr.lIns = LEFT_PADDING;
-            this.bodyPr.rIns = RIGHT_PADDING;
-            this.bodyPr.tIns = 0;
-            this.bodyPr.bIns = 0;
-            this.bodyPr.bIns = 0;
-            this.bodyPr.horzOverflow = AscFormat.nOTClip;
-            this.bodyPr.vertOverflow = AscFormat.nOTClip;
-        }
+        this.bodyPr = new AscFormat.CBodyPr();
+        this.bodyPr.setDefault();
+        this.bodyPr.anchor = 1;//vertical align ctr
+        this.bodyPr.lIns = LEFT_PADDING;
+        this.bodyPr.rIns = RIGHT_PADDING;
+        this.bodyPr.tIns = 0;
+        this.bodyPr.bIns = 0;
+        this.bodyPr.bIns = 0;
+        this.bodyPr.horzOverflow = AscFormat.nOTClip;
+        this.bodyPr.vertOverflow = AscFormat.nOTClip;
+    }
     CButton.prototype = Object.create(CButtonBase.prototype);
     CButton.prototype.getTxBodyType = function () {
         var nRet = null;
@@ -1763,10 +1841,34 @@
     };
     CButton.prototype.recalculateContent = function () {
         var sText = this.getString();
-        for(var key in this.textBoxes) {
-            if(this.textBoxes.hasOwnProperty(key)) {
-                this.txBody = this.textBoxes[key];
-                this.txBody.recalculateOneString(sText);
+        var oFontMap = {};
+        var oFont, oFoundFont, oMapFont;
+        for(var key in STYLE_TYPE) {
+            if(STYLE_TYPE.hasOwnProperty(key)) {
+                if(STYLE_TYPE[key] !== STYLE_TYPE.WHOLE && STYLE_TYPE[key] !== STYLE_TYPE.HEADER) {
+                    oFont = this.parent.getFont(STYLE_TYPE[key]);
+                    oFoundFont = null;
+                    if(oFont) {
+                        for(var fontKey in oFontMap) {
+                            if(oFontMap.hasOwnProperty(fontKey)) {
+                                oMapFont = oFontMap[fontKey];
+                                if(oMapFont && oMapFont.isEqual(oFont)) {
+                                    oFoundFont = oMapFont;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if(!oFoundFont) {
+                        this.createTextBody();
+                        this.textBoxes[STYLE_TYPE[key]] = this.txBody;
+                        this.txBody.recalculateOneString(sText);
+                        oFontMap[key] = oFont;
+                    }
+                    else {
+                        this.textBoxes[STYLE_TYPE[key]] = this.textBoxes[STYLE_TYPE[fontKey]];
+                    }
+                }
             }
         }
     };
@@ -1774,10 +1876,13 @@
     };
     CButton.prototype.draw = function (graphics) {
         this.txBody = this.textBoxes[this.getState()];
+        if(!this.txBody) {
+            this.txBody = null;
+        }
         CButtonBase.prototype.draw.call(this, graphics);
     };
     CButton.prototype.getTooltipText = function() {
-        if(this.txBody.bFit) {
+        if(!this.txBody || this.txBody.bFit) {
             return null;
         }
         return this.getString();
@@ -1937,6 +2042,9 @@
     };
     CButtonsContainer.prototype.getFill = function (nType) {
         return this.slicer.getFill(nType);
+    };  
+    CButtonsContainer.prototype.getFont = function (nType) {
+        return this.slicer.getFont(nType);
     };
     CButtonsContainer.prototype.getButtonHeight = function () {
         return this.slicer.getButtonHeight();
@@ -2098,7 +2206,6 @@
                                     this.buttons[nButton].setInvertSelectTmpState();
                                 }
                             }
-                            
                         }
                         else {
                             for(nButton = 0; nButton < this.buttons.length; ++nButton) {
