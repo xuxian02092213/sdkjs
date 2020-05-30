@@ -2157,6 +2157,10 @@ GraphicOption.prototype.union = function(oGraphicOption) {
         else {
             oNewTask = new GraphicOption(null);
                 }
+        if(window["IS_NATIVE_EDITOR"]) {
+            _this.showDrawingObjectsEx(oNewTask.getRect());
+            return;
+        }
         if(_this.drawTask === null) {
             _this.drawTask = oNewTask;
                 }
