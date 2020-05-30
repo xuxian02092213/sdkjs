@@ -565,7 +565,10 @@ CTextBody.prototype =
     },
     checkContentFit: function(sText) {
         var oContent = this.content;
-        oContent.ClearContent(true);
+        if(!oContent.Is_Empty()) {
+            var oFirstPara = oContent.Content[0];
+            oFirstPara.Content = [oFirstPara.Content[oFirstPara.Content.length - 1]];
+        }
         AscFormat.AddToContentFromString(oContent, sText);
         AscFormat.CShape.prototype.recalculateContent.call(this.parent);
         var oFirstParagraph = oContent.Content[0];

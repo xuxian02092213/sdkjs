@@ -123,8 +123,9 @@
     var ICON_CLEAR_FILTER = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4NCjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgY2xpcC1ydWxlPSJldmVub2RkIiBkPSJNMTAgMTZMOCAxNFYxMEwzIDVIMTVMMTAgMTBWMTZaTTE2LjE0NjQgMTYuODUzNkwxNC41IDE1LjIwNzFMMTIuODUzNiAxNi44NTM2TDEyLjE0NjQgMTYuMTQ2NUwxMy43OTI5IDE0LjVMMTIuMTQ2NCAxMi44NTM2TDEyLjg1MzYgMTIuMTQ2NUwxNC41IDEzLjc5MjlMMTYuMTQ2NCAxMi4xNDY1TDE2Ljg1MzYgMTIuODUzNkwxNS4yMDcxIDE0LjVMMTYuODUzNiAxNi4xNDY1TDE2LjE0NjQgMTYuODUzNloiIGZpbGw9IiM0NDQ0NDQiLz4NCjwvc3ZnPg0K";
     var ICON_CLEAR_FILTER_DISABLED = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4NCjxnIG9wYWNpdHk9IjAuNCI+DQo8cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTEwIDE2TDggMTRWMTBMMyA1SDE1TDEwIDEwVjE2Wk0xNi4xNDY0IDE2Ljg1MzZMMTQuNSAxNS4yMDcxTDEyLjg1MzYgMTYuODUzNkwxMi4xNDY0IDE2LjE0NjVMMTMuNzkyOSAxNC41TDEyLjE0NjQgMTIuODUzNkwxMi44NTM2IDEyLjE0NjVMMTQuNSAxMy43OTI5TDE2LjE0NjQgMTIuMTQ2NUwxNi44NTM2IDEyLjg1MzZMMTUuMjA3MSAxNC41TDE2Ljg1MzYgMTYuMTQ2NUwxNi4xNDY0IDE2Ljg1MzZaIiBmaWxsPSIjNDQ0NDQ0Ii8+DQo8L2c+DQo8L3N2Zz4NCg==";
     
-  
-    
+    var oDefaultWrapObject = {oTxWarpStruct: null, oTxWarpStructParamarks: null, oTxWarpStructNoTransform: null, oTxWarpStructParamarksNoTransform: null};
+
+
     function getSlicerIconsForLoad() {
         return [ICON_MULTISELECT, ICON_MULTISELECT_INVERTED, ICON_CLEAR_FILTER, ICON_CLEAR_FILTER_DISABLED];
     }
@@ -1117,6 +1118,12 @@
         }
         return bChange;
     };
+    CSlicer.prototype.checkAutofit = function (bIgnoreWordShape) {
+        return false;
+    };
+    CSlicer.prototype.checkTextWarp = function(oContent, oBodyPr, dWidth, dHeight, bNeedNoTransform, bNeedWarp) {
+        return oDefaultWrapObject;
+    };
     
     function CHeader(slicer) {
         AscFormat.CShape.call(this);
@@ -1372,6 +1379,8 @@
         this.transformText = this.getFullTextTransform();
         this.invertTransformText = oMT.Invert(this.transformText);
     };
+    CHeader.prototype.recalculateSnapArrays = function() {
+    };
     CHeader.prototype.getFullTransform = function() {
         var oMT = AscCommon.global_MatrixTransformer;
         var oTransform = oMT.CreateDublicateM(this.localTransform);
@@ -1536,7 +1545,12 @@
         }
         return sText;
     };
-    
+    CHeader.prototype.checkAutofit = function (bIgnoreWordShape) {
+        return false;
+    };
+    CHeader.prototype.checkTextWarp = function(oContent, oBodyPr, dWidth, dHeight, bNeedNoTransform, bNeedWarp) {
+        return oDefaultWrapObject;
+    };
     function CButtonBase(parent) {
         AscFormat.CShape.call(this);
         this.parent = parent;
@@ -1689,6 +1703,16 @@
         this.bounds.b = this.bounds.y + this.extY;
         this.bounds.w = this.bounds.r - this.bounds.l;
         this.bounds.h = this.bounds.b - this.bounds.t;
+    };
+    CButtonBase.prototype.recalculateSnapArrays = function() {
+    };
+    CButtonBase.prototype.checkAutofit = function (bIgnoreWordShape) {
+        return false;
+    };
+    CButtonBase.prototype.checkTextWarp = function(oContent, oBodyPr, dWidth, dHeight, bNeedNoTransform, bNeedWarp) {
+        return oDefaultWrapObject;
+    };
+    CButtonBase.prototype.addToRecalculate = function() {
     };
     CButtonBase.prototype.draw = function (graphics) {
         var oUR = graphics.updatedRect;
