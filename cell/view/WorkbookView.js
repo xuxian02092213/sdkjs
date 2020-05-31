@@ -3581,8 +3581,11 @@
 			}
 		}
 
+		var oThis = this;
 		var callback = function (success) {
+		    var oWSView = oThis.getWorksheet();
 			if (!success) {
+                oWSView.handlers.trigger("selectionChanged");
 				return;
 			}
 
@@ -3591,6 +3594,7 @@
 				slicers[i].slicer.set(obj);
 			}
 			History.EndTransaction();
+            oWSView.handlers.trigger("selectionChanged");
 		};
 
 		if (slicers && slicers.length) {

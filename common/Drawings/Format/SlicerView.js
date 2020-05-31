@@ -184,7 +184,6 @@
         this.view = null;
         this.styleName = null;
     };
- 
     CSlicerCache.prototype.hasData = function() {
         return this.values !== null && this.view !== null;
     };

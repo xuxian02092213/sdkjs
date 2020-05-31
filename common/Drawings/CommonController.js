@@ -9916,7 +9916,8 @@ DrawingObjectsController.prototype =
             if(AscFormat.isRealNumber(props.Width) && AscFormat.isRealNumber(props.Height)){
                 aAdditionalObjects = this.getConnectorsForCheck2();
             }
-            this.checkSelectedObjectsAndCallback(this.setGraphicObjectPropsCallBack, [props], false, AscDFH.historydescription_Spreadsheet_SetGraphicObjectsProps, aAdditionalObjects);
+            var bNoSendProperties = AscCommon.isRealObject(props.SlicerProperties);
+            this.checkSelectedObjectsAndCallback(this.setGraphicObjectPropsCallBack, [props], bNoSendProperties, AscDFH.historydescription_Spreadsheet_SetGraphicObjectsProps, aAdditionalObjects);
             var oApplyProps = null;
             if(props)
             {
