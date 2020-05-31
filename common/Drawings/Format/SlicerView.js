@@ -1867,10 +1867,15 @@
         var sText = this.getString();
         var oFontMap = {};
         var oFont, oFoundFont, oMapFont;
+        
+        var oFirstButton = this.parent.buttons[0];
+        var bUseFirstButton = (oFirstButton !== this);
+        var nType;
         for(var key in STYLE_TYPE) {
             if(STYLE_TYPE.hasOwnProperty(key)) {
-                if(STYLE_TYPE[key] !== STYLE_TYPE.WHOLE && STYLE_TYPE[key] !== STYLE_TYPE.HEADER) {
-                    oFont = this.parent.getFont(STYLE_TYPE[key]);
+                nType = STYLE_TYPE[key];
+                if(nType !== STYLE_TYPE.WHOLE && nType !== STYLE_TYPE.HEADER) {
+                    oFont = this.parent.getFont(nType);
                     oFoundFont = null;
                     if(oFont) {
                         for(var fontKey in oFontMap) {
@@ -1885,12 +1890,15 @@
                     }
                     if(!oFoundFont) {
                         this.createTextBody();
-                        this.textBoxes[STYLE_TYPE[key]] = this.txBody;
+                        this.textBoxes[nType] = this.txBody;
+                        if(bUseFirstButton) {
+                            this.txBody.content.Content[0].CompiledPr = oFirstButton.textBoxes[nType].content.Content[0].CompiledPr;
+                        }
                         this.txBody.recalculateOneString(sText);
                         oFontMap[key] = oFont;
                     }
                     else {
-                        this.textBoxes[STYLE_TYPE[key]] = this.textBoxes[STYLE_TYPE[fontKey]];
+                        this.textBoxes[nType] = this.textBoxes[STYLE_TYPE[fontKey]];
                     }
                 }
             }
