@@ -1071,7 +1071,7 @@
         }
     };
     CSlicer.prototype.getLocked = function () {
-        return this.data.getLocked();
+        return this.data.getLocked() || (this.lockType !== AscCommon.c_oAscLockTypes.kLockTypeNone && this.lockType !== AscCommon.c_oAscLockTypes.kLockTypeMine);
     };
     CSlicer.prototype.copy = function (oPr) {
         var copy = new CSlicer();
