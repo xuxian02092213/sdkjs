@@ -3560,13 +3560,19 @@ GraphicOption.prototype.union = function(oGraphicOption) {
                                     bRecalculate = true;
                                 }
                             }
-                            if(bRecalculate){
+                            if(bRecalculate) {
                                 oGraphicObject.handleUpdateExtents();
                                 oGraphicObject.recalculate();
                                 bDraw = true;
                             }
+                            else {
+                                drawingObject.checkBoundsFromTo();
+                            }
                         }
                     }
+                }
+                else {
+                    drawingObject.checkBoundsFromTo();
                 }
             }
         }
