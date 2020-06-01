@@ -1953,8 +1953,10 @@
 		var table = null;
 		if (null != this.tableIdOpen && null != this.columnOpen) {
 			table = tableIds[this.tableIdOpen];
-			this.tableId = table.DisplayName;
-			this.column = table.getTableNameColumnByIndex(this.columnOpen - 1);
+			if (table) {
+				this.tableId = table.DisplayName;
+				this.column = table.getTableNameColumnByIndex(this.columnOpen - 1);
+			}
 		}
 		return table;
 	};

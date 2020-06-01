@@ -3437,7 +3437,7 @@ function (window, undefined) {
 		}
 
 		if (updateByCacheName === null && slicer) {
-			this.wb.onSlicerUpdate(bUndo ? Data.from.name : Data.to.name);
+			this.wb.onSlicerUpdate(Data.name);
 		} else if (updateByCacheName) {
 			var slicers = oModel.getSlicersByCacheName(Data.name);
 			if (slicers) {
