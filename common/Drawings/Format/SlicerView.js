@@ -1499,7 +1499,7 @@
             return nRet
         }
         if(nIndex === 0) {
-            if(oButton.tmpState !== null) {
+            if(oButton.haveTmpState()) {
                 nRet = oButton.tmpState;
             }
             else {
@@ -1567,6 +1567,9 @@
     CButtonBase.prototype.getString = function() {
         return "";
     };
+    CButtonBase.prototype.haveTmpState = function() {
+        return this.tmpState !== null;
+    };
     CButtonBase.prototype.Get_Styles = function() {
         return this.parent.getTxStyles(this.getTxBodyType());
     };
@@ -1605,7 +1608,7 @@
     };
     CButtonBase.prototype.getState = function() {
         var nState = 0;
-        if(this.tmpState !== null) {
+        if(this.haveTmpState()) {
             nState = this.tmpState;
         }
         else {

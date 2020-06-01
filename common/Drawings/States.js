@@ -256,6 +256,7 @@ function NullState(drawingObjects)
 {
     this.drawingObjects = drawingObjects;
     this.startTargetTextObject = null;
+    this.lastMoveHandler = null;
 }
 
 NullState.prototype =
@@ -369,15 +370,30 @@ NullState.prototype =
 
             }
         }
+        else
+        {
+            if(this.lastMoveHandler)
+            {
+                var oRet = {};
+                oRet.objectId = this.lastMoveHandler.Get_Id();
+                oRet.bMarker = false;
+                oRet.cursorType = "default";
+                oRet.tooltip = null;
+                return oRet;
+            }
+        }
         return null;
     },
 
     onMouseMove: function(e, x, y, pageIndex)
     {
         var aDrawings = this.drawingObjects.getDrawingArray();
-        var _x = x, _y = y;
+        var _x = x, _y = y, oDrawing;
+        this.lastMoveHandler = null;
         for(var nDrawing = aDrawings.length - 1; nDrawing > -1; --nDrawing) {
-            if(aDrawings[nDrawing].onMouseMove(e, _x, _y)) {
+            oDrawing = aDrawings[nDrawing];
+            if(oDrawing.onMouseMove(e, _x, _y)) {
+                this.lastMoveHandler = oDrawing;
                 _x = -1000;
             }
         }
