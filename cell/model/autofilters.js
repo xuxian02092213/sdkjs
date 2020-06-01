@@ -394,8 +394,7 @@
 
 			constructor: AutoFilters,
 			
-			addAutoFilter: function(styleName, activeRange, addFormatTableOptionsObj, offLock, props, filterInfo)
-			{
+			addAutoFilter: function(styleName, activeRange, addFormatTableOptionsObj, offLock, props, filterInfo) {
 				var worksheet = this.worksheet, t = this, cloneFilter;
 				var wsView = Asc['editor'].wb.getWorksheet(worksheet.getIndex());
 				var isTurnOffHistory = worksheet.workbook.bUndoChanges || worksheet.workbook.bRedoChanges;
@@ -829,7 +828,7 @@
 			checkRemoveTableParts: function (delRange, tableRange) {
 				var result = true, firstRowRange;
 
-				if (tableRange && delRange.containsRange(tableRange) == false) {
+				if (tableRange && delRange.containsRange(tableRange) === false) {
 					firstRowRange = new Asc.Range(tableRange.c1, tableRange.r1, tableRange.c2, tableRange.r1);
 					result = !firstRowRange.isIntersect(delRange);
 				}
@@ -870,8 +869,7 @@
 						tablePart.AutoFilter.FilterColumns.length) ||
 						(tablePart && tablePart.AutoFilter && tablePart.isApplySortConditions()))) {
 						result = {isFilterColumns: true, isAutoFilter: true};
-					} else if (tablePart.Ref && tablePart.AutoFilter &&
-						tablePart.AutoFilter !== null) {
+					} else if (tablePart.Ref && tablePart.AutoFilter && tablePart.AutoFilter !== null) {
 						result = {isFilterColumns: false, isAutoFilter: true};
 					} else {
 						result = {isFilterColumns: false, isAutoFilter: false};
@@ -916,7 +914,7 @@
 					if (bIsInFilter && !bIsInFilter.isAutoFilter() && bIsInFilter.Ref.containsRange(activeCells)) {
 						res.asc_setRange(bIsInFilter.DisplayName);
 					} else {
-						if (activeCells.r1 == activeCells.r2 && activeCells.c1 == activeCells.c2 && !userRange)//если ячейка выделенная одна
+						if (activeCells.r1 === activeCells.r2 && activeCells.c1 === activeCells.c2 && !userRange)//если ячейка выделенная одна
 						{
 							addRange = this.expandRange(activeCells);
 						} else {
@@ -927,7 +925,7 @@
 					}
 				} else {
 					if (null === bIsInFilter || isPivot) {
-						if (activeCells.r1 == activeCells.r2 && activeCells.c1 == activeCells.c2 && !userRange)//если ячейка выделенная одна
+						if (activeCells.r1 === activeCells.r2 && activeCells.c1 === activeCells.c2 && !userRange)//если ячейка выделенная одна
 						{
 							addRange = this.expandRange(activeCells);
 						} else {
@@ -1196,7 +1194,7 @@
 			},
 
 			reDrawFilter: function (range, row) {
-				if (!range && row == undefined) {
+				if (!range && row === undefined) {
 					return;
 				}
 
@@ -1233,8 +1231,8 @@
 				var activeCells = ar.clone();
 				var t = this;
 
-				var DeleteColumns = !!(insertType && (insertType == c_oAscDeleteOptions.DeleteColumns || insertType == c_oAscInsertOptions.InsertColumns));
-				var DeleteRows = !!(insertType && (insertType == c_oAscDeleteOptions.DeleteRows || insertType == c_oAscInsertOptions.InsertRows));
+				var DeleteColumns = !!(insertType && (insertType === c_oAscDeleteOptions.DeleteColumns || insertType === c_oAscInsertOptions.InsertColumns));
+				var DeleteRows = !!(insertType && (insertType === c_oAscDeleteOptions.DeleteRows || insertType === c_oAscInsertOptions.InsertRows));
 
 				if (DeleteColumns)//в случае, если удаляем столбцы, тогда расширяем активную область область по всем строкам
 				{
@@ -1564,8 +1562,8 @@
 				var t = this;
 				var bUndoChanges = worksheet.workbook.bUndoChanges;
 				var bRedoChanges = worksheet.workbook.bRedoChanges;
-				var DeleteRows = ((insertType == c_oAscDeleteOptions.DeleteRows && type == 'delCell') ||
-				insertType == c_oAscInsertOptions.InsertRows);
+				var DeleteRows = ((insertType === c_oAscDeleteOptions.DeleteRows && type === 'delCell') ||
+				insertType === c_oAscInsertOptions.InsertRows);
 				activeRange = activeRange.clone();
 				var diff = activeRange.r2 - activeRange.r1 + 1;
 				var redrawTablesArr = [];
@@ -4682,13 +4680,13 @@
 			_getFormatTableColumnRange: function (table, columnName) {
 				var worksheet = this.worksheet;
 				var arrFormat = [];
-				var res = null;
+				var res = null, i;
 
 				var tableRange = table.getTableRangeForFormula({
 					param: AscCommon.FormulaTablePartInfo.columns, startCol: columnName, endCol: columnName
 				});
 				if (null !== tableRange) {
-					for (var i = tableRange.r1; i <= tableRange.r2; i++) {
+					for (i = tableRange.r1; i <= tableRange.r2; i++) {
 						var cell = worksheet.getCell3(i, tableRange.c1);
 						var format = cell.getNumFormat();
 						var sFromatString = format.sFormat;
@@ -4706,7 +4704,7 @@
 
 				if (res) {
 					var maxCount = 0;
-					for (var i in arrFormat) {
+					for (i in arrFormat) {
 						if (arrFormat[i] > maxCount) {
 							maxCount = arrFormat[i];
 							res = i;
@@ -4739,13 +4737,13 @@
 				var diffCol = arnTo.c1 - arnFrom.c1;
 				var diffRow = arnTo.r1 - arnFrom.r1;
 
-				var ref, moveRangeTo;
+				var ref, moveRangeTo, i;
 				if (!copyRange) {
 					//находим а/ф и ф/т там откуда переносим
 					var findFilters = this._searchFiltersInRange(arnFrom);
 					if (findFilters) {
 						var ws = opt_wsTo ? opt_wsTo.model : worksheet;
-						for (var i = 0; i < findFilters.length; i++) {
+						for (i = 0; i < findFilters.length; i++) {
 							ref = findFilters[i].Ref;
 							//range а/ф или ф/т со сдвигом(потенциальное место вставки)
 							moveRangeTo = new Asc.Range(ref.c1 + diffCol, ref.r1 + diffRow, ref.c2 + diffCol, ref.r2 + diffRow);
@@ -4774,7 +4772,7 @@
 					var afTo = opt_wsTo && opt_wsTo.model ? opt_wsTo.model.autoFilters : this;
 					var findFiltersTo = afTo._searchFiltersInRange(arnTo);
 					if (arnTo && findFiltersTo) {
-						for (var i = 0; i < findFiltersTo.length; i++) {
+						for (i = 0; i < findFiltersTo.length; i++) {
 							ref = findFiltersTo[i].Ref;
 
 							//если переносим просто данные, причём шапки совпадают, то фильтр не очищаем
