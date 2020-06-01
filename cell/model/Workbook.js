@@ -8323,6 +8323,19 @@
 		}
 	};
 
+	Worksheet.prototype.updateSlicersByRange = function (range) {
+		var tables = this.autoFilters.getTablesIntersectionRange(range);
+		if (tables) {
+			for (var i = 0; i < tables.length; i++) {
+				this.slicersUpdateAfterChangeTable(tables[i].DisplayName);
+			}
+		}
+		var pivot = false;
+		if (pivot) {
+
+		}
+	};
+
 	Worksheet.prototype.slicersUpdateAfterChangeTable = function (name) {
 		var slicers = this.getSlicersByTableName(name);
 		if (slicers) {
