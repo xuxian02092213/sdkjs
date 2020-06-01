@@ -3337,7 +3337,7 @@ function (window, undefined) {
 				break;
 			}
 			case AscCH.historyitem_Slicer_SetCacheName: {
-				slicer = oModel.getSlicerByName(bUndo ? Data.to : Data.from);
+				slicer = oModel.getSlicerByName(Data.name);
 				if (slicer) {
 					slicer.setCacheName(bUndo ? Data.from : Data.to);
 					updateByCacheName = false;
