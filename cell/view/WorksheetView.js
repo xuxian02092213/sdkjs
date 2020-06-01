@@ -20090,7 +20090,7 @@
 
 		var slicer = this.model.getSlicerByName(name);
 		if (slicer) {
-			this.checkLockSlicer([slicer], true, callback);
+			this.checkLockSlicers([slicer], true, callback);
 		}
 	};
 
@@ -20108,7 +20108,7 @@
 		};
 
 		if (slicer) {
-			this.checkLockSlicer([slicer], true, callback);
+			this.checkLockSlicers([slicer], true, callback);
 		}
 	};
 
@@ -20193,7 +20193,7 @@
 		}*/
 	};
 
-	WorksheetView.prototype.checkLockSlicer = function (slicers, doLockRange, callback) {
+	WorksheetView.prototype.checkLockSlicers = function (slicers, doLockRange, callback) {
 		var t = this;
 		var _lockMap = [];
 		var lockInfoArr = [];
