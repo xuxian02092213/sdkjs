@@ -3788,6 +3788,7 @@ DrawingObjectsController.prototype =
                 oSlicer = aSlicers[i];
                 aSlicerNames.push(oSlicer.getName());
                 bSize |= oSlicer.setButtonWidth(props.SlicerProperties.asc_getButtonWidth());
+                oSlicer.recalculate();
                 var bLocked = props.SlicerProperties.asc_getLockedPosition() === true;
                 if(bLocked)
                 {
@@ -3800,7 +3801,6 @@ DrawingObjectsController.prototype =
                     oSlicer.setLockValue(AscFormat.LOCKS_MASKS.noResize, undefined);
                 }
             }
-            oAPI.asc_setSlicers(aSlicerNames, props.SlicerProperties);
             if(!bSize)
             {
                 if(AscFormat.isRealNumber(props.Width) || AscFormat.isRealNumber(props.Height))
@@ -3830,9 +3830,11 @@ DrawingObjectsController.prototype =
                             }
                             oSlicer.checkDrawingBaseCoords();
                         }
+                        oSlicer.recalculate();
                     }
                 }
             }
+            oAPI.asc_setSlicers(aSlicerNames, props.SlicerProperties);
             History.EndTransaction();
         }
         var oApi = editor || Asc['editor'];
