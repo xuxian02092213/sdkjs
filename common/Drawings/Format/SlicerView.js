@@ -2366,10 +2366,6 @@
         if(!this.hit(x, y)) {
             return null;
         }
-        var oRet = {
-            cursorType: "default",
-            tooltip: null
-        }
         var oRet;
         for(var i = 0; i < this.buttons.length; ++i) {
             oRet = this.buttons[i].getCursorInfo(e, x, y);
