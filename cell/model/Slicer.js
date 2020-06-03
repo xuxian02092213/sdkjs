@@ -339,9 +339,9 @@
 	CT_slicer.prototype.getType = function() {
 		return AscCommonExcel.UndoRedoDataTypes.Slicer;
 	};
-	CT_slicer.prototype.clone = function () {
-		//клонирование для интерфейса, только CT_slicer без внутренних структур
-		var res = new CT_slicer();
+	CT_slicer.prototype.clone = function (ws) {
+		//если ws-> undefined, то клонирование для интерфейса, только CT_slicer без внутренних структур
+		var res = new CT_slicer(ws);
 
 		res.name = this.name;
 		//res.uid = this.uid;
@@ -353,6 +353,12 @@
 		res.style = this.style;
 		res.lockedPosition = this.lockedPosition;
 		res.rowHeight = this.rowHeight;
+
+		if (ws) {
+			res.uid = AscCommon.CreateGUID();
+			res.cacheDefinition = this.cacheDefinition.clone(ws);
+			return res;
+		}
 
 		this.initInterfaceOptions();
 
@@ -1007,6 +1013,37 @@
 		this._type = type;
 	};
 
+	CT_slicerCacheDefinition.prototype.clone = function (ws) {
+		var res = new CT_slicerCacheDefinition(ws);
+
+		var i
+		for (i = 0; i < this.pivotTables.length; i++) {
+			res.pivotTables[i] = this.pivotTables.clone();//SlicerCachePivotTable
+		}
+		res.data = this.data ? this.data.clone() : null;//CSlicerCacheData
+
+		res.name = this.name;
+		res.uid = AscCommon.CreateGUID();
+		res.sourceName = this.sourceName;
+
+		res.tableSlicerCache = this.tableSlicerCache ? this.tableSlicerCache.clone() : null;
+		if (this.slicerCacheHideItemsWithNoData) {
+			if (this.slicerCacheHideItemsWithNoData.length === 0) {
+				res.slicerCacheHideItemsWithNoData = this.slicerCacheHideItemsWithNoData;
+			} else {
+				//TODO проверить структуру
+				for (i = 0; i < this.slicerCacheHideItemsWithNoData.length; i++) {
+					if (!res.slicerCacheHideItemsWithNoData) {
+						res.slicerCacheHideItemsWithNoData = [];
+					}
+					res.slicerCacheHideItemsWithNoData[i] = this.slicerCacheHideItemsWithNoData[i];
+				}
+			}
+		}
+
+		return res;
+	};
+
 	CT_slicerCacheDefinition.prototype.generateSlicerCacheName = function (name) {
 		var wb = this.ws.workbook;
 		var checkAlreadyAdd = function (_name) {
@@ -1328,6 +1365,14 @@
 		this.olap = null;//OlapSlicerCache
 		this.tabular = null;//TabularSlicerCache
 	}
+	CT_slicerCacheData.prototype.clone = function () {
+		var res = new CT_slicerCacheData();
+
+		res.olap = this.olap.clone();
+		res.tabular = this.tabular.clone();
+
+		return res;
+	};
 	CT_slicerCacheData.prototype.toStream = function (s) {
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
 		s.WriteUChar(AscCommon.g_nodeAttributeEnd);
@@ -1389,6 +1434,14 @@
 		this.tabId = null;
 		this.name = null;
 	}
+	CT_slicerCachePivotTable.prototype.clone = function () {
+		var res = new CT_slicerCachePivotTable();
+
+		res.tabId = this.tabId;
+		res.name = this.name;
+
+		return res;
+	};
 	CT_slicerCachePivotTable.prototype.toStream = function (s) {
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
 		s._WriteUInt2(0, this.tabId);
@@ -1427,6 +1480,17 @@
 		this.c = null;
 		this.nd = false;
 	}
+	CT_olapSlicerCacheItem.prototype.clone = function () {
+		var res = new CT_olapSlicerCacheItem();
+
+		//TODO ?p
+
+		res.n = this.n;
+		res.c = this.c;
+		res.nd = this.nd;
+
+		return res;
+	};
 	CT_olapSlicerCacheItem.prototype.toStream = function (s) {
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
 		s._WriteString2(0, this.n);
@@ -1501,6 +1565,15 @@
 		this.i = [];//OlapSlicerCacheItem
 		this.startItem = null
 	}
+	CT_olapSlicerCacheRange.prototype.clone = function () {
+		var res = new CT_olapSlicerCacheRange();
+
+		for (var i = 0; i < this.i.length; i++) {
+			res.i[i] = this.i[i].clone();//OlapSlicerCacheItem
+		}
+
+		return res;
+	};
 	CT_olapSlicerCacheRange.prototype.toStream = function (s) {
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
 		s._WriteUInt2(0, this.startItem);
@@ -1568,6 +1641,21 @@
 		this.sortOrder = ST_olapSlicerCacheSortOrder.Natural;
 		this.crossFilter = ST_slicerCacheCrossFilter.ShowItemsWithDataAtTop;
 	}
+	CT_olapSlicerCacheLevelData.prototype.clone = function () {
+		var res = new CT_olapSlicerCacheLevelData();
+
+		for (var i = 0; i < this.ranges.length; i++) {
+			res.ranges[i] = this.ranges[i].clone();//OlapSlicerCacheItem
+		}
+
+		res.uniqueName = this.uniqueName;
+		res.sourceCaption = this.sourceCaption;
+		res.count = this.count;
+		res.sortOrder = this.sortOrder;
+		res.crossFilter = this.crossFilter;
+
+		return res;
+	};
 	CT_olapSlicerCacheLevelData.prototype.toStream = function (s) {
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
 		s._WriteString2(0, this.uniqueName);
@@ -1640,6 +1728,20 @@
 		this.selections = [];//OlapSlicerCacheSelection
 		this.pivotCacheId = null;
 	}
+	CT_olapSlicerCache.prototype.clone = function () {
+		var res = new CT_olapSlicerCache();
+
+		var i;
+		for (i = 0; i < this.levels.length; i++) {
+			res.levels[i] = this.levels[i].clone();
+		}
+		for (i = 0; i < this.selections.length; i++) {
+			res.selections[i] = this.selections[i].clone();
+		}
+		res.pivotCacheId = this.pivotCacheId;
+
+		return res;
+	};
 	CT_olapSlicerCache.prototype.toStream = function (s) {
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
 		s._WriteUInt2(0, this.pivotCacheId);
@@ -1715,6 +1817,17 @@
 		this.level = [];
 		return this;
 	}
+	CT_olapSlicerCacheLevelsData.prototype.clone = function () {
+		var res = new CT_olapSlicerCacheLevelsData();
+
+		res.count = this.count;
+		for (var i = 0; i < this.level.length; i++) {
+			//TODO need clone?
+			res.level[i] = this.level[i].clone();
+		}
+
+		return res;
+	};
 	CT_olapSlicerCacheLevelsData.prototype.toStream = function (s) {
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
 		s._WriteUInt2(0, this.count);
@@ -1778,6 +1891,17 @@
 		this.selection = [];
 		return this;
 	}
+	CT_olapSlicerCacheSelections.prototype.clone = function () {
+		var res = new CT_olapSlicerCacheSelections();
+
+		res.count = this.count;
+		for (var i = 0; i < this.selection.length; i++) {
+			//TODO need clone?
+			res.selection[i] = this.selection[i].clone();
+		}
+
+		return res;
+	};
 	CT_olapSlicerCacheSelections.prototype.toStream = function (s) {
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
 		s._WriteUInt2(0, this.count);
@@ -1840,6 +1964,17 @@
 		this.p = [];//OlapSlicerCacheItemParent - состоит из одного поля, поэтому данную структуру не добавляю
 		this.n = null;
 	}
+	CT_olapSlicerCacheSelections.prototype.clone = function () {
+		var res = new CT_olapSlicerCacheSelection();
+
+		for (var i = 0; i < this.p.length; i++) {
+			//TODO need clone?
+			res.p[i] = this.p[i].clone();
+		}
+		res.n = this.n;
+
+		return res;
+	};
 	CT_olapSlicerCacheSelection.prototype.toStream = function (s) {
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
 		s._WriteString2(0, this.n);
@@ -1909,6 +2044,13 @@
 		this.n = null;
 		return this;
 	}
+	CT_olapSlicerCacheItemParent.prototype.clone = function () {
+		var res = new CT_olapSlicerCacheItemParent();
+
+		res.n = this.n;
+
+		return res;
+	};
 	CT_olapSlicerCacheItemParent.prototype.toStream = function (s) {
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
 		s._WriteString2(0, this.n);
@@ -1949,6 +2091,19 @@
 
 		return this;
 	}
+	CT_tableSlicerCache.prototype.clone = function () {
+		var res = new CT_tableSlicerCache();
+
+		res.tableId = this.tableId;
+		res.tableIdOpen = this.tableIdOpen;
+		res.column = this.column;
+		res.columnOpen = this.columnOpen;
+		res.sortOrder = this.sortOrder;
+		res.customListSort = this.customListSort;
+		res.crossFilter = this.crossFilter;
+
+		return res;
+	};
 	CT_tableSlicerCache.prototype.initPostOpen = function (tableIds) {
 		var table = null;
 		if (null != this.tableIdOpen && null != this.columnOpen) {
@@ -2053,6 +2208,20 @@
 		this.showMissing = true;
 		this.crossFilter = ST_slicerCacheCrossFilter.ShowItemsWithDataAtTop;
 	}
+	CT_tabularSlicerCache.prototype.clone = function () {
+		var res = new CT_tabularSlicerCache();
+
+		for (var i = 0; i < this.items.length; i++) {
+			res.items[i] = this.items[i].clone();
+		}
+		res.pivotCacheId = this.pivotCacheId;
+		res.sortOrder = this.sortOrder;
+		res.customListSort = this.customListSort;
+		res.showMissing = this.showMissing;
+		res.crossFilter = this.crossFilter;
+
+		return res;
+	};
 	CT_tabularSlicerCache.prototype.toStream = function (s) {
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
 		s._WriteUInt2(0, this.pivotCacheId);
@@ -2130,6 +2299,14 @@
 		this.count = null;
 		return this;
 	}
+	CT_slicerCacheOlapLevelName.prototype.clone = function () {
+		var res = new CT_slicerCacheOlapLevelName();
+
+		res.uniqueName = this.uniqueName;
+		res.count = this.count;
+
+		return res;
+	};
 	CT_slicerCacheOlapLevelName.prototype.toStream = function (s) {
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
 		s._WriteString2(0, this.uniqueName);
@@ -2165,6 +2342,16 @@
 		this.slicerCacheOlapLevelName = [];
 		return this;
 	}
+	CT_slicerCacheHideNoData.prototype.clone = function () {
+		var res = new CT_slicerCacheHideNoData();
+
+		res.count = this.count;
+		for (var i = 0; i < this.slicerCacheOlapLevelName.length; i++) {
+			res.slicerCacheOlapLevelName[i] = this.slicerCacheOlapLevelName[i].clone();
+		}
+
+		return res;
+	};
 	CT_slicerCacheHideNoData.prototype.toStream = function (s) {
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
 		s._WriteUInt2(0, this.count);
@@ -2230,6 +2417,16 @@
 		this.i = [];
 		return this;
 	}
+	CT_tabularSlicerCacheItems.prototype.clone = function () {
+		var res = new CT_tabularSlicerCacheItems();
+
+		res.count = this.count;
+		for (var i = 0; i < this.i.length; i++) {
+			res.i[i] = this.i[i].clone();
+		}
+
+		return res;
+	};
 	CT_tabularSlicerCacheItems.prototype.toStream = function (s) {
 		s.WriteUChar(AscCommon.g_nodeAttributeStart);
 		s._WriteUInt2(0, this.count);

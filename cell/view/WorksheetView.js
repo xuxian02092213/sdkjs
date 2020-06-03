@@ -20245,6 +20245,66 @@
 		}
 	};
 
+	WorksheetView.prototype.tryPasteSlicers = function (arr, callback) {
+		var t = this;
+
+		var _callback = function (success) {
+			if (!success) {
+				callback(false);
+				return;
+			}
+			for (var i = 0; i < arr.length; i++) {
+				var slicer = arr[i].clone(t.ws);
+				//клонируем, перегенерируем имя, имя кэша и проверяем sourceName у кэша
+				if (modelCaches[i]) {
+					slicer.cacheDefinition = modelCaches[i];
+				} else {
+					//тут необходимо ещё проверить, соответсвует ли внутренняя структура
+
+				}
+			}
+			callback();
+		};
+
+		var lockRanges = [], isLockDefNames, slicerPasted, cachePasted, modelCache, _range;
+		var modelCaches = [];
+		for (var i = 0; i < arr.length; i++) {
+			slicerPasted = arr[i];
+			cachePasted = slicerPasted.getCacheDefinition();
+			modelCache = this.model.workbook.getSlicerCacheByCacheName(cachePasted.name);
+			if (modelCache) {
+				var _type = modelCache.getType();
+				if (_type === window['AscCommonExcel'].insertSlicerType.table) {
+					_range = modelCache.getRange();
+					if (_range) {
+						lockRanges.push(_range);
+					}
+				} else if (_type === window['AscCommonExcel'].insertSlicerType.pivotTable) {
+
+				}
+				modelCaches[i] = modelCache;
+			} else {
+				_range = cachePasted.getRange();
+				if (_range) {
+					lockRanges.push(_range);
+				}
+				isLockDefNames = true;
+			}
+		}
+
+		this._isLockedCells(lockRanges, null, function(success) {
+			if (success) {
+				if (isLockDefNames) {
+					t._isLockedDefNames(_callback);
+				} else {
+					_callback(true);
+				}
+			} else {
+				callback(false);
+			}
+		});
+	};
+
 	//------------------------------------------------------------export---------------------------------------------------
     window['AscCommonExcel'] = window['AscCommonExcel'] || {};
 	window["AscCommonExcel"].CellFlags = CellFlags;
