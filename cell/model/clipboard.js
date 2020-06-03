@@ -2181,7 +2181,7 @@
 				History.Create_NewPoint();
 				History.StartTransaction();
 
-				var callback = function (success) {
+				var callback = function (success, slicersNames) {
 					if (!success) {
 						//TODO история + для вставки
 						return;
@@ -2240,11 +2240,23 @@
 
 					var aCopies = [];
 					var oIdMap = {};
+					var _slicerCounter = 0;
 					var oCopyPr = new AscFormat.CCopyObjectProperties();
 					oCopyPr.idMap = oIdMap;
 					ws.objectRender.controller.resetSelection();
 					for (var i = 0; i < data.Drawings.length; i++) {
+
+						if (slicersNames && data.Drawings[i].graphicObject.getObjectType() === AscDFH.historyitem_type_SlicerView) {
+							if (slicersNames[_slicerCounter]) {
+								data.Drawings[i].graphicObject.setName(slicersNames[_slicerCounter]);
+							} else {
+								continue;
+							}
+							_slicerCounter++;
+						}
+
 						var _copy = data.Drawings[i].graphicObject.copy(oCopyPr);
+
 						oIdMap[data.Drawings[i].graphicObject.Id] = _copy.Id;
 						data.Drawings[i].graphicObject = _copy;
 						aCopies.push(data.Drawings[i].graphicObject);
@@ -2338,17 +2350,6 @@
 					if (data.Drawings[i].graphicObject.getObjectType() === AscDFH.historyitem_type_SlicerView) {
 						var pastedSlicer = data.getSlicerByName(data.Drawings[i].graphicObject.name);
 						pastedSlicers.push(pastedSlicer);
-						/*if (pastedSlicer) {
-							var pastedCache = pastedSlicer.getCacheDefinition();
-							//если уже существует данный кэш - проверяем по имени
-							//если нет - то добавляем новый
-							var modelCache = ws.workbook.getSlicerCacheByCacheName(pastedCache.name);
-							if (modelCache) {
-
-							} else {
-
-							}
-						}*/
 					}
 				}
 

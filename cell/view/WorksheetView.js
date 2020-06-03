@@ -20253,17 +20253,30 @@
 				callback(false);
 				return;
 			}
+			var newNames = [];
 			for (var i = 0; i < arr.length; i++) {
-				var slicer = arr[i].clone(t.ws);
+				var slicer = arr[i].clone(t.model);
+				slicer.name = slicer.generateName(slicer.name);
 				//клонируем, перегенерируем имя, имя кэша и проверяем sourceName у кэша
 				if (modelCaches[i]) {
 					slicer.cacheDefinition = modelCaches[i];
 				} else {
 					//тут необходимо ещё проверить, соответсвует ли внутренняя структура
-
+					var table = slicer.cacheDefinition.getTableSlicerCache();
+					if (!table || t.model.workbook.getTableIndexColumnByName(table.tableId, table.column)) {
+						continue;
+					}
+					slicer.cacheDefinition.name = slicer.cacheDefinition.generateSlicerCacheName(slicer.name);
+					var newDefName = new Asc.asc_CDefName(slicer.cacheDefinition.name, "#N/A", null, false, null, null, true);
+					t.model.workbook.editDefinesNames(null, newDefName);
 				}
+				History.Add(AscCommonExcel.g_oUndoRedoWorksheet, AscCH.historyitem_Worksheet_SlicerAdd, t.model.getId(), null,
+					new AscCommonExcel.UndoRedoData_FromTo(null, slicer));
+
+				t.model.aSlicers.push(slicer);
+				newNames[i] = slicer.name;
 			}
-			callback();
+			callback(true, newNames);
 		};
 
 		var lockRanges = [], isLockDefNames, slicerPasted, cachePasted, modelCache, _range;
