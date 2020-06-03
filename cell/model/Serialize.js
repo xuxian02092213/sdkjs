@@ -2798,7 +2798,11 @@
 				this.bs.WriteItem(c_oSerWorkbookTypes.PivotCaches, function () {oThis.WritePivotCaches(pivotCaches);});
 			}
 			//slicerCaches
-            this.PrepareTableIds();
+            //for copy/paste write string name table/column ?
+            if (!this.oBinaryWorksheetsTableWriter.isCopyPaste) {
+                this.PrepareTableIds();
+            }
+
             var slicerCacheIndex = 0;
             var slicerCaches = {};
             var slicerCacheExtIndex = 0;
@@ -3030,7 +3034,7 @@
                         stream.ImportFromMemory(oThis.memory);
 
                         stream.StartRecord(0);
-                        slicerCaches[name].toStream(stream, tableIds);
+                        slicerCaches[name].toStream(stream, tableIds, oThis.isCopyPaste);
                         stream.EndRecord();
 
                         stream.ExportToMemory(oThis.memory);
@@ -6847,7 +6851,7 @@
                 var slicerCacheDefinition = new Asc.CT_slicerCacheDefinition();
                 var fileStream = this.stream.ToFileStream();
                 fileStream.GetUChar();
-                slicerCacheDefinition.fromStream(fileStream);
+                slicerCacheDefinition.fromStream(fileStream, oThis.bwtr.copyPasteObj && oThis.bwtr.copyPasteObj.isCopyPaste);
                 this.stream.FromFileStream(fileStream);
                 this.oReadResult.slicerCaches[slicerCacheDefinition.name] = slicerCacheDefinition;
             } else
