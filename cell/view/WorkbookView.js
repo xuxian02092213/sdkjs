@@ -216,8 +216,9 @@
     this.trackOverlay = null;
     this.autoShapeTrack = null;
 
-    this.stateFormatPainter = c_oAscFormatPainterState.kOff;
-    this.rangeFormatPainter = null;
+    this.formatPainterState = c_oAscFormatPainterState.kOff;
+    this.formatPainterRange = null;
+    this.formatPainterSheet = null;
 
     this.selectionDialogMode = false;
     this.dialogAbsName = false;
@@ -396,6 +397,8 @@
 				  self.enableKeyEventsHandler(true);
 			  }, "autoFiltersClick": function () {
 				  self._onAutoFiltersClick.apply(self, arguments);
+			  }, "pivotFiltersClick": function () {
+				  self._onPivotFiltersClick.apply(self, arguments);
 			  }, "commentCellClick": function () {
 				  self._onCommentCellClick.apply(self, arguments);
 			  }, "isGlobalLockEditCell": function () {
@@ -459,7 +462,7 @@
 
 			  // FormatPainter
 			  'isFormatPainter': function () {
-				  return self.stateFormatPainter;
+				  return self.formatPainterState;
 			  },
 
 			  //calculate
@@ -726,9 +729,7 @@
 		  }, "onRenameCellTextEnd": function (countFind, countReplace) {
 			  self.handlers.trigger("asc_onRenameCellTextEnd", countFind, countReplace);
 		  }, 'onStopFormatPainter': function () {
-			  self._onStopFormatPainter();
-		  }, 'getRangeFormatPainter': function () {
-			  return self.rangeFormatPainter;
+              self._onStopFormatPainter.apply(self, arguments);
 		  }, "onDocumentPlaceChanged": function () {
 			  self._onDocumentPlaceChanged();
 		  }, "updateSheetViewSettings": function () {
@@ -1123,7 +1124,7 @@
     if (this.selectionDialogMode) {
       return;
     }
-    var isStateFormatPainter = this.stateFormatPainter;
+    var formatPainterState = this.formatPainterState;
     var ws = this.getWorksheet();
     ws.changeSelectionDone();
     this._onSelectionNameChanged(ws.getSelectionName(/*bRangeText*/false));
@@ -1140,7 +1141,7 @@
 
     var ct = ws.getCursorTypeFromXY(x, y);
 
-    if (c_oTargetType.Hyperlink === ct.target && !this.isFormulaEditMode && !isStateFormatPainter) {
+    if (c_oTargetType.Hyperlink === ct.target && !this.isFormulaEditMode && !formatPainterState) {
       // Проверим замерженность
       var isHyperlinkClick = false;
      if(isSelectOnShape) {
@@ -1279,18 +1280,19 @@
 
 		// проверяем фильтр
 		if (ct.target === c_oTargetType.FilterObject) {
-			if (ct.isPivot) {
-				//необходимо сгенерировать объект AutoFiltersOptions
+			var filterObj;
+			if (ct.idPivot) {
+				filterObj = ws.pivot_setDialogProp(ct.idPivot);
 			} else {
-				var filterObj = ws.af_setDialogProp(ct.idFilter, true);
-				if(filterObj) {
-					arrMouseMoveObjects.push(new asc_CMM({
-						type: c_oAscMouseMoveType.Filter,
-						x: AscCommon.AscBrowser.convertToRetinaValue(x),
-						y: AscCommon.AscBrowser.convertToRetinaValue(y),
-						filter: filterObj
-					}));
-				}
+				filterObj = ws.af_setDialogProp(ct.idFilter, true);
+			}
+			if(filterObj) {
+				arrMouseMoveObjects.push(new asc_CMM({
+					type: c_oAscMouseMoveType.Filter,
+					x: AscCommon.AscBrowser.convertToRetinaValue(x),
+					y: AscCommon.AscBrowser.convertToRetinaValue(y),
+					filter: filterObj
+				}));
 			}
 		}
 
@@ -1432,6 +1434,13 @@
     this.getWorksheet().af_setDialogProp(idFilter);
   };
 
+  WorkbookView.prototype._onPivotFiltersClick = function(idPivot) {
+    var filterObj = this.getWorksheet().pivot_setDialogProp(idPivot);
+    if (filterObj) {
+      this.handlers.trigger("asc_onSetAFDialog", filterObj);
+    }
+  };
+
   WorkbookView.prototype._onGroupRowClick = function(x, y, target, type) {
   	return this.getWorksheet().groupRowClick(x, y, target, type);
   };
@@ -1448,9 +1457,9 @@
     }
   };
 
-  WorkbookView.prototype._onStopFormatPainter = function() {
-    if (this.stateFormatPainter) {
-      this.formatPainter(c_oAscFormatPainterState.kOff);
+  WorkbookView.prototype._onStopFormatPainter = function (bLockDraw) {
+    if (this.formatPainterState) {
+      this.formatPainter(c_oAscFormatPainterState.kOff, bLockDraw);
     }
   };
 
@@ -1930,9 +1939,6 @@
               selectionRange = ws.model.selectionRange.getLast().clone(true);
           }
           ws.cloneSelection(false);
-      } else if (this.stateFormatPainter) {
-          // Должны отменить выбор на закрываемом листе
-          ws.formatPainter(c_oAscFormatPainterState.kOff);
       }
     }
 
@@ -1974,13 +1980,6 @@
 
     if (!bLockDraw) {
       ws.draw();
-    }
-
-    if (this.stateFormatPainter) {
-      // Должны отменить выбор на закрываемом листе
-      this.getWorksheet().formatPainter(this.stateFormatPainter);
-    }
-    if (!bLockDraw) {
       ws.objectRender.controller.updateSelectionState();
       ws.objectRender.controller.updateOverlay();
     }
@@ -2149,6 +2148,13 @@
 	WorkbookView.prototype.isActive = function () {
 		return (-1 === this.copyActiveSheet || this.wsActive === this.copyActiveSheet);
 	};
+
+	WorkbookView.prototype.isDrawFormatPainter = function () {
+	    return this.formatPainterState && this.formatPainterSheet === this.wsActive;
+    };
+    WorkbookView.prototype.getFormatPainterSheet = function () {
+        return this.formatPainterState && this.model.getWorksheet(this.formatPainterSheet);
+    };
 
   WorkbookView.prototype.getIsTrackShape = function() {
     var ws = this.getWorksheet();
@@ -2604,16 +2610,25 @@
       }
   };
 
-  WorkbookView.prototype.formatPainter = function(stateFormatPainter) {
-    // Если передали состояние, то выставляем его. Если нет - то меняем на противоположное.
-    this.stateFormatPainter = (null != stateFormatPainter) ? stateFormatPainter : ((c_oAscFormatPainterState.kOff !== this.stateFormatPainter) ? c_oAscFormatPainterState.kOff : c_oAscFormatPainterState.kOn);
+  WorkbookView.prototype.formatPainter = function(formatPainterState, bLockDraw) {
+    var ws = this.getWorksheet();
+    if (!bLockDraw) {
+        ws.cleanSelection();
+    }
 
-    this.rangeFormatPainter = this.getWorksheet().formatPainter(this.stateFormatPainter);
-    if (this.stateFormatPainter) {
-      this.copyActiveSheet = this.wsActive;
+    // Если передали состояние, то выставляем его. Если нет - то меняем на противоположное.
+    this.formatPainterState = (null != formatPainterState) ? formatPainterState :
+        ((c_oAscFormatPainterState.kOff !== this.formatPainterState) ? c_oAscFormatPainterState.kOff : c_oAscFormatPainterState.kOn);
+
+    if (this.formatPainterState) {
+      this.formatPainterSheet = this.wsActive;
+      this.formatPainterRange = ws.model.selectionRange.clone();
     } else {
-      this.copyActiveSheet = -1;
+      this.formatPainterSheet = this.formatPainterRange = null;
       this.handlers.trigger('asc_onStopFormatPainter');
+    }
+    if (!bLockDraw) {
+      ws.updateSelectionWithSparklines();
     }
   };
 

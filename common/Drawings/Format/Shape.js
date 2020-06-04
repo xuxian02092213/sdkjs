@@ -991,10 +991,6 @@ function CShape()
 
     this.tmpFontScale = undefined;
     this.tmpLnSpcReduction = undefined;
-
-
-    this.Id = AscCommon.g_oIdCounter.Get_NewId();
-    AscCommon.g_oTableId.Add( this, this.Id );
 }
 
 	CShape.prototype = Object.create(AscFormat.CGraphicObjectBase.prototype);
@@ -5309,7 +5305,19 @@ CShape.prototype.changePresetGeom = function (sPreset) {
     if(sPreset === "textRect")
     {
         this.spPr.setGeometry(AscFormat.CreateGeometry("rect"));
-        this.setStyle(AscFormat.CreateDefaultTextRectStyle());
+        
+        if(this.bWordShape)
+        {
+            if(this.style)
+            {
+                this.setStyle(null);
+            }
+        }
+        else
+        {
+            this.setStyle(AscFormat.CreateDefaultTextRectStyle());
+        }
+        
         var fill = new AscFormat.CUniFill();
         fill.setFill(new AscFormat.CSolidFill());
         fill.fill.setColor(new AscFormat.CUniColor());
