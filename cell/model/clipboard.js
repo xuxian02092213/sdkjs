@@ -2183,13 +2183,16 @@
 
 				var callback = function (success, slicersNames) {
 					if (!success) {
-						//TODO история + для вставки
+						History.EndTransaction();
+						window['AscCommon'].g_specialPasteHelper.CleanButtonInfo();
+						window['AscCommon'].g_specialPasteHelper.Paste_Process_End();
+
 						return;
 					}
 
 					//определяем стартовую позицию, если изображений несколько вставляется
-					var graphicObject;
-					for (var i = 0; i < data.Drawings.length; i++) {
+					var graphicObject, i;
+					for (i = 0; i < data.Drawings.length; i++) {
 						drawingObject = data.Drawings[i];
 						graphicObject = drawingObject.graphicObject;
 
@@ -2244,7 +2247,7 @@
 					var oCopyPr = new AscFormat.CCopyObjectProperties();
 					oCopyPr.idMap = oIdMap;
 					ws.objectRender.controller.resetSelection();
-					for (var i = 0; i < data.Drawings.length; i++) {
+					for (i = 0; i < data.Drawings.length; i++) {
 
 						if (slicersNames && data.Drawings[i].graphicObject.getObjectType() === AscDFH.historyitem_type_SlicerView) {
 							if (slicersNames[_slicerCounter]) {

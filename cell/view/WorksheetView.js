@@ -20263,7 +20263,7 @@
 				} else {
 					//тут необходимо ещё проверить, соответсвует ли внутренняя структура
 					var table = slicer.cacheDefinition.getTableSlicerCache();
-					if (!table || t.model.workbook.getTableIndexColumnByName(table.tableId, table.column)) {
+					if (!table || !t.model.workbook.getTableIndexColumnByName(table.tableId, table.column)) {
 						continue;
 					}
 					slicer.cacheDefinition.name = slicer.cacheDefinition.generateSlicerCacheName(slicer.name);
