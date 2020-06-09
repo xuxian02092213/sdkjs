@@ -44,8 +44,10 @@
 		Horizontal: 2
 	};
 	var ArrowType = {
-		Min: 0,
-		Max: 1
+		Left: 0,
+		Up: 1,
+		Right: 2,
+		Down: 3
 	};
 	var AnimationType = {
 		ToOver: 0,
@@ -197,18 +199,155 @@
 
 	function Arrow(settings)
 	{
-		this.type = ArrowType.Min;
+		this.type = ArrowType.Up;
 		this.w = 0; // ширина в пикселах
 		this.h = 0; // высота в пикселах
 		this.onePixSize = 1; // ширина обводки (зависит от AscBrowser.retinaPixelRatio)
 		this.isDown = false; // нажата ли
 		this.animationState = null; // состояние анимации
 		this.style = new ArrowStyle(settings);
+
+		this.cache = null;
 	}
 
-	Arrow.prototype.resize = function (scroll_width, scroll_height)
+	Arrow.prototype.resize = function(width, height)
 	{
+		if (this.w === width && this.h === height)
+			return;
 
+		if (!this.cache)
+			this.cache = document.createElement("canvas");
+
+		this.w = width;
+		this.h = height;
+
+		if (0 === this.w) this.w = this.h;
+		if (0 === this.h) this.h = this.w;
+
+		this.cache.width = this.w;
+		this.cache.height = this.h;
+
+		var len = AscBrowser.convertToRetinaValue(6, true);
+		if (0 === (len & 1))
+			len += 1;
+
+		var isDraw = true;
+		switch (this.type)
+		{
+			case ArrowType.Left:
+			case ArrowType.Right:
+			{
+				if (len >= this.w)
+					isDraw = false;
+				break;
+			}
+			case ArrowType.Up:
+			case ArrowType.Down:
+			{
+				if (len >= this.h)
+					isDraw = false;
+				break;
+			}
+			default:
+				break;
+		}
+
+		if (!isDraw)
+			return;
+
+		var ctx = this.canvas.getContext("2d");
+		var data = ctx.createImageData(this.w, this.h);
+		var data_px = data.data;
+
+		var countPart = (len + 1) >> 1;
+		var x, y, i, ind;
+		var stride = 4 * this.w;
+
+		switch (this.type)
+		{
+			case ArrowType.Up:
+			{
+				x = ((this.w - len) >> 1);
+				y = this.h - ((this.h - countPart) >> 1);
+
+				while (len > 0)
+				{
+					ind = 4 * (this.w * y + x) + 3;
+					for (i = 0; i < len; i++, ind += 4)
+					{
+						data_px[ind] = 255;
+					}
+
+					x += 1;
+					y -= 1;
+					len -= 2;
+				}
+				break;
+			}
+			case ArrowType.Down:
+			{
+				x = ((this.w - len) >> 1);
+				y = ((this.h - countPart) >> 1);
+
+				while (len > 0)
+				{
+					ind = 4 * (this.w * y + x) + 3;
+					for (i = 0; i < len; i++, ind += 4)
+					{
+						data_px[ind] = 255;
+					}
+
+					x += 1;
+					y += 1;
+					len -= 2;
+				}
+				break;
+			}
+			case ArrowType.Left:
+			{
+				x = this.w - ((this.w - len) >> 1);
+				y = ((this.h - len) >> 1);
+
+				while (len > 0)
+				{
+					ind = 4 * (this.w * y + x) + 3;
+					for (i = 0; i < len; i++, ind += stride)
+					{
+						data_px[ind] = 255;
+						ind += stride;
+					}
+
+					x -= 1;
+					y += 1;
+					len -= 2;
+				}
+				break;
+			}
+			case ArrowType.Right:
+			{
+				x = ((this.w - len) >> 1);
+				y = ((this.h - len) >> 1);
+
+				while (len > 0)
+				{
+					ind = 4 * (this.w * y + x) + 3;
+					for (i = 0; i < len; i++, ind += stride)
+					{
+						data_px[ind] = 255;
+						ind += stride;
+					}
+
+					x += 1;
+					y += 1;
+					len -= 2;
+				}
+				break;
+			}
+			default:
+				break;
+		}
+
+		ctx.putImageData(data, 0, 0);
 	};
 
 	Arrow.prototype.draw = function (context, scroll_width, scroll_height)
@@ -291,17 +430,25 @@
 				this.settings[opt] = settings[opt];
 		}
 
+		this.scroller = new Scroller(this.settings);
+		this.scrollType = scrollType;
+
 		if (this.settings.showArrows)
 		{
 			this.arrowMin = new Arrow(this.settings);
 			this.arrowMax = new Arrow(this.settings);
-		}
 
-		this.scroller = new Scroller(this.settings);
-		this.scrollType = scrollType;
-		if (undefined === this.scrollType)
-			this.scrollType = ScrollType.None;
-		this.scrollTypeAttack = this.scrollType;
+			if (this.scrollType == ScrollType.Horizontal)
+			{
+				this.arrowMin.type = ArrowType.Left;
+				this.arrowMax.type = ArrowType.Right;
+			}
+			if (this.scrollType == ScrollType.Vertical)
+			{
+				this.arrowMin.type = ArrowType.Up;
+				this.arrowMax.type = ArrowType.Down;
+			}
+		}
 
 		this.scrollTimeout = null;
 
