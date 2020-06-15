@@ -73,6 +73,18 @@
 	{
 		return new ElementColor(this.R, this.G, this.B);
 	};
+	ElementColor.prototype.isEqual = function (color)
+	{
+		if (!color)
+			return false;
+		if (this.R === color.R && this.G === color.G && this.B === color.B)
+			return true;
+		return false;
+	};
+	ElementColor.prototype.toStyle = function ()
+	{
+		return "rgb(" + this.R + "," + this.G + "," + this.B + ")";
+	};
 
 	function getAnimationStep(color1, color2, count)
 	{
@@ -104,6 +116,12 @@
 		this.ColorBackgroundDown.fromHEX(settings.arrowActiveBackgroundColor);
 		this.ColorBorderDown.fromHEX(settings.arrowActiveBorderColor);
 		this.ColorDecoratorDown.fromHEX(settings.arrowActiveColor);
+	}
+	function ArrowState()
+	{
+		this.ColorBackground;
+		this.ColorBorder;
+		this.ColorDecorator;
 	}
 
 	ArrowStyle.getAnimationState = function (state_cur, type)
@@ -202,11 +220,11 @@
 		this.type = ArrowType.Up;
 		this.w = 0; // ширина в пикселах
 		this.h = 0; // высота в пикселах
-		this.onePixSize = 1; // ширина обводки (зависит от AscBrowser.retinaPixelRatio)
 		this.isDown = false; // нажата ли
 		this.animationState = null; // состояние анимации
 		this.style = new ArrowStyle(settings);
-
+		this.state = new ArrowState();
+		this.old_state = new ArrowState();
 		this.cache = null;
 	}
 
@@ -350,12 +368,56 @@
 		ctx.putImageData(data, 0, 0);
 	};
 
-	Arrow.prototype.draw = function (context, scroll_width, scroll_height)
+	Arrow.prototype.draw = function (context, width, height)
 	{
+		if (this.state && this.old_state)
+		{
+			if (this.state.ColorBackground.isEqual(this.old_state.ColorBackground) &&
+				this.state.ColorBorder.isEqual(this.old_state.ColorBorder) &&
+				this.state.ColorDecorator.isEqual(this.old_state.ColorDecorator))
+			{
+				// ничего не поменялось.
+				return;
+			}
+		}
 
+		this.old_state.ColorBackground = this.state.ColorBackground.copy();
+		this.old_state.ColorBorder = this.state.ColorBorder.copy();
+		this.old_state.ColorDecorator = this.state.ColorDecorator.copy();
+
+		var x = (this.type === ArrowType.Right) ? (width - this.w) : 0;
+		var y = (this.type === ArrowType.Down) ? (height - this.h) : 0;
+
+		// 1) background
+		context.beginPath();
+		context.fillStyle = this.old_state.ColorBackground.toStyle();
+		context.fillRect(x, y, this.w, this.h);
+
+		// 2) decorator
+		var ctx_arrow = this.cache.getContext("2d");
+		ctx_arrow.globalCompositeOperation = "source-in";
+		ctx_arrow.fillStyle = this.ColorDecorator.toStyle();
+		ctx_arrow.fillRect(0, 0, this.w, this.h);
+		context.drawImage(this.cache, x, y, this.w, this.h);
+
+		// 3) border
+		context.beginPath();
+		context.strokeStyle = this.old_state.ColorBolder.toStyle();
+		var pen_width = AscBrowser.retinaPixelRatio >> 0;
+		if (pen_width < 1) pen_width = 1;
+		context.lineWidth = pen_width;
+		context.moveTo(x + (pen_width / 2), y + (pen_width / 2));
+		context.lineTo(x + (this.w - pen_width / 2), y + (pen_width / 2));
+		context.lineTo(x + (this.w - pen_width / 2), y + this.h - (pen_width / 2));
+		context.lineTo(x + (pen_width / 2), y + this.h - (pen_width / 2));
+		context.closePath();
+		context.stroke();
+
+		// 4) clear path
+		context.beginPath();
 	};
 
-	Arrow.prototype.animationNext = function (context, scroll_width, scroll_height)
+	Arrow.prototype.animationNext = function (context, width, height)
 	{
 
 	};
@@ -364,13 +426,58 @@
 	{
 		this.w = 0; // ширина в пикселах
 		this.h = 0; // высота в пикселах
-		this.onePixSize = 1; // ширина обводки (зависит от AscBrowser.retinaPixelRatio)
 		this.isDown = false; // нажата ли
 		this.animationState = null; // состояние анимации
 		this.minSize = settings.scrollerMin ? settings.scrollerMin : 34;
 		this.maxSize = settings.scrollerMax ? settings.scrollerMax : 99999;
 		this.style = new ScrollerStyle(settings);
+		this.state = new ArrowState();
+		this.old_state = new ArrowState();
 	}
+
+	Scroller.prototype.draw = function (context, width, height, margin)
+	{
+		if (this.state && this.old_state)
+		{
+			if (this.state.ColorBackground.isEqual(this.old_state.ColorBackground) &&
+				this.state.ColorBorder.isEqual(this.old_state.ColorBorder) &&
+				this.state.ColorDecorator.isEqual(this.old_state.ColorDecorator))
+			{
+				// ничего не поменялось.
+				return;
+			}
+		}
+
+		this.old_state.ColorBackground = this.state.ColorBackground.copy();
+		this.old_state.ColorBorder = this.state.ColorBorder.copy();
+		this.old_state.ColorDecorator = this.state.ColorDecorator.copy();
+
+		var x = (this.type === ArrowType.Right) ? (width - this.w) : 0;
+		var y = (this.type === ArrowType.Down) ? (height - this.h) : 0;
+
+		// 1) background
+		context.beginPath();
+		context.fillStyle = this.old_state.ColorBackground.toStyle();
+		context.fillRect(x, y, this.w, this.h);
+
+		// 2) decorator
+
+		// 3) border
+		context.beginPath();
+		context.strokeStyle = this.old_state.ColorBolder.toStyle();
+		var pen_width = AscBrowser.retinaPixelRatio >> 0;
+		if (pen_width < 1) pen_width = 1;
+		context.lineWidth = pen_width;
+		context.moveTo(x + (pen_width / 2), y + (pen_width / 2));
+		context.lineTo(x + (this.w - pen_width / 2), y + (pen_width / 2));
+		context.lineTo(x + (this.w - pen_width / 2), y + this.h - (pen_width / 2));
+		context.lineTo(x + (pen_width / 2), y + this.h - (pen_width / 2));
+		context.closePath();
+		context.stroke();
+
+		// 4) clear path
+		context.beginPath();
+	};
 
 	function ScrollSettings()
 	{
@@ -417,6 +524,9 @@
 		this.vscrollStep = 10;
 		this.hscrollStep = 10;
 		this.wheelScrollLines = 1;
+
+		this.position = 0;
+		this.positionMax = 0;
 	}
 
 	function ScrollObject(elemID, settings, scrollType)
@@ -458,10 +568,13 @@
 		this.width = 1;
 		this.heigth = 1;
 
+		this.widthPx = 1;
+		this.heightPx = 1;
+
 		this.scrollerMargin = this.settings.marginScroller;
 
-		this.position = 0;
-		this.positionMax = 0;
+		this.position = this.settings.position;
+		this.positionMax = this.settings.positionMax;
 
 		this.eventListeners = [];
 
@@ -469,7 +582,7 @@
 		this._init(elemID);
 	}
 
-	ScrollObject.prototype.clientWidth = function (elem)
+	ScrollObject.prototype.clientWidth = function(elem)
 	{
 		var _w = elem.clientWidth;
 		if (0 != _w)
@@ -485,7 +598,7 @@
 
 		return 0;
 	};
-	ScrollObject.prototype.clientHeight = function (elem)
+	ScrollObject.prototype.clientHeight = function(elem)
 	{
 		var _w = elem.clientWidth;
 		if (0 != _w)
@@ -500,6 +613,23 @@
 			return _intVal;
 
 		return 0;
+	};
+
+	ScrollObject.prototype.resize = function()
+	{
+		this.width = this.clientWidth(this.canvas.parentNode);
+		this.heigth = this.clientHeight(this.canvas.parentNode);
+
+		this.canvas.style.width = this.width;
+		this.canvas.style.height = this.heigth;
+		AscCommon.calculateCanvasSize(this.canvas);
+
+		this.widthPx = this.canvas.width;
+		this.heightPx = this.canvas.height;
+
+		this.context = this.canvas.getContext('2d');
+		this.context.fillStyle = this.settings.scrollBackgroundColor;
+		this.context.fillRect(0, 0, this.widthPx, this.heightPx);
 	};
 
 	ScrollObject.prototype._init = function ( elemID )
@@ -510,20 +640,9 @@
 		var holder = document.getElementById(elemID);
 
 		if (holder.getElementsByTagName('canvas').length === 0)
-		{
 			this.canvas = holder.appendChild(document.createElement("CANVAS"));
-		}
 		else
-        {
 			this.canvas = holder.children[1];
-		}
-
-		this.width = this.clientWidth(this.canvas.parentNode);
-		this.heigth = this.clientHeight(this.canvas.parentNode);
-
-		this.canvas.style.width = this.width;
-		this.canvas.style.height = this.heigth;
-		AscCommon.calculateCanvasSize(this.canvas);
 
 		this.canvas.style.zIndex = 100;
 		this.canvas.style.position = "absolute";
@@ -532,31 +651,11 @@
 		if (AscBrowser.isWebkit)
 			this.canvas.style.webkitUserSelect = "none";
 
-		this.context = this.canvas.getContext('2d');
+		this.resize();
 
 		var arrowSize = Math.min(this.width, this.heigth);
 		if (this.settings.showArrows)
 			this.scrollerMargin = arrowSize + 2;
-
-		var maxScrollY = holder.firstElementChild.clientHeight - this.settings.screenH > 0 ? holder.firstElementChild.clientHeight - this.settings.screenH : 0;
-		var maxScrollH = holder.firstElementChild.clientWidth - this.settings.screenW > 0 ? holder.firstElementChild.clientWidth - this.settings.screenW : 0;
-
-		if (this.scrollType === ScrollType.None)
-		{
-		}
-
-		this.maxScrollY = this.maxScrollY2 = holder.firstElementChild.clientHeight - this.settings.screenH > 0 ? holder.firstElementChild.clientHeight - this.settings.screenH : 0;
-		this.maxScrollX = this.maxScrollX2 = holder.firstElementChild.clientWidth - this.settings.screenW > 0 ? holder.firstElementChild.clientWidth - this.settings.screenW : 0;
-
-		this.isVerticalScroll = holder.firstElementChild.clientHeight / Math.max( this.canvasH, 1 ) > 1;
-		this.isHorizontalScroll = holder.firstElementChild.clientWidth / Math.max( this.canvasW, 1 ) > 1;
-
-		this._setScrollerHW();
-
-		this.paneHeight = this.canvasH - this.arrowPosition * 2;
-		this.paneWidth = this.canvasW - this.arrowPosition * 2;
-
-		this.RecalcScroller();
 
 		AscCommon.addMouseEvent(this.canvas, "down", this.evt_mousedown);
 		AscCommon.addMouseEvent(this.canvas, "move", this.evt_mousemove);
@@ -579,16 +678,10 @@
 			return false;
 		};
 
-		if ( this.canvas.addEventListener ){
-			this.canvas.addEventListener( 'DOMMouseScroll', this.evt_mousewheel, false );
-		}
+		if (this.canvas.addEventListener)
+			this.canvas.addEventListener("DOMMouseScroll", this.evt_mousewheel, false);
 
-		this.context.fillStyle = this.settings.scrollBackgroundColor;
-		this.context.fillRect(0,0,this.canvasW,this.canvasH);
-
-		this._drawArrow();
-		this._draw();
-
+		this.draw();
         return true;
 	};
 
@@ -600,25 +693,24 @@
 		this.disableCurrentScroll = false;
 		return ret;
 	};
-	ScrollObject.prototype.getMousePosition = function ( evt ) {
+	ScrollObject.prototype.getMousePosition = function(e)
+	{
 		// get canvas position
 		var obj = this.canvas;
 		var top = 0;
 		var left = 0;
-		while ( obj && obj.tagName != 'BODY' ) {
+		while (obj && obj.tagName != 'BODY')
+		{
 			top += obj.offsetTop;
 			left += obj.offsetLeft;
 			obj = obj.offsetParent;
 		}
 
 		// return relative mouse position
-		var mouseX = ((evt.clientX * AscBrowser.zoom) >> 0) - left + window.pageXOffset;
-		var mouseY = ((evt.clientY * AscBrowser.zoom) >> 0) - top + window.pageYOffset;
+		var mouseX = e.clientX - left + window.pageXOffset;
+		var mouseY = e.clientY - top + window.pageYOffset;
 
-		return {
-			x:mouseX,
-			y:mouseY
-		};
+		return { x: mouseX, y: mouseY };
 	};
 	ScrollObject.prototype.RecalcScroller = function ( startpos ) {
 		if ( this.isVerticalScroll ) {
@@ -2127,77 +2219,69 @@
 	};
 
 	/************************************************************************/
-	/*for events*/
-	ScrollObject.prototype.bind = function ( typesStr, handler ) {
-		var types = typesStr.split( " " );
+	ScrollObject.prototype.bind = function(types_string, handler)
+	{
+		var types = types_string.split(" ");
 		/*
 		 * loop through types and attach event listeners to
 		 * each one.  eg. "click mouseover.namespace mouseout"
 		 * will create three event bindings
 		 */
-		for ( var n = 0; n < types.length; n++ ) {
-			var type = types[n];
-			var event = (type.indexOf( 'touch' ) == -1) ? 'on' + type : type;
-			var parts = event.split( "." );
+		for (var i = 0; i < types.length; i++)
+		{
+			var type = types[i];
+			var event = (type.indexOf("touch") === -1) ? 'on' + type : type;
+			var parts = event.split(".");
 			var baseEvent = parts[0];
 			var name = parts.length > 1 ? parts[1] : "";
 
-			if ( !this.eventListeners[baseEvent] ) {
+			if (!this.eventListeners[baseEvent])
 				this.eventListeners[baseEvent] = [];
-			}
 
-			this.eventListeners[baseEvent].push( {
-				name:name,
-				handler:handler
-			} );
+			this.eventListeners[baseEvent].push({ name: name, handler: handler });
 		}
 	};
-	ScrollObject.prototype.unbind = function ( typesStr ) {
-		var types = typesStr.split( " " );
-
-		for ( var n = 0; n < types.length; n++ ) {
-			var type = types[n];
-			var event = (type.indexOf( 'touch' ) == -1) ? 'on' + type : type;
-			var parts = event.split( "." );
+	ScrollObject.prototype.unbind = function(types_string)
+	{
+		var types = types_string.split(" ");
+		for (var i = 0; i < types.length; i++)
+		{
+			var type = types[i];
+			var event = (type.indexOf("touch") === -1) ? 'on' + type : type;
+			var parts = event.split(".");
 			var baseEvent = parts[0];
 
-			if ( this.eventListeners[baseEvent] && parts.length > 1 ) {
+			if ( this.eventListeners[baseEvent] && parts.length > 1 )
+			{
 				var name = parts[1];
-
-				for ( var i = 0; i < this.eventListeners[baseEvent].length; i++ ) {
-					if ( this.eventListeners[baseEvent][i].name == name ) {
-						this.eventListeners[baseEvent].splice( i, 1 );
-						if ( this.eventListeners[baseEvent].length === 0 ) {
+				for (var j = 0; j < this.eventListeners[baseEvent].length; j++ )
+				{
+					if (this.eventListeners[baseEvent][j].name === name)
+					{
+						this.eventListeners[baseEvent].splice(j, 1);
+						if (this.eventListeners[baseEvent].length === 0)
+						{
 							this.eventListeners[baseEvent] = undefined;
 						}
 						break;
 					}
 				}
 			}
-			else {
+			else
+			{
 				this.eventListeners[baseEvent] = undefined;
 			}
 		}
 	};
-	ScrollObject.prototype.handleEvents = function ( eventType, evt, p ) {
-		var that = this;
-		// generic events handler
-		function handle( obj ) {
-			var el = obj.eventListeners;
-			if ( el[eventType] ) {
-				var events = el[eventType];
-				for ( var i = 0; i < events.length; i++ ) {
-					events[i].handler.apply( obj, [evt] );
-				}
+	ScrollObject.prototype.handleEvents = function(eventType, params) {
+		var events = this.eventListeners;
+		if (events[eventType])
+		{
+			for (var i = 0, length = events[eventType].length; i < length; i++)
+			{
+				events[eventType][i].handler.apply(this, [params]);
 			}
 		}
-
-		/*
-		 * simulate bubbling by handling shape events
-		 * first, followed by group events, followed
-		 * by layer events
-		 */
-		handle( that );
 	};
 
 	window["AscCommon"].ScrollSettings = ScrollSettings;
