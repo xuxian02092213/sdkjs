@@ -4368,6 +4368,21 @@
 				}
 			},
 
+			getTableColumnByTotal: function (col, row) {
+				var worksheet = this.worksheet;
+				if (worksheet.TableParts && worksheet.TableParts.length > 0) {
+					for (var i = 0; i < worksheet.TableParts.length; i++) {
+						if (worksheet.TableParts[i].isTotalsRow()) {
+							var ref = worksheet.TableParts[i].Ref;
+							if (ref.r2 === row && col >= ref.c1 && col <= ref.c2) {
+								return worksheet.TableParts[i];
+							}
+						}
+					}
+				}
+				return null;
+			},
+
 			_getTrueColId: function (filter, colId, checkShowButton) {
 				//TODO - добавил условие, чтобы не было ошибки(bug 30007). возможно, второму пользователю нужно запретить все действия с измененной таблицей.
 				if (filter === null) {

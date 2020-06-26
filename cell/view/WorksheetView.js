@@ -15460,7 +15460,19 @@
 					row: activeCell.row,
 					col: activeCell.col
 				});
-			}
+			} else {
+                var totalTableFunc = this.model.autoFilters.getTableColumnByTotal(activeCell.col, activeCell.row);
+                if (totalTableFunc) {
+                    this.af_drawCurrentButton(offsetX, offsetY, {
+                        isOverlay: true,
+                        isSortState: null,
+                        isSetFilter: false,
+                        row: activeCell.row,
+                        col: activeCell.col
+                    });
+                }
+            }
+
 			return false;
 		}
 		return true;
