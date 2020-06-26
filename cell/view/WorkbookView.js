@@ -397,6 +397,8 @@
 				  self.enableKeyEventsHandler(true);
 			  }, "autoFiltersClick": function () {
 				  self._onAutoFiltersClick.apply(self, arguments);
+			  }, "tableTotalClick": function () {
+				  self._onTableTotalClick.apply(self, arguments);
 			  }, "pivotFiltersClick": function () {
 				  self._onPivotFiltersClick.apply(self, arguments);
 			  }, "commentCellClick": function () {
@@ -1432,6 +1434,10 @@
 
   WorkbookView.prototype._onAutoFiltersClick = function(idFilter) {
     this.getWorksheet().af_setDialogProp(idFilter);
+  };
+
+  WorkbookView.prototype._onTableTotalClick = function(idTableTotal) {
+      self.handlers.trigger("asc_onTableTotalMenu", idTableTotal);
   };
 
   WorkbookView.prototype._onPivotFiltersClick = function(idPivot) {
