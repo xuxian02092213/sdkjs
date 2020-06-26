@@ -74,20 +74,7 @@ function Paragraph(DrawingDocument, Parent, bFromPresentation)
     this.Pr = new CParaPr();
 
     // Рассчитанное положение рамки
-    this.CalculatedFrame =
-    {
-        L : 0,       // Внутренний рект, по которому идет рассчет
-        T : 0,
-        W : 0,
-        H : 0,
-        L2 : 0,      // Внешний рект, с учетом границ
-        T2 : 0,
-        W2 : 0,
-        H2 : 0,
-        PageIndex : 0,
-		StartIndex: 0,
-		FlowCount: 0
-    };
+    this.CalculatedFrame = new CCalculatedFrame();
 
     // Данный TextPr будет относится только к символу конца параграфа
     this.TextPr = new ParaTextPr();
@@ -215,12 +202,9 @@ Paragraph.prototype.Use_Wrap = function()
 
 	return true;
 };
-Paragraph.prototype.Use_YLimit = function()
+Paragraph.prototype.UseLimit = function()
 {
-	if (undefined != this.Get_FramePr() && this.Parent instanceof CDocument)
-		return false;
-
-	return true;
+	return Asc.NoYLimit !== this.YLimit;
 };
 Paragraph.prototype.Set_Pr = function(oNewPr)
 {
@@ -1800,23 +1784,6 @@ Paragraph.prototype.Draw = function(CurPage, pGraphics)
 
 	var Pr = this.Get_CompiledPr();
 
-	// Задаем обрезку, если данный параграф является рамкой
-	if (true !== this.Is_Inline())
-	{
-		var FramePr = this.Get_FramePr();
-		if (undefined != FramePr && this.Parent instanceof CDocument)
-		{
-			var PixelError = editor.WordControl.m_oLogicDocument.DrawingDocument.GetMMPerDot(1);
-			var BoundsL    = this.CalculatedFrame.L2 - PixelError;
-			var BoundsT    = this.CalculatedFrame.T2 - PixelError;
-			var BoundsH    = this.CalculatedFrame.H2 + 2 * PixelError;
-			var BoundsW    = this.CalculatedFrame.W2 + 2 * PixelError;
-
-			pGraphics.SaveGrState();
-			pGraphics.AddClipRect(BoundsL, BoundsT, BoundsW, BoundsH);
-		}
-	}
-
 	// Выясним какая заливка у нашего текста
 
 	var Theme    = this.Get_Theme();
@@ -1868,12 +1835,7 @@ Paragraph.prototype.Draw = function(CurPage, pGraphics)
 	// 6 часть отрисовки :
 	//    Рисуем верхнюю, нижнюю и промежуточную границы
 	this.Internal_Draw_6(CurPage, pGraphics, Pr);
-
-	// Убираем обрезку
-	if (undefined != FramePr && this.Parent instanceof CDocument)
-	{
-		pGraphics.RestoreGrState();
-	}
+	
 	if (pGraphics.End_Command)
 	{
 		pGraphics.End_Command();
@@ -10739,7 +10701,19 @@ Paragraph.prototype.Document_Get_AllFontNames = function(AllFonts)
  */
 Paragraph.prototype.Document_UpdateRulersState = function()
 {
-	if (true === this.Is_Inline())
+	if (this.CalculatedFrame)
+	{
+		var oFrame = this.CalculatedFrame;
+		this.Parent.DrawingDocument.Set_RulerState_Paragraph({
+			L         : oFrame.L2,
+			T         : oFrame.T2,
+			R         : oFrame.L2 + oFrame.W2,
+			B         : oFrame.T2 + oFrame.H2,
+			PageIndex : this.GetStartPageAbsolute(),
+			Frame     : this
+		}, false);
+	}
+	else
 	{
 		if (this.Parent instanceof CDocument)
 		{
@@ -10748,19 +10722,6 @@ Paragraph.prototype.Document_UpdateRulersState = function()
 				this.LogicDocument.Document_UpdateRulersStateBySection();
 			}
 		}
-	}
-	else
-	{
-		var StartPage = this.Parent.Get_AbsolutePage(0);
-		var Frame     = this.CalculatedFrame;
-		this.Parent.DrawingDocument.Set_RulerState_Paragraph({
-			L         : Frame.L,
-			T         : Frame.T,
-			R         : Frame.L + Frame.W,
-			B         : Frame.T + Frame.H,
-			PageIndex : StartPage + Frame.PageIndex,
-			Frame     : this
-		}, false);
 	}
 };
 /**
@@ -10950,6 +10911,14 @@ Paragraph.prototype.Is_Inline = function()
 
 	return true;
 };
+Paragraph.prototype.IsInline = function()
+{
+	return this.Is_Inline();
+};
+Paragraph.prototype.GetFramePr = function()
+{
+	return this.Pr.FramePr;
+};
 Paragraph.prototype.Get_FramePr = function()
 {
 	return this.Pr.FramePr;
@@ -10976,7 +10945,7 @@ Paragraph.prototype.Set_FramePr = function(FramePr, bDelete)
 	if (true === FramePr.FromDropCapMenu && 1 === FrameParas.length)
 	{
 		// Здесь мы смотрим только на количество строк, шрифт, тип и горизонтальный отступ от текста
-		var NewFramePr = FramePr_old.Copy();
+		var NewFramePr = FramePr_old ? FramePr_old.Copy() : new CFramePr();
 
 		if (undefined != FramePr.DropCap)
 		{
@@ -11018,7 +10987,7 @@ Paragraph.prototype.Set_FramePr = function(FramePr, bDelete)
 	}
 	else
 	{
-		var NewFramePr = FramePr_old.Copy();
+		var NewFramePr = FramePr_old ? FramePr_old.Copy() : new CFramePr();
 
 		if (undefined != FramePr.H)
 			NewFramePr.H = FramePr.H;
@@ -11164,26 +11133,20 @@ Paragraph.prototype.Get_FrameBounds = function(FrameX, FrameY, FrameW, FrameH)
 
 	return {X : X0, Y : Y0, W : X1 - X0, H : Y1 - Y0};
 };
-Paragraph.prototype.Set_CalculatedFrame = function(L, T, W, H, L2, T2, W2, H2, PageIndex, StartIndex, FlowCount)
+Paragraph.prototype.SetCalculatedFrame = function(oFrame)
 {
-	this.CalculatedFrame.T         = T;
-	this.CalculatedFrame.L         = L;
-	this.CalculatedFrame.W         = W;
-	this.CalculatedFrame.H         = H;
-	this.CalculatedFrame.T2        = T2;
-	this.CalculatedFrame.L2        = L2;
-	this.CalculatedFrame.W2        = W2;
-	this.CalculatedFrame.H2        = H2;
-	this.CalculatedFrame.PageIndex = PageIndex;
-	this.CalculatedFrame.StartIndex = StartIndex;
-	this.CalculatedFrame.FlowCount = FlowCount;
+	this.CalculatedFrame = oFrame;
+	oFrame.AddParagraph(this);
 };
-Paragraph.prototype.Get_CalculatedFrame = function()
+Paragraph.prototype.GetCalculatedFrame = function()
 {
 	return this.CalculatedFrame;
 };
 Paragraph.prototype.Internal_Get_FrameParagraphs = function()
 {
+	if (this.CalculatedFrame && this.CalculatedFrame.GetParagraphs().length > 0)
+		return this.CalculatedFrame.GetParagraphs();
+
 	var FrameParas = [];
 
 	var FramePr = this.Get_FramePr();
@@ -11248,8 +11211,16 @@ Paragraph.prototype.Get_LineDropCapWidth = function()
 };
 Paragraph.prototype.Change_Frame = function(X, Y, W, H, PageIndex)
 {
-	var FramePr = this.Get_FramePr();
-	if (!this.LogicDocument || undefined === FramePr || ( Math.abs(Y - this.CalculatedFrame.T) < 0.001 && Math.abs(X - this.CalculatedFrame.L) < 0.001 && Math.abs(W - this.CalculatedFrame.W) < 0.001 && Math.abs(H - this.CalculatedFrame.H) < 0.001 && PageIndex === this.CalculatedFrame.PageIndex ))
+	if (!this.LogicDocument || !this.CalculatedFrame || !this.CalculatedFrame.GetFramePr())
+		return;
+
+	var FramePr = this.CalculatedFrame.GetFramePr();
+
+	if (Math.abs(Y - this.CalculatedFrame.T2) < 0.001
+		&& Math.abs(X - this.CalculatedFrame.L2) < 0.001
+		&& Math.abs(W - this.CalculatedFrame.W2) < 0.001
+		&& Math.abs(H - this.CalculatedFrame.H2) < 0.001
+		&& PageIndex === this.CalculatedFrame.PageIndex)
 		return;
 
 	var FrameParas = this.Internal_Get_FrameParagraphs();
@@ -11262,24 +11233,26 @@ Paragraph.prototype.Change_Frame = function(X, Y, W, H, PageIndex)
 		this.LogicDocument.StartAction(AscDFH.historydescription_Document_ParagraphChangeFrame);
 		var NewFramePr = FramePr.Copy();
 
-		if (Math.abs(X - this.CalculatedFrame.L) > 0.001)
+		if (Math.abs(X - this.CalculatedFrame.L2) > 0.001)
 		{
-			NewFramePr.X       = X;
+			NewFramePr.X       = X + (this.CalculatedFrame.L - this.CalculatedFrame.L2);
 			NewFramePr.XAlign  = undefined;
 			NewFramePr.HAnchor = Asc.c_oAscHAnchor.Page;
 		}
 
-		if (Math.abs(Y - this.CalculatedFrame.T) > 0.001)
+		if (Math.abs(Y - this.CalculatedFrame.T2) > 0.001)
 		{
-			NewFramePr.Y       = Y;
+			NewFramePr.Y       = Y + (this.CalculatedFrame.T - this.CalculatedFrame.T2);
 			NewFramePr.YAlign  = undefined;
 			NewFramePr.VAnchor = Asc.c_oAscVAnchor.Page;
 		}
 
-		if (Math.abs(W - this.CalculatedFrame.W) > 0.001)
-			NewFramePr.W = W;
+		if (Math.abs(W - this.CalculatedFrame.W2) > 0.001)
+		{
+			NewFramePr.W = W - Math.abs(this.CalculatedFrame.W2 - this.CalculatedFrame.W);
+		}
 
-		if (Math.abs(H - this.CalculatedFrame.H) > 0.001)
+		if (Math.abs(H - this.CalculatedFrame.H2) > 0.001)
 		{
 			if (undefined != FramePr.DropCap && Asc.c_oAscDropCap.None != FramePr.DropCap && 1 === FrameParas.length)
 			{
@@ -11287,11 +11260,11 @@ Paragraph.prototype.Change_Frame = function(X, Y, W, H, PageIndex)
 				var _H           = Math.min(H, PageH);
 				NewFramePr.Lines = this.Update_DropCapByHeight(_H);
 				NewFramePr.HRule = linerule_Exact;
-				NewFramePr.H     = H;
+				NewFramePr.H     = H - Math.abs(this.CalculatedFrame.H2 - this.CalculatedFrame.H);
 			}
 			else
 			{
-				if (H <= this.CalculatedFrame.H)
+				if (H <= this.CalculatedFrame.H2)
 					NewFramePr.HRule = linerule_Exact;
 				else
 					NewFramePr.HRule = Asc.linerule_AtLeast;
@@ -11310,6 +11283,7 @@ Paragraph.prototype.Change_Frame = function(X, Y, W, H, PageIndex)
 		this.LogicDocument.Recalculate();
 		this.LogicDocument.UpdateInterface();
 		this.LogicDocument.UpdateRulers();
+		this.LogicDocument.UpdateTracks();
 		this.LogicDocument.FinalizeAction();
 	}
 };
