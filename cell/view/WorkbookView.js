@@ -1437,7 +1437,17 @@
   };
 
   WorkbookView.prototype._onTableTotalClick = function(idTableTotal) {
-      self.handlers.trigger("asc_onTableTotalMenu", idTableTotal);
+      var ws = this.getWorksheet();
+      if (idTableTotal) {
+          var _table = ws.model.TableParts ? ws.model.TableParts[idTableTotal.id] : null;
+          if (_table) {
+            var _tableColumn = _table.TableColumns[idTableTotal.colId];
+            if (_tableColumn) {
+                var list = [window['Asc']['ETotalsRowFunction'].totalrowfunctionAverage];
+                this.handlers.trigger("asc_onTableTotalMenu", list, _tableColumn.TotalsRowFunction);
+            }
+          }
+      }
   };
 
   WorkbookView.prototype._onPivotFiltersClick = function(idPivot) {
@@ -2210,6 +2220,9 @@
         } else {
             if (c_oAscPopUpSelectorType.None === type) {
                 ws.setSelectionInfo("value", name, /*onlyActive*/true);
+                return;
+            } else if (c_oAscPopUpSelectorType.TotalRowFunc === type) {
+                ws.setSelectionInfo("totalRowFunc", name, /*onlyActive*/true);
                 return;
             }
 

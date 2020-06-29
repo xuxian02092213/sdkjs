@@ -6322,7 +6322,7 @@
 				if (this.TableParts[i].isTotalsRow()) {
 					var ref = this.TableParts[i].Ref;
 					if (ref.r2 === row && col >= ref.c1 && col <= ref.c2) {
-						return {index: i, colIndex: ref.c1 - col};
+						return {index: i, colIndex: col - ref.c1};
 					}
 				}
 			}

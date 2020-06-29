@@ -10696,6 +10696,13 @@
 						}
 						expansionTableRange = range.bbox;
                         break;
+                    case "totalRowFunc":
+                        var _table = t.model.autoFilters.getTableByActiveCell();
+                        if (_table) {
+                            t.model.autoFilters._changeTotalsRowData(_table, range.bbox, {totalFunction: val});
+                            expansionTableRange = range.bbox;
+                        }
+                        break;
                     case "format":
                         range.setNumFormat(val);
                         canChangeColWidth = c_oAscCanChangeColWidth.numbers;
