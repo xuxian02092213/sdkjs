@@ -1443,8 +1443,7 @@
           if (_table) {
             var _tableColumn = _table.TableColumns[idTableTotal.colId];
             if (_tableColumn) {
-                var list = [window['Asc']['ETotalsRowFunction'].totalrowfunctionAverage];
-                this.handlers.trigger("asc_onTableTotalMenu", list, _tableColumn.TotalsRowFunction);
+                this.handlers.trigger("asc_onTableTotalMenu", _tableColumn.TotalsRowFunction);
             }
           }
       }
