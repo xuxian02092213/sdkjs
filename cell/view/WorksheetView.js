@@ -10699,7 +10699,10 @@
                     case "totalRowFunc":
                         var _table = t.model.autoFilters.getTableByActiveCell();
                         if (_table) {
-                            t.model.autoFilters._changeTotalsRowData(_table, range.bbox, {totalFunction: val});
+                            var _tF = t.model.autoFilters._changeTotalsRowData(_table, range.bbox, {totalFunction: val});
+                            if (_tF) {
+                                range.setValue(_tF[0]);
+                            }
                             expansionTableRange = range.bbox;
                         }
                         break;
