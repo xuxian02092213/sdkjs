@@ -3044,9 +3044,8 @@
 							cell.setType(CellValueType.String);
 						}
 						var _formula = tableColumn.getTotalRowFormula(tablePart);
-						if (_formula) {
-							newFormulas.push("=" + _formula);
-						}
+						newFormulas.push(_formula ? "=" + _formula : "");
+
 
 						this._addHistoryObj({nCol: cell.bbox.c1, nRow: cell.bbox.r1, formula: oldFormula, val: oldLabel, totalFunction: oldTotalFunction
 						}, AscCH.historyitem_AutoFilter_ChangeTotalRow, {activeCells: range, nCol: cell.bbox.c1, nRow: cell.bbox.r1, formula: formula, val: label, totalFunction: totalFunction});

@@ -1443,7 +1443,11 @@
           if (_table) {
             var _tableColumn = _table.TableColumns[idTableTotal.colId];
             if (_tableColumn) {
-                this.handlers.trigger("asc_onTableTotalMenu", _tableColumn.TotalsRowFunction);
+                var val = _tableColumn.TotalsRowFunction;
+                if (null === val) {
+                    val = Asc.ETotalsRowFunction.totalrowfunctionNone;
+                }
+                this.handlers.trigger("asc_onTableTotalMenu", val);
             }
           }
       }
@@ -2279,6 +2283,8 @@
 
         var addFunction = function (name) {
         	t.setWizardMode(true);
+            t.cellEditor.selectionBegin = 0;
+            t.cellEditor.selectionEnd = t.cellEditor.textRender.getEndOfText();
 			t.cellEditor.insertFormula(name);
 			// ToDo send info from selection
 			var res = name ? new AscCommonExcel.CFunctionInfo(name) : null;

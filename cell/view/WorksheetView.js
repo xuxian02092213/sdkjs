@@ -10703,7 +10703,6 @@
                             if (_tF) {
                                 range.setValue(_tF[0]);
                             }
-                            expansionTableRange = range.bbox;
                         }
                         break;
                     case "format":
