@@ -2273,7 +2273,7 @@
         }
     };
 
-    WorkbookView.prototype.startWizard = function (name) {
+    WorkbookView.prototype.startWizard = function (name, doCleanCellContent) {
         var t = this;
         var callback = function (success) {
             if (success) {
@@ -2283,8 +2283,10 @@
 
         var addFunction = function (name) {
         	t.setWizardMode(true);
-            t.cellEditor.selectionBegin = 0;
-            t.cellEditor.selectionEnd = t.cellEditor.textRender.getEndOfText();
+        	if (doCleanCellContent) {
+                t.cellEditor.selectionBegin = 0;
+                t.cellEditor.selectionEnd = t.cellEditor.textRender.getEndOfText();
+            }
 			t.cellEditor.insertFormula(name);
 			// ToDo send info from selection
 			var res = name ? new AscCommonExcel.CFunctionInfo(name) : null;
